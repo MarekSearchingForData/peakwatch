@@ -61,6 +61,16 @@ def validate():
     ok &= _log(con, "rnl_non_negative", "raw_town_rnl", (rnl["rnl_mw"] >= 0).all(),
                f"min={rnl['rnl_mw'].min():.3f} MW; {zeros} zero town-months (own generation)")
 
+    # Gross-error guard: first-publication files have contained 15x data-entry
+    # errors (Groton 2024-06: 199.8 MW vs 13.5 restated). Flag any town-month
+    # more than 4x the town's own median.
+    med = rnl.groupby("town")["rnl_mw"].transform("median")
+    spikes = rnl[(med > 0) & (rnl["rnl_mw"] > 4 * med)]
+    ok &= _log(con, "rnl_spike_guard", "raw_town_rnl", spikes.empty,
+               "none" if spikes.empty else
+               "; ".join(f"{r.town} {r.month}={r.rnl_mw:.1f}MW"
+                         for r in spikes.itertuples()))
+
     # Promote
     if ok:
         con.execute("DELETE FROM clean_zone_demand")

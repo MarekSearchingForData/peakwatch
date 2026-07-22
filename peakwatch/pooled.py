@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from lightgbm import LGBMRegressor
 
-from .allocator import _monthly_pool_peak_hours
+from .allocator import _monthly_pool_peak_hours, _pool_series
 from .store import connect
 
 TECH_BUCKETS = {"solar": "pv_mw", "hydro": "hydro_mw", "wind": "wind_mw",
@@ -36,7 +36,7 @@ def build_frame(con):
     wx = pd.read_sql("SELECT * FROM raw_weather", con, parse_dates=["ts"])
     wx["ts"] = pd.to_datetime(wx["ts"], utc=True)
 
-    peaks = _monthly_pool_peak_hours(zd)
+    peaks = _monthly_pool_peak_hours(zd, _pool_series(con))
     zone_at_peak = {}
     for zone in ("NEMA", "SEMA", "WCMA"):
         zone_at_peak[zone] = (zd[zd["zone"] == zone].set_index("ts")["rt_load_mw"]

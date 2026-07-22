@@ -12,7 +12,8 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import NMF
 
-from .allocator import SLICE_TOWNS, SLICE_ZONE, _monthly_pool_peak_hours
+from .allocator import (SLICE_TOWNS, SLICE_ZONE, _monthly_pool_peak_hours,
+                        _pool_series)
 from .peaks import EASTERN
 from .store import connect
 
@@ -59,7 +60,7 @@ def run_slice():
               f"profile {' '.join(f'{v:.1f}' for v in shape[::3])}")
 
     # anchor design matrix: component values at each month's settlement hour
-    peaks = _monthly_pool_peak_hours(zd)
+    peaks = _monthly_pool_peak_hours(zd, _pool_series(con))
     local = peaks["ts"].dt.tz_convert(EASTERN)
     anchors = pd.DataFrame({"month": peaks.index,
                             "date": local.dt.date, "hour": local.dt.hour})

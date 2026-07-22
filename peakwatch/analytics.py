@@ -6,7 +6,7 @@ ahead | day of month), from the empirical survival of peak days.
 """
 import pandas as pd
 
-from .allocator import _monthly_pool_peak_hours
+from .allocator import _monthly_pool_peak_hours, _pool_series
 from .peaks import EASTERN
 from .store import connect
 
@@ -14,7 +14,7 @@ from .store import connect
 def climatology(con):
     zd = pd.read_sql("SELECT * FROM clean_zone_demand", con, parse_dates=["ts"])
     zd["ts"] = pd.to_datetime(zd["ts"], utc=True)
-    peaks = _monthly_pool_peak_hours(zd)
+    peaks = _monthly_pool_peak_hours(zd, _pool_series(con))
     local = peaks["ts"].dt.tz_convert(EASTERN)
     out = pd.DataFrame({
         "month": peaks.index,

@@ -17,7 +17,8 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 
-from .allocator import SLICE_TOWNS, SLICE_ZONE, _monthly_pool_peak_hours
+from .allocator import (SLICE_TOWNS, SLICE_ZONE, _monthly_pool_peak_hours,
+                        _pool_series)
 from .store import connect
 
 SEASON = {12: "w", 1: "w", 2: "w", 6: "s", 7: "s", 8: "s"}  # else shoulder
@@ -79,7 +80,7 @@ def run():
     wx = pd.read_sql("SELECT * FROM raw_weather", con, parse_dates=["ts"])
     wx["ts"] = pd.to_datetime(wx["ts"], utc=True)
 
-    peaks = _monthly_pool_peak_hours(zd)
+    peaks = _monthly_pool_peak_hours(zd, _pool_series(con))
     zone_at_peak = (zd[zd["zone"] == SLICE_ZONE].set_index("ts")["rt_load_mw"]
                     .reindex(peaks["ts"]).values)
     peaks = peaks.assign(zone_mw=zone_at_peak).dropna(subset=["zone_mw"])
