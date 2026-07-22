@@ -80,6 +80,22 @@ def risk_flags(con, threshold=0.95):
     return pd.DataFrame(rows), mtd_max
 
 
+def alert_budget_curve(con, zone=None):
+    """Industry-style scoring (Voltus/VPPSA framing): what % of monthly peaks
+    are captured at each alert budget, sweeping the DA-vs-running-max
+    threshold. Uses only morning-of information."""
+    from .peaks import backtest_rule, daily_summary, load_zone_demand
+    df = load_zone_demand()
+    daily = daily_summary(df, zone)
+    rows = []
+    for thr in (0.90, 0.93, 0.95, 0.97, 0.99):
+        r = backtest_rule(daily, zone or "SYSTEM", thr)
+        rows.append({"threshold": thr, "peaks_caught": f"{r.hits}/{r.months}",
+                     "capture_%": round(100 * r.hit_rate, 1),
+                     "alert_days_per_month": round(r.alert_days_per_month, 1)})
+    return pd.DataFrame(rows)
+
+
 def run():
     con = connect()
     clim = climatology(con)
@@ -94,6 +110,10 @@ def run():
     print(f"\n=== Next-days risk (month-to-date max: {mtd:,.0f} MW) ===")
     if len(flags):
         print(flags.to_string(index=False))
+    print("\n=== Alert budget curve (SYSTEM): capture vs alert days ===")
+    print(alert_budget_curve(con).to_string(index=False))
+    print("Industry line: catch 100% of monthly peaks within ~3-5 alert-days/mo "
+          "(Voltus budget-framing; VPPSA contracts at 90% capture).")
     con.close()
 
 

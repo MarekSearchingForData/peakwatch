@@ -60,28 +60,40 @@ def run(zone="WCMA"):
           f"({train['date'].min()}..{train['date'].max()}), "
           f"test {len(test):,}h ({split}..{test['date'].max()}) ===")
 
+    # hold out the last 45 train days for residual calibration
+    cal_split = sorted(train["date"].unique())[-45]
+    fit, cal = train[train["date"] < cal_split], train[train["date"] >= cal_split]
+
     models = {}
     for q in (0.1, 0.5, 0.9):
         m = LGBMRegressor(objective="quantile", alpha=q, n_estimators=400,
                           learning_rate=0.05, num_leaves=63, verbose=-1)
-        m.fit(train[FEATURES], train["rt_load_mw"])
+        m.fit(fit[FEATURES], fit["rt_load_mw"])
         models[q] = m
     p50 = models[0.5].predict(test[FEATURES])
     p10 = models[0.1].predict(test[FEATURES])
     p90 = models[0.9].predict(test[FEATURES])
 
+    # GEFCom-style residual simulation: widen raw quantile bands by the
+    # empirical p10/p90 of calibration-slice residuals around p50
+    res = cal["rt_load_mw"].values - models[0.5].predict(cal[FEATURES])
+    lo, hi = np.quantile(res, 0.1), np.quantile(res, 0.9)
+    p10_cal, p90_cal = np.minimum(p10, p50 + lo), np.maximum(p90, p50 + hi)
+
     y = test["rt_load_mw"].values
     ours = np.abs(p50 - y)
     iso = np.abs(test["da_load_mw"].values - y)
     both = ~np.isnan(iso)
-    cover = np.mean((y >= p10) & (y <= p90))
+    cover_raw = np.mean((y >= p10) & (y <= p90))
+    cover = np.mean((y >= p10_cal) & (y <= p90_cal))
     blend = np.abs((p50 + test["da_load_mw"].values) / 2 - y)
     print(f"\nMAE  ours: {ours[both].mean():.1f} MW   ISO DA: {iso[both].mean():.1f} MW"
           f"   ({100 * (1 - ours[both].mean() / iso[both].mean()):+.1f}% vs ISO)")
     print(f"MAPE ours: {100 * (ours[both] / y[both]).mean():.2f}%   "
           f"ISO DA: {100 * (iso[both] / y[both]).mean():.2f}%   "
           f"BLEND (ours+ISO)/2: {100 * (blend[both] / y[both]).mean():.2f}%")
-    print(f"p10-p90 coverage: {100 * cover:.1f}% (target 80%)")
+    print(f"p10-p90 coverage: raw {100 * cover_raw:.1f}% -> "
+          f"residual-calibrated {100 * cover:.1f}% (target 80%)")
 
     # daily peak calling on test days
     t = test.copy()

@@ -15,9 +15,14 @@ EASTERN = "America/New_York"
 
 
 def load_zone_demand():
-    """Long-format hourly demand with local-time helpers."""
-    path = DATA_DIR / "cleaned" / "load" / "zone_demand_long.csv"
-    df = pd.read_csv(path, parse_dates=["Timestamp"])
+    """Long-format hourly demand from the store, with local-time helpers."""
+    from .store import connect
+    con = connect()
+    df = pd.read_sql(
+        "SELECT ts AS Timestamp, zone AS Zone, da_load_mw AS DaLoad_MW, "
+        "rt_load_mw AS RtLoad_MW FROM clean_zone_demand", con)
+    con.close()
+    df["Timestamp"] = pd.to_datetime(df["Timestamp"], utc=True)
     df["Local"] = df["Timestamp"].dt.tz_convert(EASTERN)
     df["Date"] = df["Local"].dt.date
     df["Hour"] = df["Local"].dt.hour
