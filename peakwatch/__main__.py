@@ -23,6 +23,9 @@ def main():
     if verb == "dollars":
         from . import dollars
         dollars.run()
+    if verb == "peakprob":
+        from . import peakmodel
+        peakmodel.run()
 
 
 if __name__ == "__main__":
