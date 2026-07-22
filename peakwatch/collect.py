@@ -91,12 +91,68 @@ def load_portfolio(con):
     return len(rows)
 
 
+def load_openmeteo_forecast(con, towns=WEATHER_TOWNS):
+    """7-day hourly forecast — SAME variables and source family as the
+    training archive, so live features match training features."""
+    coords = {t: (lat, lon) for t, lat, lon in TOWNS}
+    fetched = pd.Timestamp.utcnow().isoformat()
+    total = 0
+    for town in towns:
+        lat, lon = coords[town]
+        url = ("https://api.open-meteo.com/v1/forecast"
+               f"?latitude={lat}&longitude={lon}&forecast_days=7"
+               "&hourly=temperature_2m,shortwave_radiation,windspeed_10m,"
+               "cloudcover&timezone=UTC")
+        h = requests.get(url, timeout=60).json()["hourly"]
+        rows = list(zip([town] * len(h["time"]),
+                        [t + ":00+00:00" for t in h["time"]],
+                        h["temperature_2m"], h["shortwave_radiation"],
+                        h["windspeed_10m"], h["cloudcover"],
+                        [fetched] * len(h["time"])))
+        con.executemany(
+            "INSERT INTO raw_weather_fcst VALUES (?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(town, ts) DO UPDATE SET temp_c=excluded.temp_c, "
+            "ghi_wm2=excluded.ghi_wm2, wind_kmh=excluded.wind_kmh, "
+            "cloud_pct=excluded.cloud_pct, fetched_at=excluded.fetched_at", rows)
+        total += len(rows)
+    con.commit()
+    return total
+
+
+def load_isone_forecast(con, days_back=2, days_fwd=3):
+    """ISO-NE's own hourly load forecast (their meteorologists' consensus):
+    a feature, and the benchmark our zone forecast must beat."""
+    from .isone import ISONEClient
+    client = ISONEClient()
+    total = 0
+    for delta in range(-days_back, days_fwd + 1):
+        d = (date.today() + pd.Timedelta(days=delta)).strftime("%Y%m%d")
+        try:
+            data = client._get(f"hourlyloadforecast/day/{d}.json")
+        except Exception:
+            continue
+        recs = (data.get("HourlyLoadForecasts", {}) or {}).get(
+            "HourlyLoadForecast", []) or data.get("HourlyLoadForecast", []) or []
+        rows = [(r["BeginDate"], r["CreationDate"], r.get("LoadMw"),
+                 r.get("NetLoadMw")) for r in recs]
+        con.executemany(
+            "INSERT OR REPLACE INTO raw_isone_fcst VALUES (?, ?, ?, ?)", rows)
+        total += len(rows)
+    con.commit()
+    return total
+
+
 def refresh():
+    from . import calendar_features
     con = connect()
     n1 = load_zone_demand(con)
     n2 = load_town_rnl(con)
     n3 = load_openmeteo(con)
     n4 = load_portfolio(con)
-    print(f"refresh: {n1:,} zone-hours, {n2} town-months, "
-          f"{n3:,} weather-hours, {n4} portfolio assets upserted into raw_*")
+    n5 = load_openmeteo_forecast(con)
+    n6 = load_isone_forecast(con)
     con.close()
+    n7 = calendar_features.build()
+    print(f"refresh: {n1:,} zone-hours, {n2} town-months, {n3:,} weather-hours, "
+          f"{n4} portfolio assets, {n5} fcst-hours, {n6} ISO-fcst-hours, "
+          f"{n7} calendar days upserted")

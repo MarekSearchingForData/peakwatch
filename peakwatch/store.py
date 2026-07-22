@@ -38,6 +38,22 @@ CREATE TABLE IF NOT EXISTS town_portfolio (
     status TEXT, confidence TEXT, source TEXT,
     PRIMARY KEY (town, tech, btm)
 );
+CREATE TABLE IF NOT EXISTS raw_isone_fcst (
+    ts TEXT NOT NULL, created TEXT NOT NULL,
+    load_mw REAL, net_load_mw REAL,
+    PRIMARY KEY (ts, created)
+);
+CREATE TABLE IF NOT EXISTS raw_weather_fcst (
+    town TEXT NOT NULL, ts TEXT NOT NULL,
+    temp_c REAL, ghi_wm2 REAL, wind_kmh REAL, cloud_pct REAL,
+    fetched_at TEXT,
+    PRIMARY KEY (town, ts)
+);
+CREATE TABLE IF NOT EXISTS feature_calendar (
+    date TEXT PRIMARY KEY, dow INTEGER, is_weekend INTEGER,
+    is_holiday INTEGER, holiday_name TEXT, holiday_adjacent INTEGER,
+    doy_sin REAL, doy_cos REAL, sunset_hour REAL
+);
 CREATE TABLE IF NOT EXISTS quality_log (
     run_at TEXT NOT NULL, check_name TEXT NOT NULL,
     target TEXT, passed INTEGER, detail TEXT
