@@ -17,6 +17,9 @@ def main():
         allocator.run_slice()
     if verb in ("experiment", "all"):
         experiments.run()
+    if verb == "decompose":
+        from . import decompose
+        decompose.run_slice()
 
 
 if __name__ == "__main__":
