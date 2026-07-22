@@ -36,29 +36,32 @@ MODELS = {
 }
 
 
-def _loo_mape(y, X):
-    """Leave-one-out MAPE of least-squares y ~ [1, X]."""
+def _loo_preds(y, X):
+    """Leave-one-out per-fold predictions of least-squares y ~ [1, X]."""
     n = len(y)
     A = np.column_stack([np.ones(n), X]) if X is not None else np.ones((n, 1))
-    errs = []
+    preds = np.empty(n)
     for i in range(n):
         mask = np.arange(n) != i
         coef, *_ = np.linalg.lstsq(A[mask], y[mask], rcond=None)
-        pred = A[i] @ coef
-        errs.append(abs(pred - y[i]) / y[i] if y[i] else np.nan)
-    return 100 * np.nanmean(errs)
+        preds[i] = A[i] @ coef
+    return preds
 
 
-def _loo_mape_seasonal(y, months):
+def _loo_preds_seasonal(y, months):
     seasons = np.array([SEASON.get(m, "sh") for m in months])
-    errs = []
+    preds = np.empty(len(y))
     for i in range(len(y)):
         mask = np.arange(len(y)) != i
         same = mask & (seasons == seasons[i])
         pool = y[same] if same.any() else y[mask]
-        pred = pool.mean()
-        errs.append(abs(pred - y[i]) / y[i] if y[i] else np.nan)
-    return 100 * np.nanmean(errs)
+        preds[i] = pool.mean()
+    return preds
+
+
+def _mape(y, preds):
+    errs = [abs(p - t) / t for p, t in zip(preds, y) if t]
+    return 100 * np.nanmean(errs) if errs else np.nan
 
 
 def run():
@@ -90,16 +93,24 @@ def run():
         months = [int(m.split("-")[1]) for m in d.index]
         y = (d["rnl_mw"] / d["zone_mw"]).values  # settlement share
 
-        row = {"Town": town}
+        row, fold_preds = {"Town": town}, {}
         for name, cols in MODELS.items():
             if cols == "SEASONAL":
-                mape = _loo_mape_seasonal(y, months)
+                preds = _loo_preds_seasonal(y, months)
             else:
-                mape = _loo_mape(y, feats[cols].values if cols else None)
-            row[name] = mape
+                preds = _loo_preds(y, feats[cols].values if cols else None)
+            fold_preds[name] = preds
+            row[name] = _mape(y, preds)
+        # consensus: mean of all members' fold predictions, scored identically
+        row["consensus"] = _mape(y, np.mean(list(fold_preds.values()), axis=0))
+        # consensus-top3: mean of the 3 currently best members
+        top3 = sorted(fold_preds, key=lambda k: row[k])[:3]
+        row["consensus3"] = _mape(y, np.mean([fold_preds[k] for k in top3], axis=0))
+        for name in list(MODELS) + ["consensus", "consensus3"]:
             con.execute("INSERT INTO forecast_scorecard VALUES (?, ?, ?, ?, ?, ?)",
                         (run_at, f"zoo_{name}", town,
-                         f"{d.index.min()}..{d.index.max()}", "LOO_MAPE_pct", mape))
+                         f"{d.index.min()}..{d.index.max()}", "LOO_MAPE_pct",
+                         row[name]))
         scores = {k: v for k, v in row.items() if k != "Town"}
         row["champion"] = min(scores, key=scores.get)
         rows.append(row)
