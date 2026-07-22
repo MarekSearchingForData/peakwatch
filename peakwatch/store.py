@@ -54,6 +54,12 @@ CREATE TABLE IF NOT EXISTS feature_calendar (
     is_holiday INTEGER, holiday_name TEXT, holiday_adjacent INTEGER,
     doy_sin REAL, doy_cos REAL, sunset_hour REAL
 );
+CREATE TABLE IF NOT EXISTS town_class_mix (
+    town TEXT NOT NULL, year INTEGER,
+    res_mwh REAL, com_mwh REAL, ind_mwh REAL, other_mwh REAL, total_mwh REAL,
+    res_cust INTEGER, com_cust INTEGER, ind_cust INTEGER,
+    PRIMARY KEY (town)
+);
 CREATE TABLE IF NOT EXISTS quality_log (
     run_at TEXT NOT NULL, check_name TEXT NOT NULL,
     target TEXT, passed INTEGER, detail TEXT

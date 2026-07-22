@@ -91,6 +91,31 @@ def load_portfolio(con):
     return len(rows)
 
 
+def load_class_mix(con):
+    """EIA-861 sales by customer class (6 long-form utilities have full
+    breakdowns; 14 short-form filers have totals only — their weights get
+    initialized from archetype towns instead)."""
+    path = Path(__file__).resolve().parent.parent / "reference" / "town_class_mix.csv"
+    if not path.exists():
+        return 0
+    df = pd.read_csv(path)
+    rows = [(r.Town, r.Year,
+             None if pd.isna(r.Res_MWh) else r.Res_MWh,
+             None if pd.isna(r.Com_MWh) else r.Com_MWh,
+             None if pd.isna(r.Ind_MWh) else r.Ind_MWh,
+             None if pd.isna(r.Other_MWh) else r.Other_MWh,
+             r.Total_MWh,
+             None if pd.isna(r.Res_Customers) else int(r.Res_Customers),
+             None if pd.isna(r.Com_Customers) else int(r.Com_Customers),
+             None if pd.isna(r.Ind_Customers) else int(r.Ind_Customers))
+            for r in df.itertuples()]
+    con.executemany(
+        "INSERT OR REPLACE INTO town_class_mix VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        rows)
+    con.commit()
+    return len(rows)
+
+
 def load_openmeteo_forecast(con, towns=WEATHER_TOWNS):
     """7-day hourly forecast — SAME variables and source family as the
     training archive, so live features match training features."""
@@ -151,8 +176,9 @@ def refresh():
     n4 = load_portfolio(con)
     n5 = load_openmeteo_forecast(con)
     n6 = load_isone_forecast(con)
+    n8 = load_class_mix(con)
     con.close()
     n7 = calendar_features.build()
     print(f"refresh: {n1:,} zone-hours, {n2} town-months, {n3:,} weather-hours, "
           f"{n4} portfolio assets, {n5} fcst-hours, {n6} ISO-fcst-hours, "
-          f"{n7} calendar days upserted")
+          f"{n7} calendar days, {n8} class-mix rows upserted")
