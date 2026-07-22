@@ -6,6 +6,7 @@ re-fetched because RtLoad settles late. Run with no args to backfill
 plus wide RtLoad/DaLoad matrices.
 """
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, timedelta
 from pathlib import Path
@@ -22,7 +23,8 @@ RAW_DIR = DATA_DIR / "raw" / "load_v2"
 CLEAN_DIR = DATA_DIR / "cleaned" / "load"
 START = date(2024, 1, 1)
 REFETCH_TRAILING_DAYS = 3
-WORKERS = 6
+WORKERS = 1          # ISO-NE rate-limits aggressively; stay sequential
+PAUSE_S = 0.3
 
 _tls = local()
 
@@ -35,6 +37,7 @@ def _client():
 
 def _fetch_one(ymd, loc_id, zone, path):
     df = _client().combined_hourly_demand(ymd, loc_id)
+    time.sleep(PAUSE_S)
     if df.empty:
         return "empty"
     df.to_csv(path, index=False)

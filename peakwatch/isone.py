@@ -33,14 +33,18 @@ class ISONEClient:
         self.session.auth = HTTPBasicAuth(user or ISONE_API_USER, password or ISONE_API_PASS)
         self.session.headers.update({"Accept": "application/json"})
 
-    def _get(self, endpoint, retries=3):
+    def _get(self, endpoint, retries=6):
         url = f"{ISONE_BASE_URL}/{endpoint}"
         for attempt in range(retries):
             try:
                 r = self.session.get(url, timeout=60)
                 if r.status_code == 200:
                     return r.json()
-                if r.status_code in (429, 500, 502, 503, 504):
+                if r.status_code == 429:
+                    # ISO-NE rate limit: wait out the penalty window
+                    time.sleep(60 * (attempt + 1))
+                    continue
+                if r.status_code in (500, 502, 503, 504):
                     time.sleep(2 ** attempt + random.random())
                     continue
                 r.raise_for_status()

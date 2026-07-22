@@ -1,0 +1,24 @@
+Town,Zone,Confidence,Source
+Ashburnham,WCMA,high,ISO-NE Monthly Regional Network Load Report 2024-06 (ww-network-load-iso-202406-drp.csv)
+Boylston,WCMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+Chicopee,WCMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+Groton,WCMA,high,ISO-NE MRNL 2024-06 (9007 .R.WCMASS) + National Grid MA load-zone tariff table
+Holden,WCMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+Holyoke,WCMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+Hull,SEMA,high,ISO-NE MRNL 2024-06 (9006 .R.SEMASS) + hullmlp.com/rates (SEMA LMP)
+Ipswich,NEMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+Mansfield,SEMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+Marblehead,NEMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+Paxton,WCMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+Peabody,NEMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+Princeton,WCMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+Russell,WCMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+Shrewsbury,WCMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+South Hadley,WCMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+Sterling,WCMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+Templeton,WCMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+Wakefield,NEMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+West Boylston,WCMA,high,ISO-NE Monthly Regional Network Load Report 2024-06
+Springfield,WCMA,high,ISO-NE MRNL 2024-06 (WMECO -> 9007 .R.WCMASS)
+Boston,NEMA,high,ISO-NE MRNL 2024-06 (NSTAR NEMASS & Boston -> 9008)
+Worcester,WCMA,high,National Grid MA shared_load_zones.pdf
