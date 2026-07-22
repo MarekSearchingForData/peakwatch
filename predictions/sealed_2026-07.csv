@@ -1,0 +1,27 @@
+# PeakWatch sealed prediction — target month 2026-07
+# sealed_at_utc: 2026-07-22T20:05:37.364463+00:00
+# anchor hour so far: 2026-07-02 22:00:00+00:00 (local 2026-07-02 18:00:00-04:00)
+# method: same-season mean settlement share x zone load at anchor
+# caveat: anchor moves if a later hour sets a new pool peak
+# scored when ISO-NE publishes ww-network-load-iso-202607 (~2-month lag)
+Town,Zone,Predicted_RNL_MW,Low_MW,High_MW,n_history_months
+Peabody,NEMA,116.62,109.22,125.19,7
+Chicopee,WCMA,91.05,84.43,97.3,7
+Holyoke,WCMA,57.96,51.77,64.07,7
+Shrewsbury,WCMA,53.72,47.17,60.36,7
+Mansfield,SEMA,52.63,51.45,53.66,7
+Wakefield,NEMA,36.35,32.08,41.54,7
+Marblehead,NEMA,27.67,25.05,30.07,7
+South Hadley,WCMA,27.35,25.8,29.44,7
+Holden,WCMA,24.89,22.85,27.54,7
+Ipswich,NEMA,24.04,21.05,26.53,7
+Hull,SEMA,14.69,13.36,16.32,7
+Groton,WCMA,14.36,12.86,15.78,7
+West Boylston,WCMA,10.59,9.41,11.53,7
+Templeton,WCMA,10.18,9.14,11.44,7
+Sterling,WCMA,9.86,8.5,10.81,7
+Boylston,WCMA,8.1,6.86,9.62,7
+Ashburnham,WCMA,5.75,5.13,6.34,7
+Paxton,WCMA,5.12,4.36,6.33,7
+Princeton,WCMA,1.75,1.53,2.01,7
+Russell,WCMA,1.13,1.04,1.23,7
