@@ -4,6 +4,6 @@ pandas
 numpy
 streamlit
 plotly
-meteostat
+meteostat<2
 scikit-learn
 lightgbm

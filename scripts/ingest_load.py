@@ -6,9 +6,10 @@ re-fetched because RtLoad settles late. Run with no args to backfill
 plus wide RtLoad/DaLoad matrices.
 """
 import sys
-import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, timedelta
 from pathlib import Path
+from threading import Lock, local
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -21,40 +22,58 @@ RAW_DIR = DATA_DIR / "raw" / "load_v2"
 CLEAN_DIR = DATA_DIR / "cleaned" / "load"
 START = date(2024, 1, 1)
 REFETCH_TRAILING_DAYS = 3
-REQUEST_PAUSE_S = 0.25
+WORKERS = 6
+
+_tls = local()
+
+
+def _client():
+    if not hasattr(_tls, "client"):
+        _tls.client = ISONEClient()
+    return _tls.client
+
+
+def _fetch_one(ymd, loc_id, zone, path):
+    df = _client().combined_hourly_demand(ymd, loc_id)
+    if df.empty:
+        return "empty"
+    df.to_csv(path, index=False)
+    return "ok"
 
 
 def backfill():
     RAW_DIR.mkdir(parents=True, exist_ok=True)
-    client = ISONEClient()
     today = date.today()
     refetch_cutoff = today - timedelta(days=REFETCH_TRAILING_DAYS)
 
-    days = pd.date_range(START, today, freq="D").date
+    work = []
     stats = {"ok": 0, "skip": 0, "empty": 0, "fail": 0}
-    failures = []
-
-    for d in days:
+    for d in pd.date_range(START, today, freq="D").date:
         ymd = d.strftime("%Y%m%d")
         for loc_id, zone in LOCATION_TO_ZONE.items():
             path = RAW_DIR / f"{ymd}_{zone}.csv"
             if path.exists() and d < refetch_cutoff:
                 stats["skip"] += 1
-                continue
+            else:
+                work.append((ymd, loc_id, zone, path))
+
+    print(f"{len(work)} fetches queued, {stats['skip']} already on disk", flush=True)
+    failures = []
+    lock = Lock()
+    done = 0
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        futures = {pool.submit(_fetch_one, *w): w for w in work}
+        for fut in as_completed(futures):
+            ymd, _, zone, _ = futures[fut]
             try:
-                df = client.combined_hourly_demand(ymd, loc_id)
+                stats[fut.result()] += 1
             except Exception as e:
                 stats["fail"] += 1
                 failures.append((ymd, zone, str(e)[:120]))
-                continue
-            if df.empty:
-                stats["empty"] += 1
-                continue
-            df.to_csv(path, index=False)
-            stats["ok"] += 1
-            time.sleep(REQUEST_PAUSE_S)
-        if d.day == 1:
-            print(f"[{d}] {stats}", flush=True)
+            with lock:
+                done += 1
+                if done % 500 == 0:
+                    print(f"{done}/{len(work)} {stats}", flush=True)
 
     print(f"\nDone: {stats}")
     for f in failures[:20]:

@@ -29,14 +29,15 @@ MA_ZONES = ["NEMA", "SEMA", "WCMA"]
 
 class ISONEClient:
     def __init__(self, user=None, password=None):
-        self.auth = HTTPBasicAuth(user or ISONE_API_USER, password or ISONE_API_PASS)
-        self.headers = {"Accept": "application/json"}
+        self.session = requests.Session()
+        self.session.auth = HTTPBasicAuth(user or ISONE_API_USER, password or ISONE_API_PASS)
+        self.session.headers.update({"Accept": "application/json"})
 
     def _get(self, endpoint, retries=3):
         url = f"{ISONE_BASE_URL}/{endpoint}"
         for attempt in range(retries):
             try:
-                r = requests.get(url, auth=self.auth, headers=self.headers, timeout=60)
+                r = self.session.get(url, timeout=60)
                 if r.status_code == 200:
                     return r.json()
                 if r.status_code in (429, 500, 502, 503, 504):
