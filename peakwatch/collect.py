@@ -9,8 +9,8 @@ import requests
 from .config import DATA_DIR, TOWNS
 from .store import connect
 
-# Vertical-slice towns (see allocator.SLICE_TOWNS); full list after review
-WEATHER_TOWNS = ["Chicopee", "Holyoke", "Princeton"]
+# All member towns — pooled models need per-town weather
+WEATHER_TOWNS = [t for t, _, _ in TOWNS if t not in ("Boston", "Worcester", "Springfield")]
 
 
 def load_zone_demand(con):
@@ -47,16 +47,32 @@ def load_openmeteo(con, towns=WEATHER_TOWNS):
     """Hourly temp / solar radiation (GHI) / wind / cloud / humidity from the
     free Open-Meteo archive. Legacy variable names — the archive API rejects
     the newer snake_case aliases."""
+    import time as _time
     coords = {t: (lat, lon) for t, lat, lon in TOWNS}
     total = 0
     for town in towns:
+        # skip towns already loaded through (nearly) today
+        last = con.execute("SELECT MAX(ts) FROM raw_weather WHERE town=?",
+                           (town,)).fetchone()[0]
+        if last and last[:10] >= (date.today() - pd.Timedelta(days=3)).isoformat():
+            continue
         lat, lon = coords[town]
         url = ("https://archive-api.open-meteo.com/v1/archive"
                f"?latitude={lat}&longitude={lon}"
                "&start_date=2022-01-01&end_date=" + date.today().isoformat() +
                "&hourly=temperature_2m,shortwave_radiation,windspeed_10m,"
                "cloudcover,relativehumidity_2m&timezone=UTC")
-        h = requests.get(url, timeout=60).json()["hourly"]
+        h = None
+        for attempt in range(4):
+            payload = requests.get(url, timeout=120).json()
+            if "hourly" in payload:
+                h = payload["hourly"]
+                break
+            # rate-limited: free tier enforces per-minute caps
+            _time.sleep(65)
+        if h is None:
+            print(f"openmeteo: giving up on {town}: {payload.get('reason', '?')[:80]}")
+            continue
         rows = list(zip([town] * len(h["time"]),
                         [t + ":00+00:00" for t in h["time"]],
                         h["temperature_2m"], h["shortwave_radiation"],
