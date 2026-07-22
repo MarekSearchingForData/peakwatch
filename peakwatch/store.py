@@ -32,6 +32,12 @@ CREATE TABLE IF NOT EXISTS raw_weather (
     temp_c REAL, ghi_wm2 REAL, wind_kmh REAL, cloud_pct REAL, rh_pct REAL,
     PRIMARY KEY (town, ts)
 );
+CREATE TABLE IF NOT EXISTS town_portfolio (
+    town TEXT NOT NULL, tech TEXT NOT NULL,
+    nameplate_mw REAL, btm INTEGER, year INTEGER,
+    confidence TEXT, source TEXT,
+    PRIMARY KEY (town, tech, btm)
+);
 CREATE TABLE IF NOT EXISTS quality_log (
     run_at TEXT NOT NULL, check_name TEXT NOT NULL,
     target TEXT, passed INTEGER, detail TEXT

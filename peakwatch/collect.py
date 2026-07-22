@@ -1,6 +1,7 @@
 """Collectors: move source data (already fetched to disk by ingest scripts)
 into the raw_* tables. Idempotent upserts; safe to run mid-backfill."""
 from datetime import date
+from pathlib import Path
 
 import pandas as pd
 import requests
@@ -71,11 +72,29 @@ def load_openmeteo(con, towns=WEATHER_TOWNS):
     return total
 
 
+def load_portfolio(con):
+    """Town generation-asset reference (compiled from EIA 860/861, MassCEC)."""
+    path = Path(__file__).resolve().parent.parent / "reference" / "town_portfolio.csv"
+    if not path.exists():
+        return 0
+    df = pd.read_csv(path)
+    rows = [(r.Town, r.Tech, r.Nameplate_MW, 1 if str(r.Type).lower() == "btm" else 0,
+             r.Year, r.Confidence, r.Source) for r in df.itertuples()]
+    con.executemany(
+        "INSERT INTO town_portfolio VALUES (?, ?, ?, ?, ?, ?, ?) "
+        "ON CONFLICT(town, tech, btm) DO UPDATE SET "
+        "nameplate_mw=excluded.nameplate_mw, year=excluded.year, "
+        "confidence=excluded.confidence, source=excluded.source", rows)
+    con.commit()
+    return len(rows)
+
+
 def refresh():
     con = connect()
     n1 = load_zone_demand(con)
     n2 = load_town_rnl(con)
     n3 = load_openmeteo(con)
+    n4 = load_portfolio(con)
     print(f"refresh: {n1:,} zone-hours, {n2} town-months, "
-          f"{n3:,} weather-hours upserted into raw_*")
+          f"{n3:,} weather-hours, {n4} portfolio assets upserted into raw_*")
     con.close()
