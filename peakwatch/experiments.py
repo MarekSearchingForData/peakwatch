@@ -64,6 +64,12 @@ def _mape(y, preds):
     return 100 * np.nanmean(errs) if errs else np.nan
 
 
+def _mae_mw(y, preds, zone_mw):
+    """Absolute error in MW — the honest metric for micro towns whose
+    settlement value can be ~0 (percent error explodes there)."""
+    return float(np.nanmean(np.abs((np.array(preds) - np.array(y)) * zone_mw)))
+
+
 def run():
     con = connect()
     zd = pd.read_sql("SELECT * FROM clean_zone_demand", con, parse_dates=["ts"])
@@ -93,6 +99,12 @@ def run():
         months = [int(m.split("-")[1]) for m in d.index]
         y = (d["rnl_mw"] / d["zone_mw"]).values  # settlement share
 
+        zone_mw = d["zone_mw"].values
+        micro = (d["rnl_mw"].mean() < 3.0)  # micro town: score in MW, not %
+        metric = "LOO_MAE_MW" if micro else "LOO_MAPE_pct"
+        score = ((lambda p: _mae_mw(y, p, zone_mw)) if micro
+                 else (lambda p: _mape(y, p)))
+
         row, fold_preds = {"Town": town}, {}
         for name, cols in MODELS.items():
             if cols == "SEASONAL":
@@ -100,27 +112,27 @@ def run():
             else:
                 preds = _loo_preds(y, feats[cols].values if cols else None)
             fold_preds[name] = preds
-            row[name] = _mape(y, preds)
+            row[name] = score(preds)
         # consensus: mean of all members' fold predictions, scored identically
-        row["consensus"] = _mape(y, np.mean(list(fold_preds.values()), axis=0))
+        row["consensus"] = score(np.mean(list(fold_preds.values()), axis=0))
         # consensus-top3: mean of the 3 currently best members
         top3 = sorted(fold_preds, key=lambda k: row[k])[:3]
-        row["consensus3"] = _mape(y, np.mean([fold_preds[k] for k in top3], axis=0))
+        row["consensus3"] = score(np.mean([fold_preds[k] for k in top3], axis=0))
         for name in list(MODELS) + ["consensus", "consensus3"]:
             con.execute("INSERT INTO forecast_scorecard VALUES (?, ?, ?, ?, ?, ?)",
                         (run_at, f"zoo_{name}", town,
-                         f"{d.index.min()}..{d.index.max()}", "LOO_MAPE_pct",
-                         row[name]))
+                         f"{d.index.min()}..{d.index.max()}", metric, row[name]))
         scores = {k: v for k, v in row.items() if k != "Town"}
         row["champion"] = min(scores, key=scores.get)
+        row["metric"] = "MAE MW" if micro else "MAPE %"
         rows.append(row)
     con.commit()
     out = pd.DataFrame(rows)
-    num = out.drop(columns=["Town", "champion"])
-    print(pd.concat([out[["Town"]], num.round(1), out[["champion"]]], axis=1)
-          .to_string(index=False))
-    print("\n(LOO MAPE % predicting each month's settlement share; "
-          "champion = current best. All models re-scored every run.)")
+    num = out.drop(columns=["Town", "champion", "metric"])
+    print(pd.concat([out[["Town", "metric"]], num.round(2), out[["champion"]]],
+                    axis=1).to_string(index=False))
+    print("\n(Leave-one-out score per model — MAPE % for normal towns, "
+          "MAE in MW for micro towns; champion = current best.)")
     con.close()
 
 
