@@ -1,0 +1,7 @@
+metric,period,value,units,zone_scope,source
+RNS,2025,185.28,$/kW-yr,New England,RTO Insider NEPOOL RC/TC 2025-07; ISO-NE PTO-AC rate presentation
+RNS,2026,183.71,$/kW-yr,New England,RTO Insider NEPOOL RC/TC 2025-07; ISO-NE PTO-AC rate presentation
+FCA15,2024/25,3.98,$/kW-mo,SENE,S&P Global FCA15 results
+FCA16,2025/26,2.639,$/kW-mo,SENE,ISO-NE key stats
+FCA17,2026/27,2.590,$/kW-mo,all zones,ISO Newswire FCA17
+FCA18,2027/28,3.58,$/kW-mo,all zones,ISO Newswire FCA18; Utility Dive

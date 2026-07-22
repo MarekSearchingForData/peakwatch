@@ -51,7 +51,9 @@ def backfill():
 
     work = []
     stats = {"ok": 0, "skip": 0, "empty": 0, "fail": 0}
-    for d in pd.date_range(START, today, freq="D").date:
+    # newest-first: current month powers live peak-risk flags; old years
+    # only feed model training and can land last
+    for d in reversed(pd.date_range(START, today, freq="D").date):
         ymd = d.strftime("%Y%m%d")
         for loc_id, zone in LOCATION_TO_ZONE.items():
             path = RAW_DIR / f"{ymd}_{zone}.csv"

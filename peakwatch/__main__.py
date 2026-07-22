@@ -20,6 +20,9 @@ def main():
     if verb == "decompose":
         from . import decompose
         decompose.run_slice()
+    if verb == "dollars":
+        from . import dollars
+        dollars.run()
 
 
 if __name__ == "__main__":
