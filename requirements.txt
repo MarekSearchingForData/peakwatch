@@ -1,0 +1,9 @@
+python-dotenv
+requests
+pandas
+numpy
+streamlit
+plotly
+meteostat
+scikit-learn
+lightgbm
