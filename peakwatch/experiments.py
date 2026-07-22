@@ -71,6 +71,14 @@ def _mae_mw(y, preds, zone_mw):
     return float(np.nanmean(np.abs((np.array(preds) - np.array(y)) * zone_mw)))
 
 
+def _est_generation_mw(feats, pv_mw, wind_mw):
+    """Physical offset estimate at the anchor hour: PV from GHI (AC derate
+    ~0.8), wind from a cubic power-curve approximation (rated ~40 km/h)."""
+    pv = pv_mw * (feats["ghi_wm2"].values / 1000.0) * 0.8
+    cf = np.clip((feats["wind_kmh"].values / 40.0) ** 3, 0, 0.9)
+    return pv + wind_mw * cf
+
+
 def run():
     con = connect()
     zd = pd.read_sql("SELECT * FROM clean_zone_demand", con, parse_dates=["ts"])
@@ -79,6 +87,12 @@ def run():
                       params=[SLICE_ZONE])
     wx = pd.read_sql("SELECT * FROM raw_weather", con, parse_dates=["ts"])
     wx["ts"] = pd.to_datetime(wx["ts"], utc=True)
+    pf = pd.read_sql("SELECT town, tech, nameplate_mw FROM town_portfolio "
+                     "WHERE status='operational'", con)
+    pf["tech_l"] = pf["tech"].str.lower()
+    cap = {t: (g[g["tech_l"].str.contains("solar")]["nameplate_mw"].sum(),
+               g[g["tech_l"].str.contains("wind")]["nameplate_mw"].sum())
+           for t, g in pf.groupby("town")}
 
     peaks = _monthly_pool_peak_hours(zd, _pool_series(con))
     zone_at_peak = (zd[zd["zone"] == SLICE_ZONE].set_index("ts")["rt_load_mw"]
@@ -114,12 +128,23 @@ def run():
                 preds = _loo_preds(y, feats[cols].values if cols else None)
             fold_preds[name] = preds
             row[name] = score(preds)
+        # physical: flat share of GROSS load (net + estimated generation),
+        # minus the physical generation estimate at prediction time
+        pv_mw, wind_mw = cap.get(town, (0.0, 0.0))
+        gen = _est_generation_mw(feats, pv_mw, wind_mw)
+        gross_share = (d["rnl_mw"].values + gen) / zone_mw
+        preds_phys = np.empty(len(y))
+        for i in range(len(y)):
+            m = np.arange(len(y)) != i
+            preds_phys[i] = (gross_share[m].mean() * zone_mw[i] - gen[i]) / zone_mw[i]
+        fold_preds["physical"] = preds_phys
+        row["physical"] = score(preds_phys)
         # consensus: mean of all members' fold predictions, scored identically
         row["consensus"] = score(np.mean(list(fold_preds.values()), axis=0))
         # consensus-top3: mean of the 3 currently best members
         top3 = sorted(fold_preds, key=lambda k: row[k])[:3]
         row["consensus3"] = score(np.mean([fold_preds[k] for k in top3], axis=0))
-        for name in list(MODELS) + ["consensus", "consensus3"]:
+        for name in list(MODELS) + ["physical", "consensus", "consensus3"]:
             con.execute("INSERT INTO forecast_scorecard VALUES (?, ?, ?, ?, ?, ?)",
                         (run_at, f"zoo_{name}", town,
                          f"{d.index.min()}..{d.index.max()}", metric, row[name]))

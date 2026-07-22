@@ -73,6 +73,7 @@ with tab_towns:
 
     rnl = q("SELECT month, rnl_mw FROM clean_town_rnl WHERE town=? ORDER BY month",
             (town,))
+    RNS_RATE, FCA_RATE = 183.71, 3.58  # $/kW-yr (2026), $/kW-mo (FCA18)
     c1, c2, c3 = st.columns(3)
     if len(rnl):
         latest = rnl.iloc[-1]
@@ -81,6 +82,14 @@ with tab_towns:
         c2.metric("12-mo max", f"{rnl['rnl_mw'].tail(12).max():.2f} MW")
         yoy = rnl["rnl_mw"].tail(12).mean() - rnl["rnl_mw"].tail(24).head(12).mean()
         c3.metric("Avg vs prior year", f"{yoy:+.2f} MW")
+        d1, d2, d3 = st.columns(3)
+        avg12 = rnl["rnl_mw"].tail(12).mean()
+        summer = rnl[rnl["month"].str[5:7].isin(["07", "08"])]["rnl_mw"].tail(2)
+        trans = avg12 * 1000 * RNS_RATE
+        cap_cost = (summer.max() * 1000 * FCA_RATE * 12) if len(summer) else 0
+        d1.metric("Transmission exposure", f"${trans:,.0f}/yr")
+        d2.metric("Capacity exposure (tag proxy)", f"${cap_cost:,.0f}/yr")
+        d3.metric("Value of 1 MW shaved (12 CP)", f"${RNS_RATE * 1000:,.0f}/yr")
 
     st.subheader("Monthly peak-hour load (settlement truth)")
     fig = px.bar(rnl, x="month", y="rnl_mw", labels={"rnl_mw": "MW", "month": ""})
