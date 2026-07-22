@@ -1,7 +1,7 @@
-"""PeakWatch CLI: py -m peakwatch <refresh|validate|allocate|all>"""
+"""PeakWatch CLI: py -m peakwatch <refresh|validate|allocate|experiment|all>"""
 import sys
 
-from . import collect, validate, allocator
+from . import collect, validate, allocator, experiments
 
 
 def main():
@@ -13,6 +13,8 @@ def main():
             sys.exit("stopping: validation failed")
     if verb in ("allocate", "all"):
         allocator.run_slice()
+    if verb in ("experiment", "all"):
+        experiments.run()
 
 
 if __name__ == "__main__":

@@ -27,6 +27,11 @@ CREATE TABLE IF NOT EXISTS clean_town_rnl (
     zone TEXT, rnl_mw REAL,
     PRIMARY KEY (town, month)
 );
+CREATE TABLE IF NOT EXISTS raw_weather (
+    town TEXT NOT NULL, ts TEXT NOT NULL,
+    temp_c REAL, ghi_wm2 REAL, wind_kmh REAL, cloud_pct REAL, rh_pct REAL,
+    PRIMARY KEY (town, ts)
+);
 CREATE TABLE IF NOT EXISTS quality_log (
     run_at TEXT NOT NULL, check_name TEXT NOT NULL,
     target TEXT, passed INTEGER, detail TEXT

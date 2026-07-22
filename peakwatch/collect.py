@@ -1,9 +1,15 @@
 """Collectors: move source data (already fetched to disk by ingest scripts)
 into the raw_* tables. Idempotent upserts; safe to run mid-backfill."""
-import pandas as pd
+from datetime import date
 
-from .config import DATA_DIR
+import pandas as pd
+import requests
+
+from .config import DATA_DIR, TOWNS
 from .store import connect
+
+# Vertical-slice towns (see allocator.SLICE_TOWNS); full list after review
+WEATHER_TOWNS = ["Chicopee", "Holyoke", "Princeton"]
 
 
 def load_zone_demand(con):
@@ -36,9 +42,40 @@ def load_town_rnl(con):
     return len(rows)
 
 
+def load_openmeteo(con, towns=WEATHER_TOWNS):
+    """Hourly temp / solar radiation (GHI) / wind / cloud / humidity from the
+    free Open-Meteo archive. Legacy variable names — the archive API rejects
+    the newer snake_case aliases."""
+    coords = {t: (lat, lon) for t, lat, lon in TOWNS}
+    total = 0
+    for town in towns:
+        lat, lon = coords[town]
+        url = ("https://archive-api.open-meteo.com/v1/archive"
+               f"?latitude={lat}&longitude={lon}"
+               "&start_date=2024-01-01&end_date=" + date.today().isoformat() +
+               "&hourly=temperature_2m,shortwave_radiation,windspeed_10m,"
+               "cloudcover,relativehumidity_2m&timezone=UTC")
+        h = requests.get(url, timeout=60).json()["hourly"]
+        rows = list(zip([town] * len(h["time"]),
+                        [t + ":00+00:00" for t in h["time"]],
+                        h["temperature_2m"], h["shortwave_radiation"],
+                        h["windspeed_10m"], h["cloudcover"],
+                        h["relativehumidity_2m"]))
+        con.executemany(
+            "INSERT INTO raw_weather VALUES (?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(town, ts) DO UPDATE SET temp_c=excluded.temp_c, "
+            "ghi_wm2=excluded.ghi_wm2, wind_kmh=excluded.wind_kmh, "
+            "cloud_pct=excluded.cloud_pct, rh_pct=excluded.rh_pct", rows)
+        total += len(rows)
+    con.commit()
+    return total
+
+
 def refresh():
     con = connect()
     n1 = load_zone_demand(con)
     n2 = load_town_rnl(con)
-    print(f"refresh: {n1:,} zone-hours, {n2} town-months upserted into raw_*")
+    n3 = load_openmeteo(con)
+    print(f"refresh: {n1:,} zone-hours, {n2} town-months, "
+          f"{n3:,} weather-hours upserted into raw_*")
     con.close()
