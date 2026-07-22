@@ -7,3 +7,5 @@ plotly
 meteostat<2
 scikit-learn
 lightgbm
+pytest
+holidays

@@ -1,0 +1,87 @@
+Town,Tech,Nameplate_MW,Type,Year,Status,Confidence,Source
+Ashburnham,Solar PV - Integrys MA Solar site (3.98 MW-DC),2.9,utility,2013,operational,high,EIA-860 2024 plant 58934
+Ashburnham,BESS - MMWEC/NEC Ashburnham (3 MWh),3.0,utility,2019,operational,high,EIA-860 2024 plant 62219
+Ashburnham,BESS - Lightshift (planned),3.0,utility,2027,planned,high,Lightshift/MMWEC press 2026-06-22
+Ashburnham,BTM solar aggregate (DC),0.19,BTM,2025,operational,low,MassCEC PTS Jan-2025 (likely undercount)
+Boylston,None identified,0,utility,,none,high,EIA-860 2024 (no plants in town)
+Boylston,BTM solar aggregate (DC),0.20,BTM,2025,operational,low,MassCEC PTS Jan-2025
+Chicopee,Diesel IC peaker - Front Street (CEL; 3x2.7),8.1,utility,1978,operational,high,EIA-860 2024 plant 7396
+Chicopee,Hydro - Chicopee Hydroelectric Station (city),2.4,utility,1985,out_of_service,high,EIA-860 2024 plant 50832 (status OS)
+Chicopee,Hydro - Dwight Station (hosted),1.2,utility,1920,operational,high,EIA-860 2024 plant 6378
+Chicopee,Landfill gas IC - Ameresco Chicopee,7.8,utility,2007,operational,high,EIA-860 2024 plant 56426
+Chicopee,Solar PV - Chicopee Solar (Citizens),3.0,utility,2013,operational,high,EIA-860 2024 plant 59030
+Chicopee,Solar PV - Granby Road Solar (Citizens),1.6,utility,2015,operational,high,EIA-860 2024 plant 59626
+Chicopee,Solar PV - CED Chicopee Solar,3.0,utility,2017,operational,high,EIA-860 2024 plant 61602
+Chicopee,Solar PV - Captona Chicopee,2.0,utility,2017,operational,high,EIA-860 2024 plant 64120
+Chicopee,BESS - Lightshift (size unconfirmed),5.0,utility,,development,low,MMWEC/Lightshift press 2024
+Chicopee,BTM solar net-metered aggregate,1.89,BTM,2024,operational,high,EIA-861 2024 Net Metering
+Groton,Solar PV - GELD Solar Farm (2.93 MW-DC),2.3,utility,2016,operational,high,EIA-860 2024 plant 61539
+Groton,Gas CT CHP - West Groton (industrial host),4.1,utility,2015,operational,high,EIA-860 2024 plant 60276
+Groton,BESS - Lightshift Groton 1+2 (17.8 MWh),4.0,utility,2024,operational,high,EIA-860 2024 plants 67162/67185
+Groton,BESS - Lightshift Groton 3 (planned),4.0,utility,2027,planned,high,Lightshift press 2026-06-22
+Groton,BESS - GELD Tesla battery,0.5,utility,2019,operational,low,GELD reports (sub-1MW; not in EIA-860)
+Groton,BTM solar aggregate (DC),0.31,BTM,2025,operational,low,MassCEC PTS Jan-2025
+Holden,BESS - Lightshift Holden 1 (22.4 MWh),5.0,utility,2024,operational,high,EIA-860 2024 plant 67186
+Holden,BTM solar aggregate (DC),0.93,BTM,2025,operational,low,MassCEC PTS Jan-2025 (85 systems)
+Holyoke,Hydro - Hadley Falls (HG&E),33.4,utility,1952,operational,high,EIA-860 2024 plant 1605
+Holyoke,Hydro - Riverside (HG&E),6.9,utility,1906,operational,high,EIA-860 2024 plant 1607
+Holyoke,Hydro - Boatlock (HG&E),3.1,utility,1921,operational,high,EIA-860 2024 plant 1603
+Holyoke,Hydro - Cabot Street (HG&E),2.6,utility,1893,operational,high,EIA-860 2024 plant 9864
+Holyoke,Hydro - Chemical (HG&E),1.6,utility,1935,operational,high,EIA-860 2024 plant 1604
+Holyoke,Solar PV - Mt. Tom Solar (5.76 MW-DC),4.5,utility,2017,operational,high,EIA-860 2024 plant 60906
+Holyoke,BESS - Mt. Tom (ENGIE; 6.1 MWh),3.1,utility,2019,operational,high,EIA-860 2024 plant 60906
+Holyoke,Solar PV - Holyoke Solar Cooperative at Mueller,2.7,utility,2011,operational,high,EIA-860 2024 plant 57931
+Holyoke,BESS - Martin J. Dunn Energy Center (10 MWh),5.0,utility,2021,operational,med,HG&E website/press
+Holyoke,Distributed solar aggregate (~7.6 MW-DC),6.8,BTM,2024,operational,high,EIA-861 2024 Net Metering + Non-Net-Metering Distributed
+Hull,Wind - Hull Wind I (removed Feb 2024),0.66,utility,2001,retired,high,Public Power/hullwind.com
+Hull,Wind - Hull Wind II (demolished Dec 2025),1.8,utility,2006,retired,high,Public Power article on HW2 takedown
+Hull,BTM solar aggregate (DC),0.25,BTM,2025,operational,low,MassCEC PTS Jan-2025
+Ipswich,Gas/diesel IC peaker - High Street Station,8.5,utility,1951,operational,high,EIA-860 2024 plant 1670 (plus 2.4 MW oil OS)
+Ipswich,Wind - Ipswich Wind Turbine (town WWTP),1.6,utility,2011,operational,high,EIA-860 2024 plant 57855
+Ipswich,BESS - Lightshift (final construction),5.0,utility,2026,construction,high,Lightshift press 2026-06-22
+Ipswich,BTM solar aggregate (DC),1.80,BTM,2025,operational,med,MassCEC PTS Jan-2025 (116 systems)
+Mansfield,Solar PV - Kenmare Branch Street (1.96 MW-DC),1.5,utility,2017,operational,high,EIA-860 2024 plant 64137
+Mansfield,BTM solar net-metered aggregate,2.18,BTM,2024,operational,high,EIA-861 2024 Net Metering
+Marblehead,Diesel IC peaker - Wilkins Station (2x2.7),5.4,utility,1975,operational,high,EIA-860 2024 plant 6586
+Marblehead,BESS - Lightshift (planned),5.0,utility,2027,planned,high,Lightshift press 2026-06-22
+Marblehead,BTM solar aggregate (DC),0.39,BTM,2025,operational,low,MassCEC PTS Jan-2025 (badly undercounts; lower bound)
+Paxton,BESS - Lightshift Paxton 1 (9 MWh),3.0,utility,2024,operational,high,EIA-860 2024 plant 67187
+Paxton,BTM solar aggregate (DC),0.09,BTM,2025,operational,low,MassCEC PTS Jan-2025
+Peabody,Gas CT peaker - Waters River 1 (retiring 2026),21.3,utility,1971,operational,high,EIA-860 2024 plant 1678
+Peabody,Gas CT peaker - Waters River 2 (MMWEC Project 6),43.6,utility,1990,operational,high,EIA-860 2024 plant 1678
+Peabody,Gas GT peaker - MMWEC Project 2015A (marketed 55 MW),65.0,utility,2024,operational,high,EIA-860 2024 plant 63559
+Peabody,BESS - Lightshift (size unconfirmed),5.0,utility,,development,low,MMWEC/Lightshift press 2024
+Peabody,BTM solar net-metered aggregate,0.75,BTM,2024,operational,high,EIA-861 2024 Net Metering
+Princeton,Wind - Princeton Wind Farm (2x1.5 GE),3.0,utility,2010,operational,high,EIA-860 2024 plant 7501
+Princeton,BESS - Lightshift (planned),3.5,utility,2027,planned,high,Lightshift press 2026-06-22
+Princeton,BTM solar aggregate (DC),0.19,BTM,2025,operational,low,MassCEC PTS Jan-2025
+Russell,Hydro - Texon/Hitchcock (hosted),1.5,utility,1982,operational,high,EIA-860 2024 plant 61640
+Russell,Hydro - Indian River (hosted),1.4,utility,1909,operational,high,EIA-860 2024 plant 65294
+Russell,Wind - Holiday Hill Community Wind (hosted),5.0,utility,2019,operational,high,EIA-860 2024 plant 62897
+Russell,Solar PV - Sunrise Blandford Rd (feeds Eversource not Russell MLD),3.0,utility,2020,external,high,EIA-860 2024 plant 68655; PTS shows WMECO interconnection
+Russell,BTM solar aggregate (DC),0.03,BTM,2025,operational,low,MassCEC PTS Jan-2025
+Shrewsbury,Diesel IC peaker - SELCO station (5x2.8),14.0,utility,1969,operational,high,EIA-860 2024 plant 6125
+Shrewsbury,Gas IC - Centech Gas Generator (SELCO),2.5,utility,2019,operational,high,EIA-860 2024 plant 65768
+Shrewsbury,Solar PV - Shrewsbury Solar (3.42 MW-DC),2.5,utility,2012,operational,high,EIA-860 2024 plant 57990
+Shrewsbury,Solar PV - SELCO Community Solar (3.88 MW-DC),3.0,utility,2018,operational,high,EIA-860 2024 plant 64060
+Shrewsbury,BESS - Lightshift (size unconfirmed),5.0,utility,,development,low,MMWEC/Lightshift press 2024
+Shrewsbury,BTM solar net-metered aggregate,1.45,BTM,2024,operational,high,EIA-861 2024 Net Metering
+South Hadley,None identified,0,utility,,none,high,EIA-860 2024
+South Hadley,BTM solar aggregate incl. Mt Holyoke College (DC),0.98,BTM,2025,operational,low,MassCEC PTS Jan-2025 (SHELD cites 65+ sites; undercount)
+Sterling,Solar PV - SMLD municipal array (2.39 MW-DC),2.0,utility,2013,operational,high,EIA-860 2024 plant 58387
+Sterling,BESS - Chocksett Rd (SMLD/NEC; 3.9 MWh; first MA utility BESS),2.0,utility,2016,operational,high,EIA-860 2024 plant 60959
+Sterling,Solar+storage - MA Solar Storage 1 (1.1 PV + 1.0/2 MWh),2.1,utility,2018,operational,high,EIA-860 2024 plant 61730
+Sterling,BTM solar aggregate (DC; excl. two ~1.2-1.4 MW industrial rooftops),0.34,BTM,2025,operational,low,MassCEC PTS Jan-2025
+Templeton,Solar PV - Sunny Templeton (4.5 MW-DC),3.0,utility,2014,operational,high,EIA-860 2024 plant 59731
+Templeton,BTM solar aggregate (DC),0.20,BTM,2025,operational,low,MassCEC PTS Jan-2025
+Wakefield,BESS - MMWEC/NEC Beebe Substation (3 MWh),3.0,utility,2019,operational,high,EIA-860 2024 plant 62585
+Wakefield,BESS - Lightshift Wakefield 1 (school microgrid),5.0,utility,2025,construction,med,EIA-860 2024 proposed plant 68875; WMGLD press 2025-07
+Wakefield,BTM solar aggregate (DC),1.62,BTM,2025,operational,low,MassCEC PTS Jan-2025
+West Boylston,Hydro - Oakdale Station (MWRA; hosted),3.5,utility,1951,operational,high,EIA-860 2024 plant 10824
+West Boylston,Solar PV - Community Shared Solar landfill (2.06 MW-DC),1.5,utility,2016,operational,high,EIA-860 2024 plant 61415
+West Boylston,Solar PV - rooftop community solar (1.04 MW-DC),1.0,utility,2018,operational,med,MassCEC PTS; WBMLP website
+West Boylston,BESS - Convergent (9 MWh; deployed May 2026),3.0,utility,2026,operational,high,Convergent/pv-magazine
+West Boylston,BTM solar aggregate (DC),0.43,BTM,2025,operational,low,MassCEC PTS Jan-2025
+Ludlow (MMWEC),Oil CC intermediate - Stony Brook A,360.0,utility,1981,operational,high,EIA-860 2024 plant 6081
+Ludlow (MMWEC),Oil GT peaker - Stony Brook B,170.0,utility,1982,operational,high,EIA-860 2024 plant 6081
+Ludlow (MMWEC),Solar PV - Stony Brook site,6.9,utility,2018,operational,high,EIA-860 2024 plant 6081

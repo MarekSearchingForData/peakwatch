@@ -79,12 +79,14 @@ def load_portfolio(con):
         return 0
     df = pd.read_csv(path)
     rows = [(r.Town, r.Tech, r.Nameplate_MW, 1 if str(r.Type).lower() == "btm" else 0,
-             r.Year, r.Confidence, r.Source) for r in df.itertuples()]
+             None if pd.isna(r.Year) else int(r.Year), r.Status, r.Confidence,
+             r.Source) for r in df.itertuples()]
     con.executemany(
-        "INSERT INTO town_portfolio VALUES (?, ?, ?, ?, ?, ?, ?) "
+        "INSERT INTO town_portfolio VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
         "ON CONFLICT(town, tech, btm) DO UPDATE SET "
         "nameplate_mw=excluded.nameplate_mw, year=excluded.year, "
-        "confidence=excluded.confidence, source=excluded.source", rows)
+        "status=excluded.status, confidence=excluded.confidence, "
+        "source=excluded.source", rows)
     con.commit()
     return len(rows)
 
