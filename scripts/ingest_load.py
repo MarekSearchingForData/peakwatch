@@ -21,7 +21,7 @@ from peakwatch.isone import ISONEClient, LOCATION_TO_ZONE
 
 RAW_DIR = DATA_DIR / "raw" / "load_v2"
 CLEAN_DIR = DATA_DIR / "cleaned" / "load"
-START = date(2024, 1, 1)
+START = date(2022, 1, 1)
 REFETCH_TRAILING_DAYS = 3
 WORKERS = 1          # ISO-NE rate-limits aggressively; stay sequential
 PAUSE_S = 0.3

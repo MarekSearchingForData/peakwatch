@@ -53,7 +53,7 @@ def load_openmeteo(con, towns=WEATHER_TOWNS):
         lat, lon = coords[town]
         url = ("https://archive-api.open-meteo.com/v1/archive"
                f"?latitude={lat}&longitude={lon}"
-               "&start_date=2024-01-01&end_date=" + date.today().isoformat() +
+               "&start_date=2022-01-01&end_date=" + date.today().isoformat() +
                "&hourly=temperature_2m,shortwave_radiation,windspeed_10m,"
                "cloudcover,relativehumidity_2m&timezone=UTC")
         h = requests.get(url, timeout=60).json()["hourly"]

@@ -25,7 +25,7 @@ RAW_DIR = DATA_DIR / "raw" / "town_load"
 CLEAN_DIR = DATA_DIR / "cleaned" / "town_load"
 BASE = "https://www.iso-ne.com/static-assets/documents"
 CONTAINERS = range(100008, 100048)
-MONTHS = [f"{y}{m:02d}" for y in (2024, 2025, 2026) for m in range(1, 13)][:30]  # 202401..202606
+MONTHS = [f"{y}{m:02d}" for y in (2022, 2023, 2024, 2025, 2026) for m in range(1, 13)][:54]  # 202201..202606
 
 # RNL-name matching rules per town (lowercase substring; 'exclude' guards collisions)
 TOWN_PATTERNS = {
@@ -55,19 +55,34 @@ session = requests.Session()
 
 
 def discover(ym, hint=None):
-    """Find the URL for a month's report; prefer restated (-drp) files."""
-    containers = list(CONTAINERS)
-    if hint:
-        near = [c for c in range(hint - 2, hint + 8) if c in CONTAINERS]
-        containers = near + [c for c in containers if c not in near]
-    for suffix in ("-drp", ""):
-        for c in containers:
-            url = f"{BASE}/{c}/ww-network-load-iso-{ym}{suffix}.csv"
-            try:
-                if session.head(url, timeout=15).status_code == 200:
-                    return url, c
-            except requests.RequestException:
-                continue
+    """Find the URL for a month's report; prefer restated (-drp) files.
+
+    Two publication layouts: sequential containers (~100008+, 2024 onward)
+    and dated folders documents/YYYY/MM/ (pre-2024, published 1-10 months
+    after the data month).
+    """
+    candidates = []
+    year, month = int(ym[:4]), int(ym[4:])
+    if year >= 2024:
+        containers = list(CONTAINERS)
+        if hint:
+            near = [c for c in range(hint - 2, hint + 8) if c in CONTAINERS]
+            containers = near + [c for c in containers if c not in near]
+        for suffix in ("-drp", ""):
+            candidates += [(f"{BASE}/{c}/ww-network-load-iso-{ym}{suffix}.csv", c)
+                           for c in containers]
+    else:
+        pub = [(year + (month + k - 1) // 12, (month + k - 1) % 12 + 1)
+               for k in range(1, 11)]
+        for suffix in ("-drp", ""):
+            candidates += [(f"{BASE}/{py}/{pm:02d}/ww-network-load-iso-{ym}{suffix}.csv",
+                            hint) for py, pm in pub]
+    for url, c in candidates:
+        try:
+            if session.head(url, timeout=15).status_code == 200:
+                return url, c
+        except requests.RequestException:
+            continue
     return None, None
 
 
