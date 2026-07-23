@@ -67,6 +67,67 @@ def exceed_prob(quantile_preds, threshold):
     return float(1 - np.interp(threshold, v, CDF_P))
 
 
+def live_scores():
+    """P(exceed month-to-date max) for today and coming days, using DA load
+    already published, forecast weather, and current lags. Returns DataFrame
+    (date, da_max, mtd_max, p_exceed)."""
+    con = connect()
+    d = build_daily(con)
+    months = [m for m, g in d.groupby("month") if len(g) >= 25]
+    tr = d[d["month"].isin(months)]
+    qmodels = []
+    for q in QS:
+        mod = LGBMRegressor(objective="quantile", alpha=q, n_estimators=250,
+                            learning_rate=0.05, num_leaves=31, verbose=-1)
+        mod.fit(tr[FEATURES], tr["rt_max"])
+        qmodels.append(mod)
+
+    # feature rows for days with DA published but RT incomplete
+    zd = pd.read_sql("SELECT ts, SUM(da_load_mw) da, SUM(rt_load_mw) rt "
+                     "FROM clean_zone_demand GROUP BY ts", con)
+    zd["ts"] = pd.to_datetime(zd["ts"], utc=True)
+    local = zd["ts"].dt.tz_convert(EASTERN)
+    zd["date"] = local.dt.date
+    day = zd.groupby("date").agg(da_max=("da", "max"), rt_max=("rt", "max"))
+    day.index = pd.to_datetime(day.index)
+    today_month = day.index.max().strftime("%Y-%m")
+    mtd = day[day.index.strftime("%Y-%m") == today_month]["rt_max"].max()
+
+    wxf = pd.read_sql("SELECT ts, AVG(temp_c) t, AVG(ghi_wm2) g "
+                      "FROM raw_weather_fcst GROUP BY ts", con)
+    wxf["ts"] = pd.to_datetime(wxf["ts"], utc=True)
+    wxf["date"] = wxf["ts"].dt.tz_convert(EASTERN).dt.date
+    wd = wxf.groupby("date").agg(tmax=("t", "max"), ghi_max=("g", "max"))
+    wd.index = pd.to_datetime(wd.index)
+    cal = pd.read_sql("SELECT * FROM feature_calendar", con)
+    cal["date"] = pd.to_datetime(cal["date"])
+    cal = cal.set_index("date")
+
+    rows = []
+    future = day[day["rt_max"].isna() & day["da_max"].notna()]
+    for ts, r in future.iterrows():
+        feats = {
+            "da_max": r["da_max"],
+            "tmax": wd["tmax"].get(ts, np.nan),
+            "ghi_max": wd["ghi_max"].get(ts, np.nan),
+            "dow": ts.dayofweek, "is_weekend": int(ts.dayofweek >= 5),
+            "is_holiday": int(cal["is_holiday"].get(ts, 0)),
+            "doy_sin": cal["doy_sin"].get(ts, np.nan),
+            "doy_cos": cal["doy_cos"].get(ts, np.nan),
+            "sunset_hour": cal["sunset_hour"].get(ts, np.nan),
+            "lag1_max": day["rt_max"].shift(1).get(ts, np.nan),
+            "lag7_max": day["rt_max"].shift(7).get(ts, np.nan),
+            "mtd_max": mtd, "da_vs_mtd": r["da_max"] / mtd,
+        }
+        X = pd.DataFrame([feats])[FEATURES]
+        qp = np.array([m.predict(X)[0] for m in qmodels])
+        rows.append({"date": ts.date(), "da_max": round(r["da_max"]),
+                     "mtd_max": round(mtd),
+                     "p_exceed": round(exceed_prob(qp, mtd), 2)})
+    con.close()
+    return pd.DataFrame(rows)
+
+
 def run():
     con = connect()
     d = build_daily(con)
