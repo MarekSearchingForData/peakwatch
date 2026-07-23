@@ -170,14 +170,19 @@ def render_town_page(town):
         season_now = SEASON.get(now_local.month, "sh")
         fracs = zone_hour_fracs()
         zfrac = fracs.get((zone, season_now, now_local.hour), None)
+        formula = ("Live 5-min system load × this zone's typical share of "
+                   "system for this hour and season × this town's settlement "
+                   "share of the zone.")
         n1, n2, n3 = st.columns(3)
         if zfrac:
             zone_now = live["load_mw"] * zfrac
             town_now = zone_now * amap.get(season_now, amap.mean())
             n1.metric("⚡ Est. load right now",
                       f"{town_now:,.1f} MW",
-                      f"from live system {live['load_mw']:,.0f} MW")
-            n2.metric(f"Est. {zone} zone now", f"{zone_now:,.0f} MW")
+                      f"from live system {live['load_mw']:,.0f} MW",
+                      help=formula)
+            n2.metric(f"Est. {zone} zone now", f"{zone_now:,.0f} MW",
+                      help=formula)
         act = latest_actual_zone()
         if len(act):
             zrow = act[act["Zone"] == zone]
@@ -186,9 +191,7 @@ def render_town_page(town):
                 n3.metric(f"Last actual {zone} hour",
                           f"{r['RtLoad_MW']:,.0f} MW",
                           f"{str(r['Timestamp'])[:16]} (prelim, ~2d lag)")
-        st.caption("Live estimate = 5-min system load × zone share for this "
-                   "hour/season × town settlement share. Estimated, not "
-                   "metered — the honest label matters.")
+        st.caption("Estimated, not metered.")
         st.divider()
 
     latest = rnl.iloc[-1]
@@ -271,8 +274,6 @@ def render_town_page(town):
 
 
 st.title("⚡ PeakWatch")
-st.caption("Peak intelligence for municipal utilities. Capacity tags and "
-           "transmission charges are set in a handful of hours — these are they.")
 
 _level, _msg = danger_days()
 {"alert": st.error, "watch": st.warning, "clear": st.success}[_level](_msg)
@@ -387,18 +388,39 @@ with tab_risk:
     if len(flags):
         st.dataframe(flags, use_container_width=True, hide_index=True)
 
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.subheader("Peak runway")
-        st.dataframe(survival_runway(climatology(_con())).round(2),
-                     use_container_width=True, hide_index=True)
-        st.caption("P(monthly peak still ahead | day of month), from history.")
-    with col_b:
-        st.subheader("Alert budget menu")
+    # -- Two plain-language answers, data behind expanders --
+    runway = survival_runway(climatology(_con()))
+    now_l = pd.Timestamp.now(tz=EASTERN)
+    season_now = ("summer" if now_l.month in (6, 7, 8) else
+                  "winter" if now_l.month in (12, 1, 2) else "shoulder")
+    r_season = runway[runway["season"] == season_now]
+    bracket = r_season[r_season["day_of_month"] <= now_l.day]
+    p_ahead = (bracket["P_peak_still_ahead"].iloc[-1]
+               if len(bracket) else r_season["P_peak_still_ahead"].iloc[0])
+
+    st.subheader("Is this month's peak already behind us?")
+    st.markdown(f"It's day **{now_l.day}** of a {season_now} month. "
+                f"Historically, only **{p_ahead:.0%}** of {season_now} months "
+                "still had their peak ahead at this point"
+                + (" — the big hour has almost certainly happened."
+                   if p_ahead < 0.3 else
+                   " — stay attentive; the big hour may still be coming."))
+    with st.expander("the history behind that number"):
+        st.dataframe(runway.round(2), use_container_width=True,
+                     hide_index=True)
+
+    st.subheader("How trigger-happy should alerts be?")
+    st.markdown("Alert more often → never miss a bill-setting hour, but burn "
+                "more battery runs. Alert rarely → cheap, but one missed "
+                "monthly peak costs ~**$15,000 per MW**. Since an extra "
+                "battery cycle costs almost nothing, we lean trigger-happy.")
+    with st.expander("the menu of options, measured on 54 months"):
         st.dataframe(alert_budget_curve(_con()), use_container_width=True,
                      hide_index=True)
-        st.caption("Capture vs alert-days tradeoff; a missed monthly peak "
-                   "costs ~$15.3k/MW.")
+        st.caption("Each row: alert whenever the day-ahead forecast comes "
+                   "within X% of the month's max so far. Left: how many of "
+                   "54 monthly peaks it caught. Right: alert days per month "
+                   "it cost.")
 
 # ---------------- Forecast ----------------
 with tab_fc:
