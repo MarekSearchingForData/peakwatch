@@ -13,7 +13,8 @@ from .peaks import EASTERN
 from .store import connect
 
 FEATURES = ["hour", "dow", "is_weekend", "is_holiday", "doy_sin", "doy_cos",
-            "sunset_hour", "temp_c", "ghi_wm2", "cloud_pct", "wind_kmh"]
+            "sunset_hour", "temp_c", "ghi_wm2", "cloud_pct", "wind_kmh",
+            "recent_same_hour", "recent_max"]
 
 
 def _calendar(con):
@@ -35,12 +36,17 @@ def train_and_forecast(zone: str, days: int = 7):
     wx["ts"] = pd.to_datetime(wx["ts"], utc=True)
     cal = _calendar(con)
 
-    df = zd.merge(wx, on="ts", how="inner")
+    df = zd.merge(wx, on="ts", how="inner").sort_values("ts")
     local = df["ts"].dt.tz_convert(EASTERN)
     df["hour"], df["dow"] = local.dt.hour, local.dt.dayofweek
     dkey = pd.to_datetime(local.dt.date)
     for c in ("is_weekend", "is_holiday", "doy_sin", "doy_cos", "sunset_hour"):
         df[c] = dkey.map(cal[c]).values
+    # recent-usage anchors, knowable at any horizon: same-hour mean and daily
+    # max over the trailing 14 settled days (shifted — no leakage)
+    df["recent_same_hour"] = (df.groupby("hour")["rt_load_mw"]
+                                .transform(lambda s: s.rolling(14).mean().shift(1)))
+    df["recent_max"] = df["rt_load_mw"].rolling(24 * 14).max().shift(1)
     df = df.dropna(subset=FEATURES + ["rt_load_mw"])
 
     cut = df["ts"].max() - pd.Timedelta(days=45)
@@ -54,19 +60,30 @@ def train_and_forecast(zone: str, days: int = 7):
     res = calib["rt_load_mw"].values - models[0.5].predict(calib[FEATURES])
     lo, hi = np.quantile(res, 0.1), np.quantile(res, 0.9)
 
-    # future frame from forecast weather
-    wf = pd.read_sql("SELECT ts, AVG(temp_c) temp_c, AVG(ghi_wm2) ghi_wm2, "
-                     "AVG(cloud_pct) cloud_pct, AVG(wind_kmh) wind_kmh "
-                     "FROM raw_weather_fcst GROUP BY ts", con)
-    wf["ts"] = pd.to_datetime(wf["ts"], utc=True)
+    # forecast frame: starts at the LAST SETTLED HOUR (fills the settlement
+    # gap by hindcasting with observed weather) and runs to now + days.
+    # Weather: observed where available, forecast beyond.
+    last_rt = df["ts"].max()
     now = pd.Timestamp.now(tz="UTC")
-    wf = wf[(wf["ts"] >= now.floor("h"))
-            & (wf["ts"] <= now + pd.Timedelta(days=days))]
+    hours = pd.date_range(last_rt + pd.Timedelta(hours=1),
+                          now + pd.Timedelta(days=days), freq="h", tz="UTC")
+    wf = pd.DataFrame({"ts": hours})
+    wfx = pd.read_sql("SELECT ts, AVG(temp_c) temp_c, AVG(ghi_wm2) ghi_wm2, "
+                      "AVG(cloud_pct) cloud_pct, AVG(wind_kmh) wind_kmh "
+                      "FROM raw_weather_fcst GROUP BY ts", con)
+    wfx["ts"] = pd.to_datetime(wfx["ts"], utc=True)
+    wf = (wf.merge(wx, on="ts", how="left")
+            .merge(wfx, on="ts", how="left", suffixes=("", "_f")))
+    for c in ("temp_c", "ghi_wm2", "cloud_pct", "wind_kmh"):
+        wf[c] = wf[c].fillna(wf[f"{c}_f"])
     flocal = wf["ts"].dt.tz_convert(EASTERN)
     wf["hour"], wf["dow"] = flocal.dt.hour, flocal.dt.dayofweek
     fkey = pd.to_datetime(flocal.dt.date)
     for c in ("is_weekend", "is_holiday", "doy_sin", "doy_cos", "sunset_hour"):
         wf[c] = fkey.map(cal[c]).values
+    same_hour = df.groupby("hour")["rt_load_mw"].apply(lambda s: s.tail(14).mean())
+    wf["recent_same_hour"] = wf["hour"].map(same_hour)
+    wf["recent_max"] = df["rt_load_mw"].tail(24 * 14).max()
     wf = wf.dropna(subset=FEATURES)
 
     p50 = models[0.5].predict(wf[FEATURES])

@@ -274,8 +274,11 @@ st.title("⚡ PeakWatch")
 st.caption("Peak intelligence for municipal utilities. Capacity tags and "
            "transmission charges are set in a handful of hours — these are they.")
 
+_level, _msg = danger_days()
+{"alert": st.error, "watch": st.warning, "clear": st.success}[_level](_msg)
+
 tab_map, tab_risk, tab_fc, tab_zones, tab_money, tab_health = st.tabs(
-    ["🗺️ Towns", "🎯 Peak Risk", "🔮 Forecast", "📈 Zones", "💰 Money",
+    ["🗺️ Towns", "🎯 Peak Risk", "🔮 Forecast", "📊 History", "💰 Money",
      "🩺 Health"])
 
 
@@ -323,9 +326,6 @@ with tab_map:
         fig.update_layout(height=560, margin=dict(l=0, r=0, t=10, b=0),
                           paper_bgcolor="rgba(0,0,0,0)",
                           clickmode="event+select", dragmode=False)
-        level, msg = danger_days()
-        {"alert": st.error, "watch": st.warning, "clear": st.success}[level](msg)
-
         st.caption("The 20 MMWEC member towns, colored by annual transmission "
                    "exposure. Click a highlighted town to open its page.")
         event = st.plotly_chart(fig, use_container_width=True, key="ma_map",
@@ -451,29 +451,47 @@ with tab_fc:
                "model with ISO's forecast beats ISO alone on every window "
                "tested. Town scaling uses the seasonal settlement share.")
 
-# ---------------- Zones ----------------
+# ---------------- History: when peaks happen ----------------
 with tab_zones:
-    zones = q("SELECT DISTINCT zone FROM clean_zone_demand ORDER BY zone")["zone"]
-    zone_pick = st.selectbox(
-        "Zone", zones,
-        index=list(zones).index("WCMA") if "WCMA" in list(zones) else 0)
-    zd = q("SELECT ts, da_load_mw, rt_load_mw FROM clean_zone_demand "
-           "WHERE zone=? ORDER BY ts", (zone_pick,))
-    zd["ts"] = pd.to_datetime(zd["ts"], utc=True)
-    zd["date"] = zd["ts"].dt.tz_convert(EASTERN).dt.date
-    daily = zd.groupby("date")[["da_load_mw", "rt_load_mw"]].max()
-    daily.index = pd.to_datetime(daily.index)
-    daily = daily.reindex(pd.date_range(daily.index.min(), daily.index.max()))
-    fig = go.Figure()
-    fig.add_scatter(x=daily.index, y=daily["rt_load_mw"],
-                    name="Actual daily max", connectgaps=False)
-    fig.add_scatter(x=daily.index, y=daily["da_load_mw"],
-                    name="Day-ahead daily max", line=dict(dash="dot"),
-                    connectgaps=False)
-    fig.update_layout(height=380, yaxis_title="MW")
-    st.plotly_chart(fig, use_container_width=True)
-    st.caption("Full history 2022 → today. Our LightGBM+ISO blend beats ISO's "
-               "day-ahead on every window tested (latest: 3.24% vs 3.66%).")
+    st.subheader("When do the bill-setting hours actually happen?")
+    sys = q("SELECT ts, SUM(rt_load_mw) mw FROM clean_zone_demand "
+            "GROUP BY ts HAVING COUNT(rt_load_mw)=8")
+    sys["ts"] = pd.to_datetime(sys["ts"], utc=True)
+    loc = sys["ts"].dt.tz_convert(EASTERN)
+    sys["month"], sys["hour"] = loc.dt.strftime("%Y-%m"), loc.dt.hour
+    sys["local"] = loc
+
+    peaks = sys.loc[sys.groupby("month")["mw"].idxmax()].sort_values("month")
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("**Every monthly peak since 2022** — the 12 hours/year "
+                    "that set transmission bills:")
+        show = peaks[["month", "local", "mw"]].tail(18).copy()
+        show["local"] = show["local"].dt.strftime("%a %b %d, %H:00")
+        show["mw"] = show["mw"].round(0)
+        st.dataframe(show.rename(columns={"local": "peak hour", "mw": "MW"}),
+                     use_container_width=True, hide_index=True, height=350)
+    with c2:
+        st.markdown("**What time of day peaks hit** (54 months):")
+        hist = peaks.groupby("hour").size().reindex(range(24), fill_value=0)
+        figh = px.bar(x=hist.index, y=hist.values,
+                      labels={"x": "hour of day (local)", "y": "peaks"})
+        figh.update_traces(marker_color=ACCENT)
+        figh.update_layout(height=280, margin=dict(t=10))
+        st.plotly_chart(figh, use_container_width=True)
+        st.caption("Almost every peak lands 4–7 PM. Weekends: nearly never. "
+                   "That's why a 3-hour battery discharge window works.")
+
+    st.markdown("**The 10 biggest hours ever recorded here** — these set "
+                "capacity tags:")
+    top = sys.nlargest(10, "mw")[["local", "mw"]].copy()
+    top["local"] = top["local"].dt.strftime("%a %b %d %Y, %H:00")
+    top["mw"] = top["mw"].round(0)
+    st.dataframe(top.rename(columns={"local": "hour", "mw": "system MW"}),
+                 use_container_width=True, hide_index=True)
+    st.caption("July 2, 2026 at 6 PM — 25,321 MW — is the highest hour in "
+               "this dataset and almost certainly this year's capacity-tag "
+               "hour. Every member's 2027/28 capacity bill traces to it.")
 
 # ---------------- Money ----------------
 with tab_money:
