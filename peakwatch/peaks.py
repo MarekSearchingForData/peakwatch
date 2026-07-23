@@ -46,7 +46,9 @@ def daily_summary(df, zone=None):
         "rt_max": grp["RtLoad_MW"].max(),
         "rt_hours": grp["RtLoad_MW"].count(),
     })
-    peak_hour = d.loc[d.groupby("Date")["RtLoad_MW"].idxmax().dropna()]
+    # drop all-NA days before idxmax: newer pandas raises on all-NA groups
+    settled = d.dropna(subset=["RtLoad_MW"])
+    peak_hour = settled.loc[settled.groupby("Date")["RtLoad_MW"].idxmax()]
     out["rt_peak_hour"] = peak_hour.set_index("Date")["Hour"]
     out.index = pd.to_datetime(out.index)
     out["month"] = out.index.to_period("M")
