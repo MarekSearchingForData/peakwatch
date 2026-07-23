@@ -80,6 +80,39 @@ def latest_actual_zone():
         return pd.DataFrame()
 
 
+@st.cache_data(ttl=1800)
+def danger_days():
+    """Plain-language peak danger for the coming days: (level, message).
+    level: 'alert' | 'watch' | 'clear'."""
+    probs = get_peak_probs()
+    wx = q("SELECT ts, AVG(temp_c) t FROM raw_weather_fcst GROUP BY ts")
+    tmax = {}
+    if len(wx):
+        wx["ts"] = pd.to_datetime(wx["ts"], utc=True)
+        wx["date"] = wx["ts"].dt.tz_convert(EASTERN).dt.date
+        tmax = wx.groupby("date")["t"].max().to_dict()
+    if "p_exceed" not in probs.columns or not len(probs):
+        return "clear", "Quiet grid — no elevated peak conditions detected."
+    worst = probs.loc[probs["p_exceed"].idxmax()]
+    d = pd.Timestamp(worst["date"])
+    day_name = f"{d.strftime('%A, %b')} {d.day}"
+    t_f = tmax.get(worst["date"])
+    heat = f" — forecast high {t_f * 9 / 5 + 32:.0f}°F" if t_f else ""
+    if worst["p_exceed"] >= 0.5:
+        return "alert", (f"🔥 PEAK ALERT {day_name}{heat}. The grid is likely "
+                         "to hit this month's high between 5–7 PM. Batteries "
+                         "and demand response should run. Every MW off the "
+                         "grid in that window saves ~$15,000 this month.")
+    if worst["p_exceed"] >= 0.2:
+        return "watch", (f"⚠️ Peak watch {day_name}{heat}. Conditions could "
+                         "challenge this month's high in the late afternoon. "
+                         "Have batteries ready; a final call comes with the "
+                         "morning forecast.")
+    return "clear", ("😎 All clear for the coming days. This month's peak "
+                     "(set July 2 during the heat wave) is very unlikely to "
+                     "be beaten — no special action needed.")
+
+
 @st.cache_data(ttl=86400)
 def get_geojson():
     path = Path(__file__).parent / "reference" / "ma_towns.geojson"
@@ -290,10 +323,27 @@ with tab_map:
         fig.update_layout(height=560, margin=dict(l=0, r=0, t=10, b=0),
                           paper_bgcolor="rgba(0,0,0,0)",
                           clickmode="event+select", dragmode=False)
+        level, msg = danger_days()
+        {"alert": st.error, "watch": st.warning, "clear": st.success}[level](msg)
+
         st.caption("The 20 MMWEC member towns, colored by annual transmission "
                    "exposure. Click a highlighted town to open its page.")
         event = st.plotly_chart(fig, use_container_width=True, key="ma_map",
-                                on_select="rerun", selection_mode="points")
+                                on_select="rerun", selection_mode="points",
+                                config={"scrollZoom": False,
+                                        "displayModeBar": False})
+        with st.expander("❓ What am I looking at?"):
+            st.markdown(
+                "- **The colors** show how much each member town spends per "
+                "year on transmission — charges set by its electricity use "
+                "during a handful of peak hours.\n"
+                "- **The banner above** is the bottom line: is a "
+                "bill-setting peak hour coming up, in plain words? Green "
+                "means relax; red means act.\n"
+                "- **Click any glowing town** for its full picture: live "
+                "load, history, forecasts, costs, and its power plants.\n"
+                "- Everything updates itself each morning from ISO New "
+                "England's own published data.")
         sel = None
         try:
             pts = event.selection.points
