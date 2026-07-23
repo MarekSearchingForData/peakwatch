@@ -46,6 +46,9 @@ def main():
     if verb == "peakprob":
         from . import peakmodel
         peakmodel.run()
+    if verb == "townhourly":
+        from . import townhourly
+        townhourly.run()
 
 
 if __name__ == "__main__":

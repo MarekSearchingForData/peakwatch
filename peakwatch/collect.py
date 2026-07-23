@@ -14,9 +14,17 @@ WEATHER_TOWNS = [t for t, _, _ in TOWNS if t not in ("Boston", "Worcester", "Spr
 
 
 def load_zone_demand(con):
+    """Incremental: only read day-files at/after the last stored day minus a
+    7-day settlement window — the daily loop reads ~60 files, not 13,000."""
     files = sorted((DATA_DIR / "raw" / "load_v2").glob("*.csv"))
     if not files:
         return 0
+    last = con.execute("SELECT MAX(ts) FROM raw_zone_demand").fetchone()[0]
+    if last:
+        cutoff = (pd.Timestamp(last) - pd.Timedelta(days=7)).strftime("%Y%m%d")
+        files = [f for f in files if f.name[:8] >= cutoff]
+        if not files:
+            return 0
     df = pd.concat((pd.read_csv(f) for f in files), ignore_index=True)
     rows = [(r.Timestamp, r.Zone, r.DaLoad_MW, r.RtLoad_MW)
             for r in df.itertuples()]
