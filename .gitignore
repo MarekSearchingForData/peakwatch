@@ -5,6 +5,7 @@ __pycache__/
 .venv/
 venv/
 *.db
+!deploy_snapshot.db
 data/
 .streamlit/secrets.toml
 logs/

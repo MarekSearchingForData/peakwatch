@@ -3,6 +3,7 @@ Map-first navigation: click a member town -> full town page with a
 mini-MA locator. Reads only from the store.
 """
 import json
+import os
 import sqlite3
 from pathlib import Path
 
@@ -10,6 +11,15 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+
+# Cloud secrets bridge: Streamlit Cloud provides st.secrets, local runs use
+# .env — copy secrets into the environment BEFORE peakwatch.config loads.
+try:
+    for _k, _v in st.secrets.items():
+        if isinstance(_v, str) and _k not in os.environ:
+            os.environ[_k] = _v
+except Exception:
+    pass
 
 from peakwatch.analytics import (alert_budget_curve, climatology, risk_flags,
                                  survival_runway)

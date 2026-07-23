@@ -5,6 +5,9 @@ from pathlib import Path
 from .config import PROJECT_ROOT
 
 DB_PATH = PROJECT_ROOT / "peakwatch.db"
+if not DB_PATH.exists() and (PROJECT_ROOT / "deploy_snapshot.db").exists():
+    # cloud deployment: run on the committed snapshot
+    DB_PATH = PROJECT_ROOT / "deploy_snapshot.db"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS raw_zone_demand (
