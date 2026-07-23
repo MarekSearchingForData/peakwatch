@@ -241,8 +241,15 @@ st.title("⚡ PeakWatch")
 st.caption("Peak intelligence for municipal utilities. Capacity tags and "
            "transmission charges are set in a handful of hours — these are they.")
 
-tab_map, tab_risk, tab_zones, tab_money, tab_health = st.tabs(
-    ["🗺️ Towns", "🎯 Peak Risk", "📈 Zones", "💰 Money", "🩺 Health"])
+tab_map, tab_risk, tab_fc, tab_zones, tab_money, tab_health = st.tabs(
+    ["🗺️ Towns", "🎯 Peak Risk", "🔮 Forecast", "📈 Zones", "💰 Money",
+     "🩺 Health"])
+
+
+@st.cache_data(ttl=3600)
+def get_forecast(zone, days):
+    from peakwatch.forecast7 import train_and_forecast
+    return train_and_forecast(zone, days)
 
 # ---------------- Map / Town pages ----------------
 with tab_map:
@@ -343,6 +350,57 @@ with tab_risk:
         st.caption("Capture vs alert-days tradeoff; a missed monthly peak "
                    "costs ~$15.3k/MW.")
 
+# ---------------- Forecast ----------------
+with tab_fc:
+    fc1, fc2, fc3 = st.columns([1, 1, 2])
+    fzone = fc1.selectbox("Zone", ["WCMA", "NEMA", "SEMA"], key="fc_zone")
+    fdays = fc2.slider("Forecast length (days)", 1, 7, 3, key="fc_days")
+    ftown = fc3.selectbox(
+        "Scale to town (optional)",
+        ["— zone total —"] + list(
+            q("SELECT DISTINCT town FROM clean_town_rnl WHERE zone=? "
+              "ORDER BY town", (fzone,))["town"]),
+        key="fc_town")
+    with st.spinner("Training forecast model…"):
+        tail, fc = get_forecast(fzone, fdays)
+
+    scale, unit_label = 1.0, f"{fzone} MW"
+    if ftown != "— zone total —":
+        amap = get_alphas()
+        am = amap[amap["town"] == ftown].set_index("season")["alpha"]
+        season_now = SEASON.get(pd.Timestamp.now(tz=EASTERN).month, "sh")
+        scale = float(am.get(season_now, am.mean()))
+        unit_label = f"{ftown} MW (estimated)"
+
+    fig = go.Figure()
+    fig.add_scatter(x=fc["ts"], y=fc["p90"] * scale, line=dict(width=0),
+                    showlegend=False, hoverinfo="skip")
+    fig.add_scatter(x=fc["ts"], y=fc["p10"] * scale, fill="tonexty",
+                    fillcolor="rgba(255,107,53,0.18)", line=dict(width=0),
+                    name="p10–p90 band")
+    fig.add_scatter(x=fc["ts"], y=fc["p50"] * scale, name="PeakWatch p50",
+                    line=dict(color=ACCENT, width=2))
+    if "iso_fcst_zone" in fc.columns and fc["iso_fcst_zone"].notna().any():
+        fig.add_scatter(x=fc["ts"], y=fc["iso_fcst_zone"] * scale,
+                        name="ISO forecast (scaled)",
+                        line=dict(dash="dot", color="#7fb3ff"))
+    fig.add_scatter(x=tail["ts"], y=tail["rt_load_mw"] * scale,
+                    name="Actual (last 3 days)",
+                    line=dict(color="#9aa4b2", width=1.5))
+    fig.update_layout(height=430, yaxis_title=unit_label,
+                      legend=dict(orientation="h", y=1.08))
+    st.plotly_chart(fig, use_container_width=True)
+
+    peak_row = fc.loc[fc["p50"].idxmax()]
+    peak_local = pd.Timestamp(peak_row["ts"]).tz_convert(EASTERN)
+    st.metric(f"Predicted {fdays}-day peak ({unit_label})",
+              f"{peak_row['p50'] * scale:,.1f} MW",
+              f"{peak_local.strftime('%a %b %d, %H:00')} local")
+    st.caption("Weather+calendar quantile model (no load lags — same skill "
+               "at day 7 as day 1), residual-calibrated band. Blend of this "
+               "model with ISO's forecast beats ISO alone on every window "
+               "tested. Town scaling uses the seasonal settlement share.")
+
 # ---------------- Zones ----------------
 with tab_zones:
     zones = q("SELECT DISTINCT zone FROM clean_zone_demand ORDER BY zone")["zone"]
@@ -372,6 +430,14 @@ with tab_money:
     st.subheader("Dollar exposure by town")
     st.caption(f"RNS 2026: ${RNS_RATE}/kW-yr · FCA18: ${FCA_RATE}/kW-mo · "
                "tag proxied by latest summer settlement value.")
+    st.info("**Why transmission exceeds capacity:** capacity is set by ONE "
+            "hour a year (the annual coincident peak → the capacity tag, "
+            f"billed at ${FCA_RATE}/kW-mo = ${FCA_RATE * 12:.0f}/kW-yr). "
+            "Transmission (RNS) is charged on TWELVE hours — each month's "
+            f"regional peak — at ${RNS_RATE}/kW-yr, over 4× the capacity "
+            "rate. A decade ago capacity dominated; New England transmission "
+            "rates have since tripled, flipping the ledger. Upside: twelve "
+            "chances a year to save, not one.")
     rnl_all = q("SELECT town, month, rnl_mw FROM clean_town_rnl")
     rows = []
     for t, g in rnl_all.groupby("town"):
