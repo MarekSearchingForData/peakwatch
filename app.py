@@ -58,8 +58,84 @@ st.title("⚡ PeakWatch")
 st.caption("Peak intelligence for municipal utilities. Capacity tags and "
            "transmission charges are set in a handful of hours — these are they.")
 
-tab_risk, tab_towns, tab_zones, tab_money, tab_health = st.tabs(
-    ["🎯 Peak Risk", "🏘️ Towns", "📈 Zones", "💰 Money", "🩺 Health"])
+tab_map, tab_risk, tab_towns, tab_zones, tab_money, tab_health = st.tabs(
+    ["🗺️ Map", "🎯 Peak Risk", "🏘️ Towns", "📈 Zones", "💰 Money", "🩺 Health"])
+
+
+@st.cache_data(ttl=86400)
+def get_geojson():
+    import json
+    path = Path(__file__).parent / "reference" / "ma_towns.geojson"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+# ---------------- Map ----------------
+with tab_map:
+    gj = get_geojson()
+    rnl_all_m = q("SELECT town, month, rnl_mw FROM clean_town_rnl")
+    latest = (rnl_all_m.sort_values("month").groupby("town").tail(12)
+              .groupby("town")["rnl_mw"].mean())
+    exposure = {t: v * 1000 * RNS_RATE / 1e6 for t, v in latest.items()}
+    member_names = list(exposure)
+    all_names = [f["properties"]["TOWN"] for f in gj["features"]]
+    others = [n for n in all_names if n not in member_names]
+
+    fig = go.Figure()
+    fig.add_choropleth(
+        geojson=gj, featureidkey="properties.TOWN", locations=others,
+        z=[0] * len(others), colorscale=[[0, "#262b36"], [1, "#262b36"]],
+        showscale=False, marker_line_color="#3a4150", marker_line_width=0.4,
+        hoverinfo="text", text=others, name="")
+    fig.add_choropleth(
+        geojson=gj, featureidkey="properties.TOWN", locations=member_names,
+        z=[exposure[t] for t in member_names], colorscale="YlOrRd",
+        colorbar=dict(title="$M/yr", thickness=12, len=0.7),
+        marker_line_color="#ffffff", marker_line_width=1.2,
+        customdata=member_names,
+        hovertemplate="<b>%{location}</b><br>avg RNL %{text:.1f} MW<br>"
+                      "transmission ≈ $%{z:.1f}M/yr<extra></extra>",
+        text=[latest[t] for t in member_names], name="members")
+    fig.update_geos(fitbounds="geojson", visible=False,
+                    bgcolor="rgba(0,0,0,0)")
+    fig.update_layout(height=540, margin=dict(l=0, r=0, t=10, b=0),
+                      paper_bgcolor="rgba(0,0,0,0)", clickmode="event+select",
+                      dragmode=False)
+    st.caption("The 20 MMWEC member towns, colored by annual transmission "
+               "exposure. Click a highlighted town to open its profile.")
+    event = st.plotly_chart(fig, use_container_width=True, key="ma_map",
+                            on_select="rerun", selection_mode="points")
+
+    sel = None
+    try:
+        pts = event.selection.points
+        if pts:
+            sel = pts[0].get("location") or pts[0].get("customdata")
+    except Exception:
+        pass
+    if sel and sel in member_names:
+        st.session_state["sel_town"] = sel
+    sel_town = st.session_state.get("sel_town")
+
+    if sel_town:
+        st.divider()
+        g = rnl_all_m[rnl_all_m["town"] == sel_town].sort_values("month")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Town", sel_town)
+        c2.metric(f"Latest RNL ({g['month'].iloc[-1]})",
+                  f"{g['rnl_mw'].iloc[-1]:.2f} MW")
+        c3.metric("Transmission exposure",
+                  f"${latest[sel_town] * 1000 * RNS_RATE:,.0f}/yr")
+        pf_n = q("SELECT COUNT(*) n FROM town_portfolio WHERE town=? AND "
+                 "status='operational'", (sel_town,))["n"].iloc[0]
+        c4.metric("Operational assets", int(pf_n))
+        figt = px.bar(g, x="month", y="rnl_mw",
+                      labels={"rnl_mw": "MW at monthly peak", "month": ""})
+        figt.update_layout(height=260, margin=dict(t=10))
+        st.plotly_chart(figt, use_container_width=True)
+        st.caption("Full profile — portfolio, class mix, hourly estimate, "
+                   "sealed prediction — in the 🏘️ Towns tab.")
+    else:
+        st.info("👆 Click any highlighted town on the map.")
 
 # ---------------- Peak Risk ----------------
 with tab_risk:
