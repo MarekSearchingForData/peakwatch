@@ -285,12 +285,57 @@ def render_town_page(town):
         zh["town_mw"] = zh.apply(
             lambda r: amap.get(r["season"], amap.mean()) * r["rt_load_mw"],
             axis=1)
-        fig2 = px.line(zh, x="ts", y="town_mw",
-                       labels={"town_mw": "MW (estimated)", "ts": ""})
-        fig2.update_layout(height=260, margin=dict(t=10))
+        zh["local"] = zh["ts"].dt.tz_convert(EASTERN)
+        zh["day"] = zh["local"].dt.date
+
+        fig2 = px.line(zh, x="local", y="town_mw",
+                       labels={"town_mw": "MW (estimated)", "local": ""})
+        for day in zh["day"].unique():
+            fig2.add_vline(x=pd.Timestamp(day).tz_localize(EASTERN),
+                           line_color="rgba(255,255,255,0.12)", line_width=1)
+        dp = zh.loc[zh.groupby("day")["town_mw"].idxmax()]
+        fig2.add_scatter(x=dp["local"], y=dp["town_mw"], mode="markers",
+                         marker=dict(symbol="star", size=9, color="#f0b41e"),
+                         name="daily peak",
+                         hovertemplate="daily peak %{x|%a %H:00}<br>"
+                                       "%{y:.1f} MW<extra></extra>")
+        mp = q("SELECT ts FROM (SELECT ts, rt_load_mw, strftime('%Y-%m', ts) m "
+               "FROM clean_zone_demand WHERE zone=? AND rt_load_mw IS NOT NULL) "
+               "GROUP BY m HAVING rt_load_mw = MAX(rt_load_mw)", (zone,))
+        mp_ts = set(pd.to_datetime(mp["ts"], utc=True))
+        mrows = zh[zh["ts"].isin(mp_ts)]
+        if len(mrows):
+            fig2.add_scatter(x=mrows["local"], y=mrows["town_mw"],
+                             mode="markers+text",
+                             marker=dict(symbol="star", size=18, color="#ff6b35",
+                                         line=dict(color="white", width=1)),
+                             text=["MONTHLY PEAK"] * len(mrows),
+                             textposition="top center",
+                             name="monthly bill-setter",
+                             hovertemplate="MONTHLY PEAK %{x|%a %b %d %H:00}"
+                                           "<extra></extra>")
+        ap = q("SELECT ts FROM (SELECT ts, SUM(rt_load_mw) mw FROM "
+               "clean_zone_demand WHERE strftime('%Y', ts)=strftime('%Y','now') "
+               "GROUP BY ts HAVING COUNT(rt_load_mw)=8) ORDER BY mw DESC LIMIT 1")
+        if len(ap):
+            ats = pd.to_datetime(ap["ts"].iloc[0], utc=True)
+            arow = zh[zh["ts"] == ats]
+            if len(arow):
+                fig2.add_scatter(x=arow["local"], y=arow["town_mw"],
+                                 mode="markers+text",
+                                 marker=dict(symbol="star-diamond", size=22,
+                                             color="#e05555",
+                                             line=dict(color="white", width=1.5)),
+                                 text=["ANNUAL PEAK — sets capacity tag"],
+                                 textposition="top center", name="annual peak")
+        fig2.update_layout(height=300, margin=dict(t=30),
+                           legend=dict(orientation="h", y=1.14))
         st.plotly_chart(fig2, use_container_width=True, key=f"hr_{town}")
-        st.caption("Seasonal settlement share × zone hourly load — validated "
-                   "at anchor hours and against EIA-861 annual energy.")
+        st.caption("⭐ each day's high (hover for the hour) · orange star = "
+                   "monthly bill-setting hour · red diamond-star = annual "
+                   "capacity-tag hour. Estimate = seasonal settlement share × "
+                   "zone hourly load, validated at anchors and against "
+                   "EIA-861 annual energy.")
 
     col_a, col_b = st.columns(2)
     with col_a:
