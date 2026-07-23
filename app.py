@@ -278,9 +278,10 @@ st.title("⚡ PeakWatch")
 _level, _msg = danger_days()
 {"alert": st.error, "watch": st.warning, "clear": st.success}[_level](_msg)
 
-tab_map, tab_risk, tab_fc, tab_zones, tab_money, tab_health = st.tabs(
-    ["🗺️ Towns", "🎯 Peak Risk", "🔮 Forecast", "📊 History", "💰 Money",
-     "🩺 Health"])
+(tab_map, tab_risk, tab_fc, tab_wx, tab_zones, tab_money,
+ tab_health) = st.tabs(
+    ["🗺️ Towns", "🎯 Peak Risk", "🔮 Forecast", "🌤️ Weather", "📊 History",
+     "💰 Money", "🩺 Health"])
 
 
 @st.cache_data(ttl=3600)
@@ -434,22 +435,32 @@ with tab_risk:
                 + (" — the big hour has almost certainly happened."
                    if p_ahead < 0.3 else
                    " — stay attentive; the big hour may still be coming."))
-    with st.expander("the history behind that number"):
-        st.dataframe(runway.round(2), use_container_width=True,
-                     hide_index=True)
+    with st.expander("how this changes through the month"):
+        rs = runway[runway["season"] == season_now]
+        figr = px.bar(x=rs["day_of_month"], y=rs["P_peak_still_ahead"],
+                      labels={"x": f"day of a {season_now} month",
+                              "y": "chance peak is still ahead"})
+        figr.update_traces(marker_color=ACCENT,
+                           text=[f"{v:.0%}" for v in rs["P_peak_still_ahead"]],
+                           textposition="outside")
+        figr.update_layout(height=260, yaxis_tickformat=".0%",
+                           margin=dict(t=20))
+        st.plotly_chart(figr, use_container_width=True)
 
     st.subheader("How trigger-happy should alerts be?")
-    st.markdown("Alert more often → never miss a bill-setting hour, but burn "
-                "more battery runs. Alert rarely → cheap, but one missed "
-                "monthly peak costs ~**$15,000 per MW**. Since an extra "
-                "battery cycle costs almost nothing, we lean trigger-happy.")
-    with st.expander("the menu of options, measured on 54 months"):
-        st.dataframe(alert_budget_curve(_con()), use_container_width=True,
-                     hide_index=True)
-        st.caption("Each row: alert whenever the day-ahead forecast comes "
-                   "within X% of the month's max so far. Left: how many of "
-                   "54 monthly peaks it caught. Right: alert days per month "
-                   "it cost.")
+    st.markdown("A missed monthly peak costs ~**$15,000 per MW**; an extra "
+                "battery run costs almost nothing. So: better to alert too "
+                "often than too rarely.")
+    with st.expander("the options, measured on 54 months of history"):
+        abc = alert_budget_curve(_con()).rename(columns={
+            "threshold": "alert when forecast reaches…",
+            "peaks_caught": "peaks caught",
+            "capture_%": "success rate",
+            "alert_days_per_month": "alert days per month"})
+        abc["alert when forecast reaches…"] = abc[
+            "alert when forecast reaches…"].map(lambda v: f"{v:.0%} of month's max")
+        abc["success rate"] = abc["success rate"].map(lambda v: f"{v:.0f}%")
+        st.dataframe(abc, use_container_width=True, hide_index=True)
 
 # ---------------- Forecast ----------------
 with tab_fc:
@@ -486,11 +497,35 @@ with tab_fc:
                         name="ISO forecast (scaled)",
                         line=dict(dash="dot", color="#7fb3ff"))
     fig.add_scatter(x=tail["ts"], y=tail["rt_load_mw"] * scale,
-                    name="Actual (last 3 days)",
+                    name="Actual (recent)",
                     line=dict(color="#9aa4b2", width=1.5))
+
+    # the line to beat: this month's max so far for the zone, and red
+    # danger bands wherever the forecast's upper band threatens it
+    zmtd = q("SELECT MAX(rt_load_mw) m FROM clean_zone_demand WHERE zone=? "
+             "AND strftime('%Y-%m', ts) = strftime('%Y-%m', 'now')",
+             (fzone,))["m"].iloc[0]
+    if zmtd:
+        fig.add_hline(y=zmtd * scale, line_dash="dash", line_color="#e05555",
+                      annotation_text="month's max — the line to beat",
+                      annotation_font_color="#e05555")
+        danger = fc[fc["p90"] >= 0.95 * zmtd].copy()
+        if len(danger):
+            danger["gap"] = danger["ts"].diff().dt.total_seconds().div(3600).ne(1).cumsum()
+            for _, gg in danger.groupby("gap"):
+                fig.add_vrect(x0=gg["ts"].min(), x1=gg["ts"].max()
+                              + pd.Timedelta(hours=1),
+                              fillcolor="rgba(220,60,50,0.15)", line_width=0)
     fig.update_layout(height=430, yaxis_title=unit_label,
                       legend=dict(orientation="h", y=1.08))
     st.plotly_chart(fig, use_container_width=True)
+    if zmtd and len(fc[fc["p90"] >= 0.95 * zmtd]):
+        st.warning("Red bands: hours where the forecast's upper range comes "
+                   "within 5% of this month's max — potential bill-setting "
+                   "hours.")
+    elif zmtd:
+        st.success("No forecast hour comes near this month's max — no "
+                   "bill-setting hours expected in this window.")
 
     peak_row = fc.loc[fc["p50"].idxmax()]
     peak_local = pd.Timestamp(peak_row["ts"]).tz_convert(EASTERN)
@@ -501,6 +536,56 @@ with tab_fc:
                "at day 7 as day 1), residual-calibrated band. Blend of this "
                "model with ISO's forecast beats ISO alone on every window "
                "tested. Town scaling uses the seasonal settlement share.")
+
+# ---------------- Weather outlook calendar ----------------
+with tab_wx:
+    st.subheader("7-day peak-weather outlook")
+    st.caption("Everything that feeds load, day by day. Hot + sunny weekday "
+               "= peak fuel; clouds cut rooftop solar and RAISE net load "
+               "late-day.")
+    wxf = q("SELECT ts, AVG(temp_c) t, AVG(ghi_wm2) g, AVG(cloud_pct) c, "
+            "AVG(wind_kmh) w FROM raw_weather_fcst GROUP BY ts")
+    if len(wxf):
+        wxf["ts"] = pd.to_datetime(wxf["ts"], utc=True)
+        wxf["date"] = wxf["ts"].dt.tz_convert(EASTERN).dt.date
+        daily_wx = wxf.groupby("date").agg(
+            tmax=("t", "max"), ghi=("g", "max"),
+            cloud=("c", "mean"), wind=("w", "mean")).reset_index()
+        cal_df = q("SELECT date, is_weekend, is_holiday FROM feature_calendar")
+        cal_df["date"] = pd.to_datetime(cal_df["date"]).dt.date
+        daily_wx = daily_wx.merge(cal_df, on="date", how="left")
+        probs_w = get_peak_probs()
+        pmap = ({pd.Timestamp(r["date"]).date(): r["p_exceed"]
+                 for _, r in probs_w.iterrows()}
+                if "p_exceed" in probs_w.columns else {})
+
+        cols = st.columns(min(7, len(daily_wx)))
+        for col, (_, day) in zip(cols, daily_wx.head(7).iterrows()):
+            d = pd.Timestamp(day["date"])
+            t_f = day["tmax"] * 9 / 5 + 32
+            p = pmap.get(day["date"])
+            hot = t_f >= 88 and not (day["is_weekend"] or day["is_holiday"])
+            head = ("🔥" if (p or 0) >= 0.2 or t_f >= 92 else
+                    "☀️" if day["cloud"] < 40 else
+                    "⛅" if day["cloud"] < 75 else "☁️")
+            with col:
+                st.markdown(f"**{head} {d.strftime('%a')}**  \n"
+                            f"{d.strftime('%b')} {d.day}")
+                st.metric("high", f"{t_f:.0f}°F")
+                st.caption(
+                    f"☁️ {day['cloud']:.0f}% cloud  \n"
+                    f"☀️ {day['ghi']:.0f} W/m² sun  \n"
+                    f"💨 {day['wind']:.0f} km/h  \n"
+                    + ("🏖️ weekend — low risk" if day["is_weekend"] else
+                       "🎉 holiday — low risk" if day["is_holiday"] else
+                       "💼 workday" + (" — peak fuel" if hot else ""))
+                    + (f"  \n📈 peak chance {p:.0%}" if p is not None else ""))
+        st.caption("Sun (GHI) matters twice: it drives air-conditioning AND "
+                   "rooftop-solar output. A hot day that clouds over at 5 PM "
+                   "is the nastiest combination — AC still roaring, solar "
+                   "gone.")
+    else:
+        st.info("No weather forecast loaded yet — run: py -m peakwatch refresh")
 
 # ---------------- History: when peaks happen ----------------
 with tab_zones:
