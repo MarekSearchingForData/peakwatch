@@ -53,8 +53,8 @@ def train_and_forecast(zone: str, days: int = 7):
     fit, calib = df[df["ts"] < cut], df[df["ts"] >= cut]
     models = {}
     for qv in (0.1, 0.5, 0.9):
-        m = LGBMRegressor(objective="quantile", alpha=qv, n_estimators=300,
-                          learning_rate=0.05, num_leaves=63, verbose=-1)
+        m = LGBMRegressor(objective="quantile", alpha=qv, n_estimators=200,
+                          learning_rate=0.06, num_leaves=63, verbose=-1)
         m.fit(fit[FEATURES], fit["rt_load_mw"])
         models[qv] = m
     res = calib["rt_load_mw"].values - models[0.5].predict(calib[FEATURES])

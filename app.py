@@ -324,10 +324,13 @@ _level, _msg = danger_days()
      "💰 Money", "🩺 Health"])
 
 
-@st.cache_data(ttl=3600)
-def get_forecast(zone, days):
+@st.cache_data(ttl=3600, show_spinner="Training forecast model (once per "
+                                       "zone per hour)…")
+def get_forecast(zone):
+    # always compute the full 7 days; the slider only slices the display,
+    # so moving it never retrains
     from peakwatch.forecast7 import train_and_forecast
-    return train_and_forecast(zone, days)
+    return train_and_forecast(zone, 7)
 
 # ---------------- Map / Town pages ----------------
 with tab_map:
@@ -513,8 +516,9 @@ with tab_fc:
             q("SELECT DISTINCT town FROM clean_town_rnl WHERE zone=? "
               "ORDER BY town", (fzone,))["town"]),
         key="fc_town")
-    with st.spinner("Training forecast model…"):
-        tail, fc = get_forecast(fzone, fdays)
+    tail, fc = get_forecast(fzone)
+    fc = fc[pd.to_datetime(fc["ts"], utc=True)
+            <= pd.Timestamp.now(tz="UTC") + pd.Timedelta(days=fdays)]
 
     scale, unit_label = 1.0, f"{fzone} MW"
     if ftown != "— zone total —":
