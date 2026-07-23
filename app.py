@@ -430,14 +430,17 @@ with tab_money:
     st.subheader("Dollar exposure by town")
     st.caption(f"RNS 2026: ${RNS_RATE}/kW-yr · FCA18: ${FCA_RATE}/kW-mo · "
                "tag proxied by latest summer settlement value.")
-    st.info("**Why transmission exceeds capacity:** capacity is set by ONE "
-            "hour a year (the annual coincident peak → the capacity tag, "
-            f"billed at ${FCA_RATE}/kW-mo = ${FCA_RATE * 12:.0f}/kW-yr). "
-            "Transmission (RNS) is charged on TWELVE hours — each month's "
-            f"regional peak — at ${RNS_RATE}/kW-yr, over 4× the capacity "
-            "rate. A decade ago capacity dominated; New England transmission "
-            "rates have since tripled, flipping the ledger. Upside: twelve "
-            "chances a year to save, not one.")
+    st.info("**Why transmission exceeds capacity (today):** capacity is set "
+            "by ONE hour a year — the annual coincident peak sets the tag "
+            "for the commitment year starting the FOLLOWING June (July 2026 "
+            f"peak → June 2027-May 2028 bills at FCA18 ${FCA_RATE}/kW-mo ≈ "
+            f"${FCA_RATE * 12:.0f}/kW-yr; current bills use last summer's "
+            "tag at FCA17 $2.59). Transmission (RNS) hits TWELVE hours — "
+            f"each month's regional peak — at ${RNS_RATE}/kW-yr, 4×+ the "
+            "capacity rate. Historical note: in the FCA9 era (2018/19) "
+            "capacity was $9.55/kW-mo (~$115k per MW-year) and dominated; "
+            "prices fell ~75% while transmission tripled. Twelve chances a "
+            "year to save now, not one.")
     rnl_all = q("SELECT town, month, rnl_mw FROM clean_town_rnl")
     rows = []
     for t, g in rnl_all.groupby("town"):
