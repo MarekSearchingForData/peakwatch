@@ -79,6 +79,30 @@ COMBINED_DEMAND_JSON = {
 }
 
 
+RT_CURRENT_JSON = {
+    "HourlyRtDemands": {
+        "HourlyRtDemand": [
+            {"BeginDate": "2026-07-20T23:00:00.000-04:00",
+             "Location": {"$": ".Z.WCMASS", "@LocId": "4007"},
+             "Load": 1785.615},
+            {"BeginDate": "2026-07-20T23:00:00.000-04:00",
+             "Location": {"$": ".Z.MAINE", "@LocId": "4001"},
+             "Load": 1162.86},
+        ]
+    }
+}
+
+
+def test_realtime_hourly_current_parse(monkeypatch):
+    # the endpoint whose silent format change killed the 2025 pipeline
+    from peakwatch.isone import ISONEClient
+    client = ISONEClient(user="x", password="y")
+    monkeypatch.setattr(client, "_get", lambda ep: RT_CURRENT_JSON)
+    df = client.realtime_hourly_demand_current()
+    assert set(df["Zone"]) == {"WCMA", "ME"}
+    assert df[df["Zone"] == "WCMA"]["RtLoad_MW"].iloc[0] == 1785.615
+
+
 def test_client_parses_missing_rtload(monkeypatch):
     from peakwatch.isone import ISONEClient
     client = ISONEClient(user="x", password="y")

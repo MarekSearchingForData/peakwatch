@@ -74,6 +74,21 @@ class ISONEClient:
             subset=["Timestamp"]
         )
 
+    def realtime_hourly_demand_current(self) -> pd.DataFrame:
+        """Latest published preliminary RT hourly demand, all zones.
+        Note: the public feed lags ~2 days. Format re-verified 2026-07
+        (the 2025 pipeline died on a silent format change here)."""
+        data = self._get("realtimehourlydemand/current.json")
+        rows = (data.get("HourlyRtDemands", {}) or {}).get("HourlyRtDemand", [])
+        out = []
+        for r in rows:
+            loc = r.get("Location", {})
+            lid = int(loc.get("@LocId", 0)) if isinstance(loc, dict) else 0
+            out.append({"Timestamp": pd.to_datetime(r.get("BeginDate")),
+                        "Zone": LOCATION_TO_ZONE.get(lid),
+                        "RtLoad_MW": r.get("Load")})
+        return pd.DataFrame(out).dropna(subset=["Zone"])
+
     def five_minute_system_load_current(self) -> dict:
         data = self._get("fiveminutesystemload/current.json")
         loads = data.get("FiveMinSystemLoad", [])

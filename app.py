@@ -57,6 +57,29 @@ def get_alphas():
     return alphas.reset_index()
 
 
+@st.cache_data(ttl=3600)
+def zone_hour_fracs():
+    """Zone share of system load by (season, hour), past 365 days — the
+    bridge from live 5-min system load down to zones."""
+    zd = q("SELECT ts, zone, rt_load_mw FROM clean_zone_demand "
+           "WHERE rt_load_mw IS NOT NULL AND ts >= date('now', '-365 days')")
+    zd["ts"] = pd.to_datetime(zd["ts"], utc=True)
+    local = zd["ts"].dt.tz_convert(EASTERN)
+    zd["hour"] = local.dt.hour
+    zd["season"] = local.dt.month.map(lambda m: SEASON.get(m, "sh"))
+    sys_tot = zd.groupby("ts")["rt_load_mw"].transform("sum")
+    zd["frac"] = zd["rt_load_mw"] / sys_tot
+    return zd.groupby(["zone", "season", "hour"])["frac"].mean()
+
+
+@st.cache_data(ttl=600)
+def latest_actual_zone():
+    try:
+        return ISONEClient().realtime_hourly_demand_current()
+    except Exception:
+        return pd.DataFrame()
+
+
 @st.cache_data(ttl=86400)
 def get_geojson():
     path = Path(__file__).parent / "reference" / "ma_towns.geojson"
@@ -104,6 +127,37 @@ def render_town_page(town):
     if not len(rnl):
         st.warning("No settlement data for this town.")
         return
+
+    # -- Now strip: live estimate chained from 5-min system load --
+    live = get_live()
+    alphas = get_alphas()
+    amap = alphas[alphas["town"] == town].set_index("season")["alpha"]
+    if live and len(amap):
+        now_local = pd.Timestamp.now(tz=EASTERN)
+        season_now = SEASON.get(now_local.month, "sh")
+        fracs = zone_hour_fracs()
+        zfrac = fracs.get((zone, season_now, now_local.hour), None)
+        n1, n2, n3 = st.columns(3)
+        if zfrac:
+            zone_now = live["load_mw"] * zfrac
+            town_now = zone_now * amap.get(season_now, amap.mean())
+            n1.metric("⚡ Est. load right now",
+                      f"{town_now:,.1f} MW",
+                      f"from live system {live['load_mw']:,.0f} MW")
+            n2.metric(f"Est. {zone} zone now", f"{zone_now:,.0f} MW")
+        act = latest_actual_zone()
+        if len(act):
+            zrow = act[act["Zone"] == zone]
+            if len(zrow):
+                r = zrow.iloc[0]
+                n3.metric(f"Last actual {zone} hour",
+                          f"{r['RtLoad_MW']:,.0f} MW",
+                          f"{str(r['Timestamp'])[:16]} (prelim, ~2d lag)")
+        st.caption("Live estimate = 5-min system load × zone share for this "
+                   "hour/season × town settlement share. Estimated, not "
+                   "metered — the honest label matters.")
+        st.divider()
+
     latest = rnl.iloc[-1]
     avg12 = rnl["rnl_mw"].tail(12).mean()
     summer = rnl[rnl["month"].str[5:7].isin(["07", "08"])]["rnl_mw"].tail(2)
