@@ -22,7 +22,10 @@ WEATHER_DIR = DATA_DIR / "raw" / "weather_v2"
 FORECAST_DIR = DATA_DIR / "raw" / "forecast_nws"
 START = datetime(2023, 1, 1)
 
-NWS_HEADERS = {"User-Agent": "PeakWatch (krawczyk.biz90@gmail.com)"}
+import os
+
+NWS_HEADERS = {"User-Agent":
+               f"PeakWatch ({os.getenv('NWS_CONTACT', 'contact@example.com')})"}
 
 
 def fetch_meteostat():

@@ -24,6 +24,36 @@ RNS_RATE, FCA_RATE = 183.71, 3.58  # $/kW-yr (2026), $/kW-mo (FCA18)
 ACCENT = "#ff6b35"
 
 
+# ---------------- Login gate ----------------
+def _check_login():
+    import hashlib
+    import os
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).parent / ".env")
+    want_user = os.getenv("AUTH_USER", "admin")
+    want_hash = os.getenv("AUTH_PASSWORD_SHA256", "")
+    if st.session_state.get("authed"):
+        return True
+    _, mid, _ = st.columns([1, 1, 1])
+    with mid:
+        st.markdown("## ⚡ PeakWatch")
+        st.caption("Sign in to continue")
+        with st.form("login"):
+            u = st.text_input("Username")
+            p = st.text_input("Password", type="password")
+            if st.form_submit_button("Sign in", use_container_width=True):
+                if (u == want_user and want_hash
+                        and hashlib.sha256(p.encode()).hexdigest() == want_hash):
+                    st.session_state["authed"] = True
+                    st.rerun()
+                st.error("Wrong username or password.")
+    return False
+
+
+if not _check_login():
+    st.stop()
+
+
 @st.cache_resource
 def _con():
     return sqlite3.connect(DB_PATH, check_same_thread=False)

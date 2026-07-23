@@ -38,9 +38,14 @@ reconciliation checks against independently published numbers. See
 ```
 py -m peakwatch daily     # ops loop: refresh -> validate -> risk flags -> peak probability
 py -m peakwatch monthly   # settlement loop: new RNL -> re-score model zoo -> dollar table
-streamlit run app.py      # dashboard: Peak Risk / Towns / Zones / Health
-py -m pytest tests        # 12 regression tests (one per bug ever hit)
+run_dashboard.bat         # dashboard on this PC (localhost:8511)
+serve_lan.bat             # dashboard visible to the local network
+py -m pytest tests        # regression tests (one per bug ever hit)
 ```
+
+Dashboard access requires sign-in; credentials live in `.env`
+(`AUTH_USER` + `AUTH_PASSWORD_SHA256` — store the SHA-256 hex of the
+password, never the password itself).
 
 Individual verbs: `refresh validate analyze allocate experiment decompose
 dollars peakprob`.
