@@ -386,7 +386,36 @@ with tab_risk:
     st.subheader("Next days — ISO forecast vs month-to-date max (backstop rule)")
     flags, mtd = risk_flags(_con())
     if len(flags):
-        st.dataframe(flags, use_container_width=True, hide_index=True)
+        ann = q("SELECT MAX(mw) m FROM (SELECT ts, SUM(rt_load_mw) mw FROM "
+                "clean_zone_demand WHERE ts >= date('now','start of year') "
+                "GROUP BY ts HAVING COUNT(rt_load_mw)=8)")["m"].iloc[0]
+        def _status(r):
+            v = r["vs_mtd_max"]
+            if v is None or pd.isna(v):
+                return "—"
+            s = ("🔴 monthly peak risk" if v >= 0.95 else
+                 "🟡 elevated" if v >= 0.90 else "🟢 safe")
+            if ann and r["iso_fcst_peak_mw"] >= 0.95 * ann:
+                s += " ⭐ capacity-peak risk"
+            return s
+        flags = flags.copy()
+        flags["status"] = flags.apply(_status, axis=1)
+        def _row_color(r):
+            v = r["vs_mtd_max"]
+            if v is None or pd.isna(v):
+                c = ""
+            elif v >= 0.95:
+                c = "background-color: rgba(220, 60, 50, 0.25)"
+            elif v >= 0.90:
+                c = "background-color: rgba(240, 180, 30, 0.20)"
+            else:
+                c = "background-color: rgba(60, 170, 90, 0.12)"
+            return [c] * len(r)
+        st.dataframe(flags.style.apply(_row_color, axis=1),
+                     use_container_width=True, hide_index=True)
+        st.caption(f"⭐ appears when a day's forecast approaches this year's "
+                   f"record hour ({ann:,.0f} MW) — the hour that sets "
+                   "capacity tags for the year starting next June.")
 
     # -- Two plain-language answers, data behind expanders --
     runway = survival_runway(climatology(_con()))
