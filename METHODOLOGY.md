@@ -64,9 +64,21 @@ promoted to `clean_*` only if all blocking checks pass, else quarantined.
 
 ## Known limitations (current)
 
-- Pool peak hour approximated (±1.3%) pending exact-hour snapping.
-- Princeton-class towns (generation ≥ load) need explicit offset terms;
-  wide error bands until then.
+- Princeton-class towns (generation ≥ load) remain the hardest cases;
+  the crude wind power-curve underperforms the fitted temp+wind model
+  (hub-height wind and real turbine curves are queued refinements).
 - 2022 settlement reports before mid-2022 not yet located.
-- Weather features currently lose to flat baselines at n≤8 months —
-  expected small-sample behavior; re-judged as backfill extends history.
+- Capacity tags are proxied by latest summer settlement values until
+  actual ICAP tags are available.
+- Cloud deployment runs on a committed data snapshot; live tiles are
+  real-time but history updates only when a new snapshot is pushed.
+
+## Resolved since first draft
+
+- Anchor snapping to published pool values ADOPTED (halved anchor error
+  to ±0.84%; improved 4 of 5 towns tested).
+- Weather features EARNED their seats at full history: temp+GHI is
+  Chicopee's champion (3.53% LOO), temp+wind Princeton's (0.72 MW) —
+  the small-sample losses at n≤8 months reversed exactly as predicted.
+- Quantile bands calibrated via residual simulation (54% → ~80%
+  coverage at the 80% target).
