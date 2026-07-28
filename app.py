@@ -120,6 +120,28 @@ def latest_actual_zone():
         return pd.DataFrame()
 
 
+@st.cache_data(ttl=3600, show_spinner="Refreshing forecasts…")
+def ensure_fresh_forecasts():
+    """Self-healing: if stored weather/ISO forecasts cover < 5 future days,
+    top up live (free APIs) — keeps the cloud app current between
+    snapshot pushes."""
+    try:
+        con2 = sqlite3.connect(DB_PATH)
+        mx = con2.execute("SELECT MAX(ts) FROM raw_weather_fcst").fetchone()[0]
+        horizon = (pd.Timestamp(mx).tz_localize("UTC")
+                   if mx and "+" not in mx else pd.Timestamp(mx or "2000-01-01"))
+        if horizon.tzinfo is None:
+            horizon = horizon.tz_localize("UTC")
+        if horizon < pd.Timestamp.now(tz="UTC") + pd.Timedelta(days=5):
+            from peakwatch import collect
+            collect.load_openmeteo_forecast(con2)
+            collect.load_isone_forecast(con2)
+        con2.close()
+        return True
+    except Exception:
+        return False
+
+
 @st.cache_data(ttl=1800)
 def danger_days():
     """Plain-language peak danger for the coming days: (level, message).
@@ -360,6 +382,7 @@ def render_town_page(town):
 
 st.title("⚡ PeakWatch")
 
+ensure_fresh_forecasts()
 _level, _msg = danger_days()
 {"alert": st.error, "watch": st.warning, "clear": st.success}[_level](_msg)
 
