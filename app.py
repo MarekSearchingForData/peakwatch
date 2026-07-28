@@ -1,4 +1,4 @@
-"""PeakWatch dashboard — streamlit run app.py (or run_dashboard.bat).
+﻿"""PeakWatch dashboard â€” streamlit run app.py (or run_dashboard.bat).
 Map-first navigation: click a member town -> full town page with a
 mini-MA locator. Reads only from the store.
 """
@@ -13,7 +13,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 # Cloud secrets bridge: Streamlit Cloud provides st.secrets, local runs use
-# .env — copy secrets into the environment BEFORE peakwatch.config loads.
+# .env â€” copy secrets into the environment BEFORE peakwatch.config loads.
 try:
     for _k, _v in st.secrets.items():
         if isinstance(_v, str) and _k not in os.environ:
@@ -28,7 +28,7 @@ from peakwatch.peaks import EASTERN
 from peakwatch.store import DB_PATH
 from peakwatch.townhourly import SEASON, _seasonal_alphas
 
-st.set_page_config(page_title="PeakWatch — ISO-NE", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="PeakWatch â€” ISO-NE", page_icon="âš¡", layout="wide")
 
 RNS_RATE, FCA_RATE = 183.71, 3.58  # $/kW-yr (2026), $/kW-mo (FCA18)
 ACCENT = "#ff6b35"
@@ -46,7 +46,7 @@ def _check_login():
         return True
     _, mid, _ = st.columns([1, 1, 1])
     with mid:
-        st.markdown("## ⚡ PeakWatch")
+        st.markdown("## âš¡ PeakWatch")
         st.caption("Sign in to continue")
         with st.form("login"):
             u = st.text_input("Username")
@@ -99,7 +99,7 @@ def get_alphas():
 
 @st.cache_data(ttl=3600)
 def zone_hour_fracs():
-    """Zone share of system load by (season, hour), past 365 days — the
+    """Zone share of system load by (season, hour), past 365 days â€” the
     bridge from live 5-min system load down to zones."""
     zd = q("SELECT ts, zone, rt_load_mw FROM clean_zone_demand "
            "WHERE rt_load_mw IS NOT NULL AND ts >= date('now', '-365 days')")
@@ -120,10 +120,10 @@ def latest_actual_zone():
         return pd.DataFrame()
 
 
-@st.cache_data(ttl=3600, show_spinner="Refreshing forecasts…")
+@st.cache_data(ttl=3600, show_spinner="Refreshing forecastsâ€¦")
 def ensure_fresh_forecasts():
     """Self-healing: if stored weather/ISO forecasts cover < 5 future days,
-    top up live (free APIs) — keeps the cloud app current between
+    top up live (free APIs) â€” keeps the cloud app current between
     snapshot pushes."""
     try:
         con2 = sqlite3.connect(DB_PATH)
@@ -154,25 +154,25 @@ def danger_days():
         wx["date"] = wx["ts"].dt.tz_convert(EASTERN).dt.date
         tmax = wx.groupby("date")["t"].max().to_dict()
     if "p_exceed" not in probs.columns or not len(probs):
-        return "clear", "Quiet grid — no elevated peak conditions detected."
+        return "clear", "Quiet grid â€” no elevated peak conditions detected."
     worst = probs.loc[probs["p_exceed"].idxmax()]
     d = pd.Timestamp(worst["date"])
     day_name = f"{d.strftime('%A, %b')} {d.day}"
     t_f = tmax.get(worst["date"])
-    heat = f" — forecast high {t_f * 9 / 5 + 32:.0f}°F" if t_f else ""
+    heat = f" â€” forecast high {t_f * 9 / 5 + 32:.0f}Â°F" if t_f else ""
     if worst["p_exceed"] >= 0.5:
-        return "alert", (f"🔥 PEAK ALERT {day_name}{heat}. The grid is likely "
-                         "to hit this month's high between 5–7 PM. Batteries "
+        return "alert", (f"ðŸ”¥ PEAK ALERT {day_name}{heat}. The grid is likely "
+                         "to hit this month's high between 5â€“7 PM. Batteries "
                          "and demand response should run. Every MW off the "
                          "grid in that window saves ~$15,000 this month.")
     if worst["p_exceed"] >= 0.2:
-        return "watch", (f"⚠️ Peak watch {day_name}{heat}. Conditions could "
+        return "watch", (f"âš ï¸ Peak watch {day_name}{heat}. Conditions could "
                          "challenge this month's high in the late afternoon. "
                          "Have batteries ready; a final call comes with the "
                          "morning forecast.")
-    return "clear", ("😎 All clear for the coming days. This month's peak "
+    return "clear", ("ðŸ˜Ž All clear for the coming days. This month's peak "
                      "(set July 2 during the heat wave) is very unlikely to "
-                     "be beaten — no special action needed.")
+                     "be beaten â€” no special action needed.")
 
 
 @st.cache_data(ttl=86400)
@@ -183,7 +183,7 @@ def get_geojson():
 
 @st.cache_data(ttl=86400)
 def locator_fig(town):
-    """Mini MA map with one town highlighted — the town-page header art."""
+    """Mini MA map with one town highlighted â€” the town-page header art."""
     gj = get_geojson()
     names = [f["properties"]["TOWN"] for f in gj["features"]]
     others = [n for n in names if n != town]
@@ -212,7 +212,7 @@ def render_town_page(town):
     head_l, head_r = st.columns([2, 1])
     with head_l:
         st.markdown(f"## {town}")
-        st.caption(f"Load zone **{zone}** · MMWEC member · "
+        st.caption(f"Load zone **{zone}** Â· MMWEC member Â· "
                    f"{len(rnl)} months of settlement history")
     with head_r:
         st.plotly_chart(locator_fig(town), use_container_width=True,
@@ -232,14 +232,14 @@ def render_town_page(town):
         season_now = SEASON.get(now_local.month, "sh")
         fracs = zone_hour_fracs()
         zfrac = fracs.get((zone, season_now, now_local.hour), None)
-        formula = ("Live 5-min system load × this zone's typical share of "
-                   "system for this hour and season × this town's settlement "
+        formula = ("Live 5-min system load Ã— this zone's typical share of "
+                   "system for this hour and season Ã— this town's settlement "
                    "share of the zone.")
         n1, n2, n3 = st.columns(3)
         if zfrac:
             zone_now = live["load_mw"] * zfrac
             town_now = zone_now * amap.get(season_now, amap.mean())
-            n1.metric("⚡ Est. load right now",
+            n1.metric("âš¡ Est. load right now",
                       f"{town_now:,.1f} MW",
                       f"from live system {live['load_mw']:,.0f} MW",
                       help=formula)
@@ -252,7 +252,7 @@ def render_town_page(town):
                 r = zrow.iloc[0]
                 n3.metric(f"Last actual {zone} hour",
                           f"{r['RtLoad_MW']:,.0f} MW",
-                          f"{str(r['Timestamp'])[:16]} (prelim, ~2d lag)")
+                          f"{str(r['Timestamp'])[:16]} (prelim, 2-5d lag)")
         st.caption("Estimated, not metered.")
         st.divider()
 
@@ -266,7 +266,7 @@ def render_town_page(town):
     c[0].metric(f"Latest RNL ({latest['month']})", f"{latest['rnl_mw']:.2f} MW")
     c[1].metric("12-mo max", f"{rnl['rnl_mw'].tail(12).max():.2f} MW")
     c[2].metric("Capacity tag (proxy)",
-                f"{tag:.2f} MW" if tag == tag else "—")
+                f"{tag:.2f} MW" if tag == tag else "â€”")
     c[3].metric("Avg vs prior year", f"{yoy:+.2f} MW")
     d = st.columns(4)
     trans = avg12 * 1000 * RNS_RATE
@@ -282,12 +282,12 @@ def render_town_page(town):
         row = sp[sp["Town"] == town]
         if len(row):
             r = row.iloc[0]
-            st.info(f"🔒 **Forecast on the record** — sealed 2026-07-22, "
+            st.info(f"ðŸ”’ **Forecast on the record** â€” sealed 2026-07-22, "
                     f"scored when ISO publishes (~Sept): July 2026 RNL = "
                     f"**{r['Predicted_RNL_MW']:.2f} MW** "
-                    f"[{r['Low_MW']:.2f} – {r['High_MW']:.2f}]")
+                    f"[{r['Low_MW']:.2f} â€“ {r['High_MW']:.2f}]")
 
-    st.subheader("Settlement history — MW at each monthly transmission peak")
+    st.subheader("Settlement history â€” MW at each monthly transmission peak")
     fig = px.bar(rnl, x="month", y="rnl_mw",
                  labels={"rnl_mw": "MW", "month": ""})
     fig.update_traces(marker_color=ACCENT)
@@ -348,14 +348,14 @@ def render_town_page(town):
                                  marker=dict(symbol="star-diamond", size=22,
                                              color="#e05555",
                                              line=dict(color="white", width=1.5)),
-                                 text=["ANNUAL PEAK — sets capacity tag"],
+                                 text=["ANNUAL PEAK â€” sets capacity tag"],
                                  textposition="top center", name="annual peak")
         fig2.update_layout(height=300, margin=dict(t=30),
                            legend=dict(orientation="h", y=1.14))
         st.plotly_chart(fig2, use_container_width=True, key=f"hr_{town}")
-        st.caption("⭐ each day's high (hover for the hour) · orange star = "
-                   "monthly bill-setting hour · red diamond-star = annual "
-                   "capacity-tag hour. Estimate = seasonal settlement share × "
+        st.caption("â­ each day's high (hover for the hour) Â· orange star = "
+                   "monthly bill-setting hour Â· red diamond-star = annual "
+                   "capacity-tag hour. Estimate = seasonal settlement share Ã— "
                    "zone hourly load, validated at anchors and against "
                    "EIA-861 annual energy.")
 
@@ -380,7 +380,7 @@ def render_town_page(town):
                       f"{mix['total_mwh'].iloc[0]:,.0f} MWh")
 
 
-st.title("⚡ PeakWatch")
+st.title("âš¡ PeakWatch")
 
 ensure_fresh_forecasts()
 _level, _msg = danger_days()
@@ -388,12 +388,12 @@ _level, _msg = danger_days()
 
 (tab_map, tab_risk, tab_fc, tab_wx, tab_zones, tab_money,
  tab_health) = st.tabs(
-    ["🗺️ Towns", "🎯 Peak Risk", "🔮 Forecast", "🌤️ Weather", "📊 History",
-     "💰 Money", "🩺 Health"])
+    ["ðŸ—ºï¸ Towns", "ðŸŽ¯ Peak Risk", "ðŸ”® Forecast", "ðŸŒ¤ï¸ Weather", "ðŸ“Š History",
+     "ðŸ’° Money", "ðŸ©º Health"])
 
 
 @st.cache_data(ttl=3600, show_spinner="Training forecast model (once per "
-                                       "zone per hour)…")
+                                       "zone per hour)â€¦")
 def get_forecast(zone):
     # always compute the full 7 days; the slider only slices the display,
     # so moving it never retrains
@@ -404,7 +404,7 @@ def get_forecast(zone):
 with tab_map:
     sel_town = st.session_state.get("sel_town")
     if sel_town:
-        if st.button("← Back to map"):
+        if st.button("â† Back to map"):
             st.session_state.pop("sel_town", None)
             st.rerun()
         render_town_page(sel_town)
@@ -431,7 +431,7 @@ with tab_map:
             colorbar=dict(title="$M/yr", thickness=12, len=0.7),
             marker_line_color="#ffffff", marker_line_width=1.2,
             hovertemplate="<b>%{location}</b><br>avg RNL %{text:.1f} MW<br>"
-                          "transmission ≈ $%{z:.1f}M/yr"
+                          "transmission â‰ˆ $%{z:.1f}M/yr"
                           "<br><i>click to open town page</i><extra></extra>",
             text=[latest[t] for t in member_names], name="members")
         fig.update_geos(fitbounds="geojson", visible=False,
@@ -445,10 +445,10 @@ with tab_map:
                                 on_select="rerun", selection_mode="points",
                                 config={"scrollZoom": False,
                                         "displayModeBar": False})
-        with st.expander("❓ What am I looking at?"):
+        with st.expander("â“ What am I looking at?"):
             st.markdown(
                 "- **The colors** show how much each member town spends per "
-                "year on transmission — charges set by its electricity use "
+                "year on transmission â€” charges set by its electricity use "
                 "during a handful of peak hours.\n"
                 "- **The banner above** is the bottom line: is a "
                 "bill-setting peak hour coming up, in plain words? Green "
@@ -467,8 +467,8 @@ with tab_map:
         if sel and sel in member_names:
             st.session_state["sel_town"] = sel
             st.rerun()
-        picked = st.selectbox("…or pick a town", ["—"] + member_names)
-        if picked != "—":
+        picked = st.selectbox("â€¦or pick a town", ["â€”"] + member_names)
+        if picked != "â€”":
             st.session_state["sel_town"] = picked
             st.rerun()
 
@@ -489,16 +489,16 @@ with tab_risk:
         probs = fresh if len(fresh) else probs.tail(2)
         cols = st.columns(min(4, len(probs)))
         for c, (_, r) in zip(cols, probs.iterrows()):
-            emoji = "🔴" if r["p_exceed"] >= 0.2 else "🟢"
+            emoji = "ðŸ”´" if r["p_exceed"] >= 0.2 else "ðŸŸ¢"
             c.metric(f"{emoji} {r['date']}", f"P = {r['p_exceed']:.2f}",
                      f"DA {r['da_max']:,} vs MTD {r['mtd_max']:,} MW")
-        st.caption("P(day's max exceeds month-to-date max). Alert at P ≥ 0.20. "
+        st.caption("P(day's max exceeds month-to-date max). Alert at P â‰¥ 0.20. "
                    "Full-history: 88.7% of monthly peaks at 6.3 alert-days/mo; "
                    "backstop rule catches 100% at 14.8.")
     else:
-        st.info("Probability model warming up — needs today's DA data.")
+        st.info("Probability model warming up â€” needs today's DA data.")
 
-    st.subheader("Next days — ISO forecast vs month-to-date max (backstop rule)")
+    st.subheader("Next days â€” ISO forecast vs month-to-date max (backstop rule)")
     flags, mtd = risk_flags(_con())
     if len(flags):
         ann = q("SELECT MAX(mw) m FROM (SELECT ts, SUM(rt_load_mw) mw FROM "
@@ -507,11 +507,11 @@ with tab_risk:
         def _status(r):
             v = r["vs_mtd_max"]
             if v is None or pd.isna(v):
-                return "—"
-            s = ("🔴 monthly peak risk" if v >= 0.95 else
-                 "🟡 elevated" if v >= 0.90 else "🟢 safe")
+                return "â€”"
+            s = ("ðŸ”´ monthly peak risk" if v >= 0.95 else
+                 "ðŸŸ¡ elevated" if v >= 0.90 else "ðŸŸ¢ safe")
             if ann and r["iso_fcst_peak_mw"] >= 0.95 * ann:
-                s += " ⭐ capacity-peak risk"
+                s += " â­ capacity-peak risk"
             return s
         flags = flags.copy()
         flags["status"] = flags.apply(_status, axis=1)
@@ -528,8 +528,8 @@ with tab_risk:
             return [c] * len(r)
         st.dataframe(flags.style.apply(_row_color, axis=1),
                      use_container_width=True, hide_index=True)
-        st.caption(f"⭐ appears when a day's forecast approaches this year's "
-                   f"record hour ({ann:,.0f} MW) — the hour that sets "
+        st.caption(f"â­ appears when a day's forecast approaches this year's "
+                   f"record hour ({ann:,.0f} MW) â€” the hour that sets "
                    "capacity tags for the year starting next June.")
 
     # -- Two plain-language answers, data behind expanders --
@@ -546,9 +546,9 @@ with tab_risk:
     st.markdown(f"It's day **{now_l.day}** of a {season_now} month. "
                 f"Historically, only **{p_ahead:.0%}** of {season_now} months "
                 "still had their peak ahead at this point"
-                + (" — the big hour has almost certainly happened."
+                + (" â€” the big hour has almost certainly happened."
                    if p_ahead < 0.3 else
-                   " — stay attentive; the big hour may still be coming."))
+                   " â€” stay attentive; the big hour may still be coming."))
     with st.expander("how this changes through the month"):
         rs = runway[runway["season"] == season_now]
         figr = px.bar(x=rs["day_of_month"], y=rs["P_peak_still_ahead"],
@@ -567,12 +567,12 @@ with tab_risk:
                 "often than too rarely.")
     with st.expander("the options, measured on 54 months of history"):
         abc = alert_budget_curve(_con()).rename(columns={
-            "threshold": "alert when forecast reaches…",
+            "threshold": "alert when forecast reachesâ€¦",
             "peaks_caught": "peaks caught",
             "capture_%": "success rate",
             "alert_days_per_month": "alert days per month"})
-        abc["alert when forecast reaches…"] = abc[
-            "alert when forecast reaches…"].map(lambda v: f"{v:.0%} of month's max")
+        abc["alert when forecast reachesâ€¦"] = abc[
+            "alert when forecast reachesâ€¦"].map(lambda v: f"{v:.0%} of month's max")
         abc["success rate"] = abc["success rate"].map(lambda v: f"{v:.0f}%")
         st.dataframe(abc, use_container_width=True, hide_index=True)
 
@@ -583,7 +583,7 @@ with tab_fc:
     fdays = fc2.slider("Forecast length (days)", 1, 7, 3, key="fc_days")
     ftown = fc3.selectbox(
         "Scale to town (optional)",
-        ["— zone total —"] + list(
+        ["â€” zone total â€”"] + list(
             q("SELECT DISTINCT town FROM clean_town_rnl WHERE zone=? "
               "ORDER BY town", (fzone,))["town"]),
         key="fc_town")
@@ -592,7 +592,7 @@ with tab_fc:
             <= pd.Timestamp.now(tz="UTC") + pd.Timedelta(days=fdays)]
 
     scale, unit_label = 1.0, f"{fzone} MW"
-    if ftown != "— zone total —":
+    if ftown != "â€” zone total â€”":
         amap = get_alphas()
         am = amap[amap["town"] == ftown].set_index("season")["alpha"]
         season_now = SEASON.get(pd.Timestamp.now(tz=EASTERN).month, "sh")
@@ -604,7 +604,7 @@ with tab_fc:
                     showlegend=False, hoverinfo="skip")
     fig.add_scatter(x=fc["ts"], y=fc["p10"] * scale, fill="tonexty",
                     fillcolor="rgba(255,107,53,0.18)", line=dict(width=0),
-                    name="p10–p90 band")
+                    name="p10â€“p90 band")
     fig.add_scatter(x=fc["ts"], y=fc["p50"] * scale, name="PeakWatch p50",
                     line=dict(color=ACCENT, width=2))
     if "iso_fcst_zone" in fc.columns and fc["iso_fcst_zone"].notna().any():
@@ -622,7 +622,7 @@ with tab_fc:
              (fzone,))["m"].iloc[0]
     if zmtd:
         fig.add_hline(y=zmtd * scale, line_dash="dash", line_color="#e05555",
-                      annotation_text="month's max — the line to beat",
+                      annotation_text="month's max â€” the line to beat",
                       annotation_font_color="#e05555")
         danger = fc[fc["p90"] >= 0.95 * zmtd].copy()
         if len(danger):
@@ -636,10 +636,10 @@ with tab_fc:
     st.plotly_chart(fig, use_container_width=True)
     if zmtd and len(fc[fc["p90"] >= 0.95 * zmtd]):
         st.warning("Red bands: hours where the forecast's upper range comes "
-                   "within 5% of this month's max — potential bill-setting "
+                   "within 5% of this month's max â€” potential bill-setting "
                    "hours.")
     elif zmtd:
-        st.success("No forecast hour comes near this month's max — no "
+        st.success("No forecast hour comes near this month's max â€” no "
                    "bill-setting hours expected in this window.")
 
     future = fc[pd.to_datetime(fc["ts"], utc=True) >= pd.Timestamp.now(tz="UTC")]
@@ -649,15 +649,15 @@ with tab_fc:
         st.metric(f"Predicted {fdays}-day peak ({unit_label})",
                   f"{peak_row['p50'] * scale:,.1f} MW",
                   f"{peak_local.strftime('%a %b %d, %H:00')} local")
-    st.caption("Weather+calendar quantile model (no load lags — same skill "
+    st.caption("Weather+calendar quantile model (no load lags â€” same skill "
                "at day 7 as day 1), residual-calibrated band. Blend of this "
                "model with ISO's forecast beats ISO alone on every window "
                "tested. Town scaling uses the seasonal settlement share.")
 
 # ---------------- Weather outlook calendar ----------------
-@st.cache_data(ttl=1800, show_spinner="Fetching live forecast…")
+@st.cache_data(ttl=1800, show_spinner="Fetching live forecastâ€¦")
 def weather_outlook_live():
-    """Live 7-day hourly outlook straight from the free Open-Meteo API —
+    """Live 7-day hourly outlook straight from the free Open-Meteo API â€”
     no database dependency, so the calendar can never go stale."""
     import requests as _rq
     frames = []
@@ -708,27 +708,27 @@ with tab_wx:
             t_f = day["tmax"] * 9 / 5 + 32
             p = pmap.get(day["date"])
             hot = t_f >= 88 and not (day["is_weekend"] or day["is_holiday"])
-            head = ("🔥" if (p or 0) >= 0.2 or t_f >= 92 else
-                    "☀️" if day["cloud"] < 40 else
-                    "⛅" if day["cloud"] < 75 else "☁️")
+            head = ("ðŸ”¥" if (p or 0) >= 0.2 or t_f >= 92 else
+                    "â˜€ï¸" if day["cloud"] < 40 else
+                    "â›…" if day["cloud"] < 75 else "â˜ï¸")
             with col:
                 st.markdown(f"**{head} {d.strftime('%a')}**  \n"
                             f"{d.strftime('%b')} {d.day}")
-                st.metric("high", f"{t_f:.0f}°F")
+                st.metric("high", f"{t_f:.0f}Â°F")
                 st.caption(
-                    f"☁️ {day['cloud']:.0f}% cloud  \n"
-                    f"☀️ {day['ghi']:.0f} W/m² sun  \n"
-                    f"💨 {day['wind']:.0f} km/h  \n"
-                    + ("🏖️ weekend — low risk" if day["is_weekend"] else
-                       "🎉 holiday — low risk" if day["is_holiday"] else
-                       "💼 workday" + (" — peak fuel" if hot else ""))
-                    + (f"  \n📈 peak chance {p:.0%}" if p is not None else ""))
+                    f"â˜ï¸ {day['cloud']:.0f}% cloud  \n"
+                    f"â˜€ï¸ {day['ghi']:.0f} W/mÂ² sun  \n"
+                    f"ðŸ’¨ {day['wind']:.0f} km/h  \n"
+                    + ("ðŸ–ï¸ weekend â€” low risk" if day["is_weekend"] else
+                       "ðŸŽ‰ holiday â€” low risk" if day["is_holiday"] else
+                       "ðŸ’¼ workday" + (" â€” peak fuel" if hot else ""))
+                    + (f"  \nðŸ“ˆ peak chance {p:.0%}" if p is not None else ""))
         st.caption("Sun (GHI) matters twice: it drives air-conditioning AND "
                    "rooftop-solar output. A hot day that clouds over at 5 PM "
-                   "is the nastiest combination — AC still roaring, solar "
+                   "is the nastiest combination â€” AC still roaring, solar "
                    "gone.")
     else:
-        st.info("No weather forecast loaded yet — run: py -m peakwatch refresh")
+        st.info("No weather forecast loaded yet â€” run: py -m peakwatch refresh")
 
 # ---------------- History: when peaks happen ----------------
 with tab_zones:
@@ -743,7 +743,7 @@ with tab_zones:
     peaks = sys.loc[sys.groupby("month")["mw"].idxmax()].sort_values("month")
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown("**Every monthly peak since 2022** — the 12 hours/year "
+        st.markdown("**Every monthly peak since 2022** â€” the 12 hours/year "
                     "that set transmission bills:")
         show = peaks[["month", "local", "mw"]].tail(18).copy()
         show["local"] = show["local"].dt.strftime("%a %b %d, %H:00")
@@ -758,32 +758,32 @@ with tab_zones:
         figh.update_traces(marker_color=ACCENT)
         figh.update_layout(height=280, margin=dict(t=10))
         st.plotly_chart(figh, use_container_width=True)
-        st.caption("Almost every peak lands 4–7 PM. Weekends: nearly never. "
+        st.caption("Almost every peak lands 4â€“7 PM. Weekends: nearly never. "
                    "That's why a 3-hour battery discharge window works.")
 
-    st.markdown("**The 10 biggest hours ever recorded here** — these set "
+    st.markdown("**The 10 biggest hours ever recorded here** â€” these set "
                 "capacity tags:")
     top = sys.nlargest(10, "mw")[["local", "mw"]].copy()
     top["local"] = top["local"].dt.strftime("%a %b %d %Y, %H:00")
     top["mw"] = top["mw"].round(0)
     st.dataframe(top.rename(columns={"local": "hour", "mw": "system MW"}),
                  use_container_width=True, hide_index=True)
-    st.caption("July 2, 2026 at 6 PM — 25,321 MW — is the highest hour in "
+    st.caption("July 2, 2026 at 6 PM â€” 25,321 MW â€” is the highest hour in "
                "this dataset and almost certainly this year's capacity-tag "
                "hour. Every member's 2027/28 capacity bill traces to it.")
 
 # ---------------- Money ----------------
 with tab_money:
     st.subheader("Dollar exposure by town")
-    st.caption(f"RNS 2026: ${RNS_RATE}/kW-yr · FCA18: ${FCA_RATE}/kW-mo · "
+    st.caption(f"RNS 2026: ${RNS_RATE}/kW-yr Â· FCA18: ${FCA_RATE}/kW-mo Â· "
                "tag proxied by latest summer settlement value.")
     st.info("**Why transmission exceeds capacity (today):** capacity is set "
-            "by ONE hour a year — the annual coincident peak sets the tag "
+            "by ONE hour a year â€” the annual coincident peak sets the tag "
             "for the commitment year starting the FOLLOWING June (July 2026 "
-            f"peak → June 2027-May 2028 bills at FCA18 ${FCA_RATE}/kW-mo ≈ "
+            f"peak â†’ June 2027-May 2028 bills at FCA18 ${FCA_RATE}/kW-mo â‰ˆ "
             f"${FCA_RATE * 12:.0f}/kW-yr; current bills use last summer's "
-            "tag at FCA17 $2.59). Transmission (RNS) hits TWELVE hours — "
-            f"each month's regional peak — at ${RNS_RATE}/kW-yr, 4×+ the "
+            "tag at FCA17 $2.59). Transmission (RNS) hits TWELVE hours â€” "
+            f"each month's regional peak â€” at ${RNS_RATE}/kW-yr, 4Ã—+ the "
             "capacity rate. Historical note: in the FCA9 era (2018/19) "
             "capacity was $9.55/kW-mo (~$115k per MW-year) and dominated; "
             "prices fell ~75% while transmission tripled. Twelve chances a "
@@ -816,7 +816,7 @@ with tab_health:
     ql = q("SELECT check_name, target, passed, detail FROM quality_log "
            "WHERE run_at=(SELECT MAX(run_at) FROM quality_log) "
            "ORDER BY check_name")
-    ql["passed"] = ql["passed"].map({1: "✅", 0: "❌"})
+    ql["passed"] = ql["passed"].map({1: "âœ…", 0: "âŒ"})
     st.dataframe(ql, use_container_width=True, hide_index=True)
 
     st.subheader("Model scorecard (latest zoo run)")
@@ -833,4 +833,4 @@ with tab_health:
     st.dataframe(cov, use_container_width=True, hide_index=True)
     st.caption("All numbers reconcile against independently published truth: "
                "zone labels vs /locations, pool peaks vs settlement pool "
-               "values (±0.84%), town estimates vs EIA-861 annual sales.")
+               "values (Â±0.84%), town estimates vs EIA-861 annual sales.")

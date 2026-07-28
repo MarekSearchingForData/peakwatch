@@ -10,6 +10,12 @@ def main():
     #   daily   = operations loop: fresh data -> checks -> peak risk + alert
     #   monthly = settlement loop: new RNL -> re-score zoo -> next predictions
     if verb == "daily":
+        # fetch new/settling ISO day-files first, then load them
+        import subprocess
+        from pathlib import Path
+        subprocess.run([sys.executable,
+                        str(Path(__file__).resolve().parent.parent
+                            / "scripts" / "ingest_load.py")], check=False)
         collect.refresh()
         if not validate.validate():
             sys.exit("stopping: validation failed")
