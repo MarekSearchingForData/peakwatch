@@ -461,6 +461,9 @@ with tab_risk:
     st.subheader("Peak-day probability (ML model)")
     probs = get_peak_probs()
     if "p_exceed" in probs.columns and len(probs):
+        today_d = pd.Timestamp.now(tz=EASTERN).date()
+        fresh = probs[pd.to_datetime(probs["date"]).dt.date >= today_d]
+        probs = fresh if len(fresh) else probs.tail(2)
         cols = st.columns(min(4, len(probs)))
         for c, (_, r) in zip(cols, probs.iterrows()):
             emoji = "🔴" if r["p_exceed"] >= 0.2 else "🟢"
@@ -642,6 +645,8 @@ with tab_wx:
         daily_wx = wxf.groupby("date").agg(
             tmax=("t", "max"), ghi=("g", "max"),
             cloud=("c", "mean"), wind=("w", "mean")).reset_index()
+        daily_wx = daily_wx[daily_wx["date"]
+                            >= pd.Timestamp.now(tz=EASTERN).date()]
         cal_df = q("SELECT date, is_weekend, is_holiday FROM feature_calendar")
         cal_df["date"] = pd.to_datetime(cal_df["date"]).dt.date
         daily_wx = daily_wx.merge(cal_df, on="date", how="left")

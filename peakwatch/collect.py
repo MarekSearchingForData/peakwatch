@@ -59,15 +59,18 @@ def load_openmeteo(con, towns=WEATHER_TOWNS):
     coords = {t: (lat, lon) for t, lat, lon in TOWNS}
     total = 0
     for town in towns:
-        # skip towns already loaded through (nearly) today
+        # incremental top-up: fetch from a few days before the last stored
+        # hour (full 2022+ pull only when the town is empty)
         last = con.execute("SELECT MAX(ts) FROM raw_weather WHERE town=?",
                            (town,)).fetchone()[0]
-        if last and last[:10] >= (date.today() - pd.Timedelta(days=3)).isoformat():
+        if last and last[:10] >= date.today().isoformat():
             continue
+        start = ((pd.Timestamp(last) - pd.Timedelta(days=3)).date().isoformat()
+                 if last else "2022-01-01")
         lat, lon = coords[town]
         url = ("https://archive-api.open-meteo.com/v1/archive"
                f"?latitude={lat}&longitude={lon}"
-               "&start_date=2022-01-01&end_date=" + date.today().isoformat() +
+               f"&start_date={start}&end_date=" + date.today().isoformat() +
                "&hourly=temperature_2m,shortwave_radiation,windspeed_10m,"
                "cloudcover,relativehumidity_2m&timezone=UTC")
         h = None
