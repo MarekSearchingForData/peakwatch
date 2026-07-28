@@ -616,11 +616,13 @@ with tab_fc:
         st.success("No forecast hour comes near this month's max — no "
                    "bill-setting hours expected in this window.")
 
-    peak_row = fc.loc[fc["p50"].idxmax()]
-    peak_local = pd.Timestamp(peak_row["ts"]).tz_convert(EASTERN)
-    st.metric(f"Predicted {fdays}-day peak ({unit_label})",
-              f"{peak_row['p50'] * scale:,.1f} MW",
-              f"{peak_local.strftime('%a %b %d, %H:00')} local")
+    future = fc[pd.to_datetime(fc["ts"], utc=True) >= pd.Timestamp.now(tz="UTC")]
+    if len(future):
+        peak_row = future.loc[future["p50"].idxmax()]
+        peak_local = pd.Timestamp(peak_row["ts"]).tz_convert(EASTERN)
+        st.metric(f"Predicted {fdays}-day peak ({unit_label})",
+                  f"{peak_row['p50'] * scale:,.1f} MW",
+                  f"{peak_local.strftime('%a %b %d, %H:00')} local")
     st.caption("Weather+calendar quantile model (no load lags — same skill "
                "at day 7 as day 1), residual-calibrated band. Blend of this "
                "model with ISO's forecast beats ISO alone on every window "
