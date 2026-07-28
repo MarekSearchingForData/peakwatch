@@ -655,13 +655,37 @@ with tab_fc:
                "tested. Town scaling uses the seasonal settlement share.")
 
 # ---------------- Weather outlook calendar ----------------
+@st.cache_data(ttl=1800, show_spinner="Fetching live forecast…")
+def weather_outlook_live():
+    """Live 7-day hourly outlook straight from the free Open-Meteo API —
+    no database dependency, so the calendar can never go stale."""
+    import requests as _rq
+    frames = []
+    for lat, lon in [(42.1487, -72.6079), (42.2626, -71.8023),
+                     (42.5279, -70.9287)]:  # Chicopee, Worcester, Peabody
+        url = ("https://api.open-meteo.com/v1/forecast"
+               f"?latitude={lat}&longitude={lon}&forecast_days=7"
+               "&hourly=temperature_2m,shortwave_radiation,windspeed_10m,"
+               "cloudcover&timezone=UTC")
+        h = _rq.get(url, timeout=20).json()["hourly"]
+        frames.append(pd.DataFrame({
+            "ts": pd.to_datetime(h["time"], utc=True),
+            "t": h["temperature_2m"], "g": h["shortwave_radiation"],
+            "c": h["cloudcover"], "w": h["windspeed_10m"]}))
+    allf = pd.concat(frames)
+    return allf.groupby("ts", as_index=False).mean()
+
+
 with tab_wx:
     st.subheader("7-day peak-weather outlook")
     st.caption("Everything that feeds load, day by day. Hot + sunny weekday "
                "= peak fuel; clouds cut rooftop solar and RAISE net load "
                "late-day.")
-    wxf = q("SELECT ts, AVG(temp_c) t, AVG(ghi_wm2) g, AVG(cloud_pct) c, "
-            "AVG(wind_kmh) w FROM raw_weather_fcst GROUP BY ts")
+    try:
+        wxf = weather_outlook_live()
+    except Exception:
+        wxf = q("SELECT ts, AVG(temp_c) t, AVG(ghi_wm2) g, AVG(cloud_pct) c, "
+                "AVG(wind_kmh) w FROM raw_weather_fcst GROUP BY ts")
     if len(wxf):
         wxf["ts"] = pd.to_datetime(wxf["ts"], utc=True)
         wxf["date"] = wxf["ts"].dt.tz_convert(EASTERN).dt.date
