@@ -21,6 +21,8 @@ args = sys.argv[1:]
 OUT = next((a for a in args if a.endswith('.png')), '/tmp/greymark_render.png')
 SIZE = int(args[args.index('--size') + 1]) if '--size' in args else 1400
 SAMPLES = int(args[args.index('--samples') + 1]) if '--samples' in args else 32
+NIGHT = '--night' in args  # cool moonlight for the limited-palette night style
+TOON = '--toon' in args    # flat palette shading: every face gets an exact palette colour
 rnd = random.Random(1337)
 POINTS = {'lamps': [], 'fires': [], 'chimneys': [], 'windows': [], 'water': [], 'labels': {}}
 TRACK = []  # (kind, object, offset) resolved after the scene is built
@@ -398,8 +400,12 @@ POINTS['labels'] = {
 
 # ---------------------------------------------------------- light + cam ---
 sun = bpy.data.lights.new('sun', 'SUN'); sun.energy = 5.2; sun.color = (1.0, 0.78, 0.55); sun.angle = math.radians(3)
+if NIGHT:
+    sun.energy = 4.5; sun.color = (0.85, 0.92, 1.0)
+    bg.inputs['Strength'].default_value = 0.35
 so = bpy.data.objects.new('sun', sun); bpy.context.collection.objects.link(so)
 so.rotation_euler = (math.radians(55), 0, math.radians(-35))  # low warm dusk light from the left
+if NIGHT: so.rotation_euler = (math.radians(42), 0, math.radians(-15))  # moon: lit tops + left faces, dark right faces
 
 cam = bpy.data.cameras.new('cam'); cam.type = 'ORTHO'; cam.ortho_scale = 21.0; cam.shift_y = -0.05
 co = bpy.data.objects.new('cam', cam); bpy.context.collection.objects.link(co); scene.camera = co
@@ -407,6 +413,79 @@ co = bpy.data.objects.new('cam', cam); bpy.context.collection.objects.link(co); 
 co.rotation_euler = (math.radians(60), 0, math.radians(45))
 d = 40
 co.location = (d * math.sin(math.radians(60)) * math.sin(math.radians(45)), -d * math.sin(math.radians(60)) * math.cos(math.radians(45)), d * math.cos(math.radians(60)) + 0.4)
+
+# ------------------------------------------------------------ toon mode ---
+# Replace every material with flat emission in an exact palette colour:
+#   colour = ramp[base + 2 (top face) / +1 (left face) / 0 (right face) - pattern line]
+# Patterns (bricks, planks, thatch rows, cobbles) are object-space textures -> one level darker.
+TOON_RAMP = ['#140c2a', '#1f1a4a', '#2b2c6e', '#353f8a', '#3f5a9e', '#4a7cae', '#56a8bc', '#6fd2c4', '#a8f0d8']
+TOON_WARM = {'glass': '#ffc94a', 'lamp': '#fff0a0', 'fire': '#ff8a2a', 'redwater': '#b8423a', 'gold': '#ffc94a'}
+TOON_BASE = {  # name: (base level, pattern, pattern scale); final = base + light step (-3..+3)
+    'grass': (1, 'noise', 3), 'soil': (2, 'wave', 3), 'cobble': (2, 'voronoi', 7), 'dirt': (1, 'noise', 4),
+    'plaster': (4, None, 0), 'plaster2': (3, None, 0), 'timber': (0, None, 0), 'wood': (1, 'wave', 8),
+    'thatch': (2, 'rows', 9), 'thatch_dark': (1, 'rows', 9), 'slate': (1, 'brick', 5), 'stone': (2, 'brick', 4),
+    'bone': (4, 'brick', 3), 'moss': (2, 'noise', 6), 'iron': (0, None, 0), 'leaf_o': (2, 'noise', 3), 'leaf_r': (2, 'noise', 3),
+    'leaf_g': (0, 'noise', 3), 'bark': (0, None, 0), 'flax': (3, None, 0), 'robe': (0, None, 0), 'cloak': (1, None, 0),
+    'cloth_b': (3, None, 0), 'cloth_w': (5, None, 0), 'cloth_r': (2, None, 0), 'skin': (5, None, 0), 'paper': (7, None, 0), 'linen': (6, None, 0),
+}
+
+
+def toonify(m):
+    nt = m.node_tree; N = nt.nodes; L = nt.links
+    for n in list(N): N.remove(n)
+    out = N.new('ShaderNodeOutputMaterial'); em = N.new('ShaderNodeEmission'); L.new(em.outputs[0], out.inputs['Surface'])
+    name = m.name
+    if name in TOON_WARM:
+        em.inputs['Color'].default_value = hexc(TOON_WARM[name]); return
+    base, pat, sc = TOON_BASE.get(name, (3, None, 0))
+    geo = N.new('ShaderNodeNewGeometry'); sep = N.new('ShaderNodeSeparateXYZ'); L.new(geo.outputs['Normal'], sep.inputs[0])
+    def math(op, a, b=None):
+        n = N.new('ShaderNodeMath'); n.operation = op
+        for i, v in enumerate((a, b)):
+            if v is None: continue
+            if isinstance(v, (int, float)): n.inputs[i].default_value = v
+            else: L.new(v, n.inputs[i])
+        return n.outputs[0]
+    # quantised light: moon from above / screen-left -> tops brightest, left faces mid, right faces dark
+    dot = N.new('ShaderNodeVectorMath'); dot.operation = 'DOT_PRODUCT'
+    L.new(geo.outputs['Normal'], dot.inputs[0]); dot.inputs[1].default_value = (-0.25, -0.5, 0.83)
+    lvl = math('FLOOR', math('ADD', math('MULTIPLY', dot.outputs['Value'], 3.0), 0.5))
+    lvl = math('ADD', lvl, float(base))
+    if pat:
+        tc = N.new('ShaderNodeTexCoord')
+        if pat == 'brick':
+            t = N.new('ShaderNodeTexBrick'); t.inputs['Scale'].default_value = sc; t.inputs['Mortar Size'].default_value = 0.05
+            L.new(tc.outputs['Object'], t.inputs['Vector']); line = math('GREATER_THAN', t.outputs['Fac'], 0.5)
+        elif pat == 'rows':
+            t = N.new('ShaderNodeTexWave'); t.wave_type = 'BANDS'; t.bands_direction = 'Z'; t.inputs['Scale'].default_value = sc
+            t.inputs['Distortion'].default_value = 1.5; L.new(tc.outputs['Object'], t.inputs['Vector']); line = math('LESS_THAN', t.outputs['Fac'], 0.22)
+        elif pat == 'wave':
+            t = N.new('ShaderNodeTexWave'); t.inputs['Scale'].default_value = sc; L.new(tc.outputs['Object'], t.inputs['Vector']); line = math('LESS_THAN', t.outputs['Fac'], 0.2)
+        elif pat == 'voronoi':
+            t = N.new('ShaderNodeTexVoronoi'); t.feature = 'DISTANCE_TO_EDGE'; t.inputs['Scale'].default_value = sc
+            L.new(tc.outputs['Object'], t.inputs['Vector']); line = math('LESS_THAN', t.outputs['Distance'], 0.06)
+        else:
+            t = N.new('ShaderNodeTexNoise'); t.inputs['Scale'].default_value = sc; L.new(tc.outputs['Object'], t.inputs['Vector'])
+            line = math('LESS_THAN', t.outputs['Fac'], 0.38)
+        lvl = math('SUBTRACT', lvl, line)
+    n_ = len(TOON_RAMP)
+    fac = math('DIVIDE', math('ADD', lvl, 0.5), float(n_))
+    ramp = N.new('ShaderNodeValToRGB'); ramp.color_ramp.interpolation = 'CONSTANT'
+    el = ramp.color_ramp.elements
+    el[0].position = 0.0; el[0].color = hexc(TOON_RAMP[0]); el[1].position = (n_ - 1) / n_; el[1].color = hexc(TOON_RAMP[-1])
+    for i in range(1, n_ - 1):
+        e = el.new(i / n_); e.color = hexc(TOON_RAMP[i])
+    L.new(fac, ramp.inputs['Fac']); L.new(ramp.outputs['Color'], em.inputs['Color'])
+
+
+if TOON:
+    for m in bpy.data.materials: toonify(m)
+    for ob in bpy.data.objects:
+        if ob.type == 'LIGHT': ob.hide_render = True
+    bg.inputs['Strength'].default_value = 0.0
+    scene.cycles.samples = 4; scene.cycles.use_denoising = False
+    scene.render.filter_size = 0.01
+    scene.view_settings.exposure = 0.0
 
 # project tracked points into render pixels for the animation overlay
 import json
