@@ -11,10 +11,11 @@
 // `pos` = how sure the placement is: 'text' (the book gives a direction),
 //   'guess' (the book names it but never says where; placed for the map, change freely).
 (function () {
-  const C = 26; // grid is 52 x 52 tiles
-  const g = (E, S) => ({ x: C + E + S, y: C + S - E });
+  const K = 2;  // scale: 1 compass step = K tiles. The map is 104 x 104 tiles.
+  const C = 52;
+  const g = (E, S) => ({ x: Math.round(C + K * (E + S)), y: Math.round(C + K * (S - E)) });
   const at = (E, S, o) => Object.assign(g(E, S), o);
-  const reg = (E, S, rx, ry, o) => Object.assign({ cx: C + E + S, cy: C + S - E, rx, ry }, o);
+  const reg = (E, S, rx, ry, o) => Object.assign({ cx: C + K * (E + S), cy: C + K * (S - E), rx: rx * K, ry: ry * K }, o);
 
   const places = [
     // ---- prologue / Greystone ----
@@ -24,17 +25,17 @@
       book: 'Book 1 · memory', desc: 'Where Marin, Desso and Wren die. Kept offstage. Inside the rift: a long grey beach under endless twilight, a temple in crystal silk, the trio’s graves.' }),
 
     // ---- Greymark (3.0 layout: one water, one source — the well) ----
-    at(-10, -6, { id: 'greymark', name: 'Greymark', kind: 'town', ver: 'both', pos: 'text', houses: { wall: '#cfc6b4', roof: ['#3a2a1e', '#5a4430'] },
+    at(-10, -6, { id: 'greymark', name: 'Greymark', kind: 'town', ver: 'both', pos: 'text', city: 'greymark', houses: { wall: '#cfc6b4', roof: ['#3a2a1e', '#5a4430'] },
       book: 'Book 1 · Ch I–IX', desc: 'Border town. Dark-timber palisade, thatched rows, bone-white stone gates. Hollow-eyed locals sign the Church’s ledger for cups of faintly red water.' }),
-    at(-8, -2, { id: 'well', name: 'The Town Well', kind: 'well', ver: 'both', pos: 'guess',
+    at(-8, -2, { id: 'well', city: 'greymark', name: 'The Town Well', kind: 'well', ver: 'both', pos: 'guess',
       book: 'Book 1 · Ch I–III', desc: 'The water runs faintly red. Aldren’s priests pour, sign and carry, and never drink. Runs clear once the rift is closed.' }),
-    at(-6, -9, { id: 'mill', name: 'Vex’s Linen Mill', kind: 'mill', ver: 'both', pos: 'guess',
+    at(-6, -9, { id: 'mill', city: 'greymark', name: 'Vex’s Linen Mill', kind: 'mill', ver: 'both', pos: 'guess',
       book: 'Book 1 · Ch II', desc: 'The town’s only real employer. Flax fields, blue coats and white jerkins, dye that won’t set. Eleven of Vex’s workers end up in the rift.' }),
-    at(-13, -3, { id: 'compass', name: 'The Broken Compass', kind: 'tavern', ver: 'both', pos: 'guess', fx: { glow: true },
+    at(-13, -3, { id: 'compass', city: 'greymark', name: 'The Broken Compass', kind: 'tavern', ver: 'both', pos: 'guess', fx: { glow: true },
       book: 'Book 1 · Ch I', desc: 'Tavern with “Promise” carved over the door. Where Kethric drinks himself hollow months after Greystone.' }),
-    at(-14, -7, { id: 'harren', name: 'Harren’s Cellar & the Ruin', kind: 'ruin', ver: '3.0', pos: 'guess', fx: { rift: false },
+    at(-14, -7, { id: 'harren', city: 'greymark', name: 'Harren’s Cellar & the Ruin', kind: 'ruin', ver: '3.0', pos: 'guess', fx: { rift: false },
       book: 'Book 1 · Ch II–III', desc: 'Older stone under the town: a sealed stair, carvings Kethric can’t read, fresh tool marks. The ruin was a lid over a rift.' }),
-    at(-14, -11, { id: 'youngrift', name: 'The Young Rift', kind: 'rift', ver: '3.0', pos: 'guess', size: 0.8,
+    at(-14, -11, { id: 'youngrift', city: 'greymark', name: 'The Young Rift', kind: 'rift', ver: '3.0', pos: 'guess', size: 0.8,
       book: 'Book 1 · Ch III', desc: 'Small, dark, flooded. Warm red shallows, husks of the missing in rows. Kethric kills Aldren here, then angel-Vex, and takes the thurible.' }),
     at(-9, -12, { id: 'boulderchurch', name: 'Church on the Boulder', kind: 'church', ver: '2.45', pos: 'text',
       book: 'v2.45 · Ch IV–IX', desc: 'Old draft: the crystal angel waits in a church on a boulder upstream; Aldren fought there. Cut in 3.0 (replaced by the ruin and Harren’s cellar).' }),
@@ -48,10 +49,16 @@
       book: 'old draft · Ch XI', desc: 'Slate roofs, the Gilded Sheaf inn, “last proper town before the river”. Four days on foot from Valencourt.' }),
 
     // ---- the Valencourt basin ----
-    at(6, 6, { id: 'valencourt', name: 'Valencourt', kind: 'city', ver: '3.0', pos: 'text', roof: ['#5a3a20', '#b8742f'], flag: '#3a6fb0', fx: { tree: true },
+    at(6, 6, { id: 'valencourt', name: 'Valencourt', kind: 'city', ver: '3.0', pos: 'text', city: 'valencourt', roof: ['#5a3a20', '#b8742f'], flag: '#3a6fb0', fx: { tree: true },
       book: 'Book 1 · Ch X–XXXIV', desc: 'A warm bowl that “had never seen white”, heated by rift roots. House Deveraux’s keep on trapped ancient ruins, the Mother Tree in the square, vineyards, copper. Ends under first snow, a colossal tree over the city.' }),
-    at(9, 8, { id: 'mothertree', name: 'The Mother Tree', kind: 'bigtree', ver: '3.0', pos: 'text',
+    at(9, 8, { id: 'mothertree', city: 'valencourt', name: 'The Mother Tree', kind: 'bigtree', ver: '3.0', pos: 'text',
       book: 'Book 1 · Valencourt', desc: 'Stands in the city square. Inside the rift\u2019s copy of the valley it is colossal, baobab-like, its roots grown through the keep: a spiral path, translucent veins, vats, a nursery of pods.' }),
+    at(3, 8, { id: 'valencourt_rift', name: 'The Copy Valley (inside the rift)', kind: 'rift', ver: '3.0', pos: 'text', size: 1.1, glow: '#4fb0ff', city: 'valencourt',
+      book: 'Book 1 · Ch XIII\u2013XXXII', desc: 'A rift under Valencourt holding a perfect copy of the valley around a colossal tree. Kethric lives three years here on a farm and marries, until Senna and Kess fall in.' }),
+    at(-3, -1, { id: 'road_south', name: 'The Road South', kind: 'marker', ver: '3.0', pos: 'text',
+      book: 'Book 1 · Aftermath', desc: 'Kethric leaves Greymark branded a heretic as \u201cthe warmth tugs south\u201d. He refuses a stranger\u2019s cup and drinks from a stream.' }),
+    at(2, 13, { id: 'ridge', name: 'The Ridge', kind: 'marker', ver: '3.0', pos: 'guess',
+      book: 'Book 1 · Ch XXXIV', desc: 'The survivors escape the basin and watch from the ridge as the warmth dies and snow falls on Valencourt for the first time in centuries.' }),
     at(2, 3, { id: 'ravine', name: 'The Ravine', kind: 'camp', ver: '3.0', pos: 'guess',
       book: 'Book 1 · Valencourt', desc: 'Plateau over a ravine, stream below, birch trees and black soil.' }),
     at(10, 3, { id: 'mines', name: 'Copper Mines', kind: 'keep', ver: '3.0', pos: 'guess', stone: '#8a5c34', roof: ['#7a4a22', '#c07a3a'], flag: '#c07a3a',
@@ -106,8 +113,8 @@
 
   const pts = (...a) => a.map(([E, S]) => { const p = g(E, S); return [p.x, p.y]; });
   const rivers = [
-    { name: 'Greymark river', ver: '2.45', width: 1, pts: pts([-6, -15], [-9, -9], [-11, -2], [-14, 0], [-17, 6]) },
-    { name: 'Ravine stream', ver: '3.0', width: 1, pts: pts([1, -1], [2, 4], [0, 8], [-4, 10], [-8, 12]) },
+    { name: 'Greymark river', ver: '2.45', width: 2, pts: pts([-6, -15], [-9, -9], [-11, -2], [-14, 0], [-17, 6]) },
+    { name: 'Ravine stream', ver: '3.0', width: 2, pts: pts([1, -1], [2, 4], [0, 8], [-4, 10], [-8, 12]) },
     { name: 'The red seep', ver: '3.0', t: 'blood', width: 1, pts: pts([-14, -11], [-12, -10], [-11, -8]) },
   ];
 
@@ -121,12 +128,13 @@
 
   // Kethric's journey in story order (3.0). Greymark → Valencourt is not
   // stated in the text; the beat sheet only says "the warmth tugs south".
-  const route = ['barn', 'greystone', 'greymark', 'youngrift', 'greymark', 'valencourt', 'passes', 'aldric'];
+  const route = ['barn', 'greystone', 'compass', 'well', 'mill', 'harren', 'youngrift', 'harren', 'road_south',
+    'valencourt_rift', 'mothertree', 'ridge', 'aldric'];
 
   window.ASHFALL_WORLD = {
     title: 'The Kingdom',
-    seed: 1337, w: 52, h: 52,
-    coast: { cx: C + 2, cy: C - 3, rx: 25, ry: 27 }, // west and south-west fall away to the sea
+    seed: 1337, w: 104, h: 104, noise: 1.6,
+    coast: { cx: C + 4, cy: C - 6, rx: 50, ry: 54 }, // west and south-west fall away to the sea
     regions, rivers, roads, route, places,
     ashfall: 140,
   };

@@ -8,168 +8,393 @@
 <link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #141019; --panel: #1d1724; --line: #3d3638; --ink: #e9dfc4; --muted: #a99c94;
-    --ember: #ff8a2a; --gold: #d9b350; --void: #8a4fd0;
+    --bg: #141019; --panel: #1d1724; --panel2: #251d2c; --line: #3d3638; --ink: #e9dfc4; --muted: #a99c94;
+    --ember: #ff8a2a; --gold: #d9b350; --key: #ffc94a; --sup: #c3c9cb; --men: #857873;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
-    font-family: 'Pixelify Sans', ui-monospace, monospace; }
-  header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px 16px;
-    border-bottom: 2px solid var(--line); background: var(--panel); }
-  h1 { font-family: 'Silkscreen', monospace; font-size: 18px; margin: 0; letter-spacing: 1px; color: var(--gold); }
-  h1 small { color: var(--muted); font-size: 11px; margin-left: 6px; }
-  .controls { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
-  button { font: inherit; font-size: 13px; color: var(--ink); background: #2a2230; border: 2px solid var(--line);
-    padding: 4px 10px; cursor: pointer; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: 'Pixelify Sans', ui-monospace, monospace; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 8px 16px; border-bottom: 2px solid var(--line); background: var(--panel); }
+  h1 { font-family: 'Silkscreen', monospace; font-size: 17px; margin: 0; letter-spacing: 1px; color: var(--gold); }
+  .group { display: flex; gap: 4px; flex-wrap: wrap; }
+  .controls { margin-left: auto; }
+  button { font: inherit; font-size: 13px; color: var(--ink); background: #2a2230; border: 2px solid var(--line); padding: 3px 9px; cursor: pointer; }
   button:hover { border-color: var(--ember); }
   button[aria-pressed="true"] { background: #4a1c14; border-color: var(--ember); }
-  main { display: grid; grid-template-columns: 1fr 300px; height: calc(100% - 52px); }
-  #stage { position: relative; overflow: hidden; cursor: grab; touch-action: none; }
+  button:disabled { opacity: .35; cursor: default; }
+  main { display: grid; grid-template-columns: 1fr 360px; height: calc(100% - 50px); }
+  #stage { position: relative; overflow: hidden; cursor: grab; touch-action: none; background: #141019; }
   #stage.drag { cursor: grabbing; }
-  #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  #world { position: absolute; left: 0; top: 0; }
   canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
-  .label { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; pointer-events: auto;
-    font-family: 'Silkscreen', monospace; font-size: 11px; padding: 1px 5px; background: rgba(14,11,18,.82);
-    border: 1px solid var(--line); color: var(--ink); cursor: pointer; }
-  .label.v245 { border-style: dashed; color: #c9b8a8; }
+  .label { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; font-family: 'Silkscreen', monospace; font-size: 11px;
+    padding: 1px 5px; background: rgba(14,11,18,.85); border: 1px solid var(--line); color: var(--ink); cursor: pointer; }
+  .label.v245 { border-style: dashed; color: #b8a898; opacity: .85; }
+  .label.v245::before { content: 'v2.45 · '; color: var(--muted); }
   .label.guess::after { content: ' ?'; color: var(--muted); }
-  .label.sel { border-color: var(--ember); color: var(--e1, #ffc94a); }
-  .label.city { font-size: 13px; color: var(--gold); }
-  .hide-labels .label { display: none; }
-  aside { border-left: 2px solid var(--line); background: var(--panel); padding: 14px 16px; overflow: auto; }
-  aside h2 { font-family: 'Silkscreen', monospace; font-size: 15px; margin: 0 0 4px; color: var(--gold); }
-  .meta { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
-  .tag { display: inline-block; font-size: 11px; padding: 0 5px; border: 1px solid var(--line); margin-right: 4px; }
-  .tag.t30 { border-color: var(--ember); } .tag.t245 { border-style: dashed; }
-  aside p { line-height: 1.45; font-size: 15px; }
-  .legend { margin-top: 18px; font-size: 13px; color: var(--muted); }
-  .legend div { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
-  .sw { width: 14px; height: 8px; display: inline-block; }
-  @media (max-width: 760px) {
-    main { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
-    aside { border-left: 0; border-top: 2px solid var(--line); max-height: 38vh; }
+  .label.key { border-color: #8a6a20; }
+  .label.mention { color: var(--muted); font-size: 10px; }
+  .label.sel { border-color: var(--ember); color: var(--key); z-index: 2; }
+  .label.big { font-size: 13px; color: var(--gold); }
+  .hide-labels .label:not(.sel) { display: none; }
+  .hint { position: absolute; left: 12px; bottom: 10px; font-size: 12px; color: var(--muted); background: rgba(14,11,18,.7); padding: 2px 6px; pointer-events: none; }
+  .loading { position: absolute; inset: 0; display: grid; place-items: center; font-family: 'Silkscreen', monospace; color: var(--muted); }
+  aside { border-left: 2px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
+  .tabs { display: flex; border-bottom: 2px solid var(--line); }
+  .tabs button { flex: 1; border: 0; border-right: 2px solid var(--line); background: var(--panel); padding: 8px 0; font-family: 'Silkscreen', monospace; font-size: 12px; }
+  .tabs button:last-child { border-right: 0; }
+  .tabs button[aria-selected="true"] { background: var(--panel2); color: var(--key); }
+  .pane { padding: 12px 14px; overflow: auto; flex: 1; display: none; }
+  .pane.on { display: block; }
+  h2 { font-family: 'Silkscreen', monospace; font-size: 14px; margin: 4px 0 6px; color: var(--gold); }
+  h3 { font-family: 'Silkscreen', monospace; font-size: 11px; margin: 14px 0 4px; color: var(--muted); letter-spacing: 1px; }
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+  .tag { display: inline-block; font-size: 11px; padding: 0 5px; border: 1px solid var(--line); margin: 0 4px 4px 0; }
+  .tag.key { border-color: var(--key); color: var(--key); } .tag.supporting { border-color: var(--sup); } .tag.v245 { border-style: dashed; }
+  p { line-height: 1.45; font-size: 15px; margin: 6px 0 10px; }
+  .ref { border-left: 3px dashed var(--line); padding: 4px 8px; color: #c9b8a8; font-size: 14px; margin: 8px 0; }
+  .ref b { color: var(--muted); font-family: 'Silkscreen', monospace; font-size: 10px; display: block; }
+  .list { list-style: none; margin: 0; padding: 0; }
+  .list li { display: flex; gap: 8px; align-items: baseline; padding: 4px 6px; cursor: pointer; border: 1px solid transparent; font-size: 14px; }
+  .list li:hover { border-color: var(--line); background: var(--panel2); }
+  .list li.on { border-color: var(--ember); background: #2a1a18; }
+  .list .n { color: var(--muted); font-size: 11px; min-width: 22px; text-align: right; font-family: 'Silkscreen', monospace; }
+  .list .t { flex: 1; }
+  .list .c { color: var(--muted); font-size: 12px; }
+  .dot { width: 8px; height: 8px; display: inline-block; flex: none; }
+  .dot.key { background: var(--key); } .dot.supporting { background: var(--sup); } .dot.mention { background: var(--men); } .dot.v245 { border: 1px dashed var(--muted); }
+  .linkbtn { background: none; border: 1px solid var(--line); color: var(--key); font-size: 12px; padding: 2px 6px; margin: 2px 4px 2px 0; }
+  .part { font-family: 'Silkscreen', monospace; font-size: 10px; color: var(--muted); margin: 10px 0 2px; letter-spacing: 1px; }
+  .legend div { display: flex; align-items: center; gap: 8px; margin: 3px 0; font-size: 13px; color: var(--muted); }
+  @media (max-width: 800px) {
+    main { grid-template-columns: 1fr; grid-template-rows: 1fr 42vh; }
+    aside { border-left: 0; border-top: 2px solid var(--line); }
     .controls { margin-left: 0; }
   }
 </style>
 </head>
 <body>
 <header>
-  <h1>The Kingdom <small>Ashfall · Kethric's road</small></h1>
-  <div class="controls">
-    <button id="v30" aria-pressed="true" title="Current rewrite">3.0</button>
-    <button id="v245" aria-pressed="false" title="Show places from the older v2.45 draft">+ v2.45</button>
+  <h1>Ashfall</h1>
+  <div class="group" id="views">
+    <button data-view="kingdom">Kingdom</button>
+    <button data-view="greymark">Greymark</button>
+    <button data-view="valencourt">Valencourt</button>
+  </div>
+  <div class="group controls">
+    <button id="v245" title="Show the older v2.45 draft as a reference layer">v2.45 ref</button>
     <button id="labels" aria-pressed="true">Labels</button>
-    <button id="walk" aria-pressed="true">Kethric</button>
-    <button id="zout">−</button><button id="zin">+</button>
+    <button id="walk" aria-pressed="true" title="Kethric walks his 3.0 route">Kethric</button>
+    <button id="zout" title="Zoom out">−</button><button id="zin" title="Zoom in">+</button>
   </div>
 </header>
 <main>
-  <div id="stage"><div id="world"><canvas id="map"></canvas></div></div>
-  <aside id="info">
-    <h2>Kethric's Kingdom</h2>
-    <div class="meta">Click a place to read about it</div>
-    <p>An isometric pixel map built from the Ashfall beat sheets and chapters. The little cloaked figure walks Kethric's route in story order: the wildling farm, Greystone, Greymark and the young rift beneath it, south to Valencourt, then north over the passes towards House Aldric.</p>
-    <p>A label ending in <b>?</b> means the book names the place but never says where it is, so its position is a guess. Dashed labels are from v2.45 only.</p>
-    <div class="legend">
-      <div><span class="sw" style="background:#2d5432"></span>Forest around Greymark</div>
-      <div><span class="sw" style="background:#b4471f"></span>Autumn woods, orchards</div>
-      <div><span class="sw" style="background:#6a9a48"></span>Valencourt basin (warm, never sees snow)</div>
-      <div><span class="sw" style="background:#b8c6d0"></span>Snow peaks and the northern plains</div>
-      <div><span class="sw" style="background:#5d5352"></span>Eastern Territories, ash</div>
-      <div><span class="sw" style="background:#8a4fd0"></span>Rifts (void crystal, red water)</div>
+  <div id="stage"><div id="world"><canvas id="map"></canvas></div><div class="hint" id="hint"></div></div>
+  <aside>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="story">Story 3.0</button>
+      <button role="tab" data-tab="build">Buildings</button>
+      <button role="tab" data-tab="info">Info</button>
     </div>
+    <div class="pane" id="pane-story"></div>
+    <div class="pane" id="pane-build"></div>
+    <div class="pane" id="pane-info"></div>
   </aside>
 </main>
 <script src="engine.js"></script>
 <script src="world.js"></script>
+<script src="story.js"></script>
 <script>
+// city grids are large; load them on demand
+const CITY_FILES = { greymark: 'cities/greymark.js', valencourt: 'cities/valencourt.js' };
+const CITY_NAMES = { greymark: 'Greymark', valencourt: 'Valencourt' };
 (function () {
-  const stage = document.getElementById('stage'), worldEl = document.getElementById('world');
-  const canvas = document.getElementById('map'), info = document.getElementById('info');
+  const $ = (s) => document.querySelector(s);
+  const stage = $('#stage'), worldEl = $('#world'), canvas = $('#map');
   const params = new URLSearchParams(location.search);
-  let showOld = params.get('v') === '245', walking = params.get('walk') !== '0';
-  let zoom = +(params.get('z') || 0), panX = 0, panY = 0, map = null, selected = null;
+  const STORY = window.ASHFALL_STORY, KINGDOM = window.ASHFALL_WORLD;
+  const CAT = Object.fromEntries(STORY.buildings.map(b => [b.id, b]));
+  const IMP_ORDER = { key: 0, supporting: 1, mention: 2, v245: 3 };
+  const st = {
+    view: params.get('view') || 'kingdom', showRef: params.get('v') === '245', walking: params.get('walk') !== '0',
+    zoom: 0, panX: 0, panY: 0, map: null, event: null, sel: null, hlType: null, tab: params.get('tab') || 'story',
+  };
 
-  function spec() {
-    const base = window.ASHFALL_WORLD;
-    const keep = (o) => !o.ver || o.ver !== '2.45' || showOld;
-    const places = base.places.filter(keep), ids = new Set(places.map(p => p.id));
-    return Object.assign({}, base, {
-      places, rivers: base.rivers.filter(keep),
-      roads: base.roads.filter(([a, b]) => ids.has(a) && ids.has(b)),
-      route: walking ? base.route.filter(id => ids.has(id)) : [],
+  // ---------------- data helpers ----------------
+  function eventBuildings(n) { return STORY.buildings.filter(b => b.events.includes(n)); }
+  function cityStory(city) { // story items placed in a baked city: buildings + anchors
+    const g = window.ASHFALL_CITIES[city], out = [];
+    for (const b of g.buildings) if (b.story && CAT[b.story]) out.push({ cat: CAT[b.story], tx: b.tx, ty: b.ty, h: b.h, bid: b.id, type: b.type });
+    const snapped = st.map && st.map.world.byId ? st.map.world.byId : {};
+    for (const a of g.anchors) if (CAT[a.story]) { const sp = snapped[a.story];
+      out.push({ cat: CAT[a.story], tx: sp ? sp.x : a.tx, ty: sp ? sp.y : a.ty, h: 2, anchor: true, type: CAT[a.story].type }); }
+    return out;
+  }
+  function loadCity(city) {
+    return new Promise((res, rej) => {
+      if (window.ASHFALL_CITIES && window.ASHFALL_CITIES[city]) return res();
+      const s = document.createElement('script'); s.src = CITY_FILES[city]; s.onload = res; s.onerror = rej; document.head.appendChild(s);
     });
   }
-  function build() {
-    if (map) map.stop();
+
+  // ---------------- building the map ----------------
+  function kingdomSpec() {
+    const keep = (o) => !o.ver || o.ver !== '2.45' || st.showRef;
+    const places = KINGDOM.places.filter(keep), ids = new Set(places.map(p => p.id));
+    return Object.assign({}, KINGDOM, {
+      places, rivers: KINGDOM.rivers.filter(keep),
+      roads: KINGDOM.roads.filter(([a, b]) => ids.has(a) && ids.has(b)),
+      route: st.walking ? KINGDOM.route.filter(id => ids.has(id)) : [],
+    });
+  }
+  function citySpec(city) {
+    const g = window.ASHFALL_CITIES[city];
+    const places = [];
+    const mt = g.anchors.find(a => a.story === 'mother_tree');
+    if (mt) places.push({ id: 'mother_tree', kind: 'bigtree', scale: 2, x: Math.round(mt.tx), y: Math.round(mt.ty) });
+    return { grid: g, seed: 99, places, ashfall: city === 'valencourt' ? 60 : 90, route: [] };
+  }
+
+  async function build() {
+    document.querySelectorAll('#views button').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === st.view));
+    $('#v245').disabled = st.view !== 'kingdom'; $('#walk').disabled = st.view !== 'kingdom';
+    $('#v245').setAttribute('aria-pressed', st.showRef); $('#walk').setAttribute('aria-pressed', st.walking);
+    if (st.map) st.map.stop();
     worldEl.querySelectorAll('.label').forEach(n => n.remove());
-    map = AshfallIso.create(canvas, spec());
-    if (!zoom) zoom = Math.max(1, Math.min(4, Math.round(stage.clientWidth / map.view.width)));
-    for (const pl of map.world.spec.places) {
-      const [x, y] = map.screenOf(pl.id);
-      const el = document.createElement('div');
-      el.className = 'label' + (pl.ver === '2.45' ? ' v245' : '') + (pl.pos === 'guess' ? ' guess' : '') + (pl.kind === 'city' ? ' city' : '');
-      el.textContent = pl.name; el.dataset.id = pl.id; el.dataset.x = x; el.dataset.y = y;
-      el.addEventListener('click', (e) => { e.stopPropagation(); select(pl.id); });
-      worldEl.appendChild(el);
+    let loading = null;
+    if (st.view !== 'kingdom') {
+      loading = document.createElement('div'); loading.className = 'loading'; loading.textContent = 'Building ' + CITY_NAMES[st.view] + '…'; stage.appendChild(loading);
+      await loadCity(st.view); await new Promise(r => setTimeout(r, 30));
     }
-    layout(); map.start();
-    if (params.get('t')) { map.stop(); map.renderAt(+params.get('t')); }
+    const spec = st.view === 'kingdom' ? kingdomSpec() : citySpec(st.view);
+    st.map = AshfallIso.create(canvas, spec);
+    if (loading) loading.remove();
+    st.zoom = +(params.get('z') || 0) || (st.view === 'greymark' ? 2 : 1);
+    makeLabels();
+    if (st.view !== 'kingdom') st.map.setPins(cityStory(st.view).filter(s => s.cat.importance === 'key').map(s => ({ id: s.bid || 0, tx: s.tx, ty: s.ty, h: s.h, type: s.type, importance: s.cat.importance })));
+    st.map.highlight([]); st.hlType = null;
+    layout(); st.map.start();
+    if (params.get('t')) { st.map.stop(); st.map.renderAt(+params.get('t')); }
+    $('#hint').textContent = st.view === 'kingdom' ? 'Drag to pan · wheel to zoom · click a place' : 'Generated layout · click any building · gold pins = key to the story';
+    renderStory(); renderBuildings();
+    centreOn(defaultFocus());
+  }
+  function defaultFocus() {
+    if (st.view === 'kingdom') { const a = st.map.screenOf('greymark'), b = st.map.screenOf('valencourt'); return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; }
+    const g = window.ASHFALL_CITIES[st.view]; return st.map.screenOfTile(g.square[0], g.square[1], 0);
+  }
+
+  function makeLabels() {
+    if (st.view === 'kingdom') {
+      for (const pl of st.map.world.spec.places) {
+        const [x, y] = st.map.screenOf(pl.id);
+        const lift = { city: 34, keep: 26, church: 30, town: 16, ruin: 18, rift: 18, gate: 18, bigtree: 20 }[pl.kind] || 12;
+        addLabel(pl.name, x, y - lift, 'place:' + pl.id,
+          (pl.ver === '2.45' ? ' v245' : '') + (pl.pos === 'guess' ? ' guess' : '') + (pl.kind === 'city' || pl.kind === 'town' ? ' big' : ''));
+      }
+    } else {
+      const seen = new Set();
+      for (const s of cityStory(st.view)) {
+        if (s.cat.importance === 'mention') continue;
+        const [x, y] = st.map.screenOfTile(s.tx, s.ty, s.h);
+        // stack labels that share a spot (the ruin and the rift sit under Harren's place)
+        const k = Math.round(s.tx) + ',' + Math.round(s.ty); let stack = 0; while (seen.has(k + ':' + stack)) stack++; seen.add(k + ':' + stack);
+        const lift = (s.type === 'keep' ? 44 : s.cat.id === 'mother_tree' ? 84 : 18) + stack * 11;
+        addLabel(s.cat.name, x, y - lift, 'cat:' + s.cat.id, ' ' + s.cat.importance);
+      }
+    }
+  }
+  function addLabel(text, x, y, key, cls) {
+    const el = document.createElement('div');
+    el.className = 'label' + (cls || ''); el.textContent = text; el.dataset.key = key; el.dataset.x = x; el.dataset.y = y;
+    el.addEventListener('pointerdown', (e) => e.stopPropagation());
+    el.addEventListener('click', (e) => { e.stopPropagation(); selectKey(key, false); });
+    worldEl.appendChild(el);
   }
   function layout() {
-    canvas.style.width = map.view.width * zoom + 'px';
-    canvas.style.height = map.view.height * zoom + 'px';
-    const lift = { city: 34, keep: 26, church: 30, town: 16, ruin: 18, rift: 18, gate: 18, bigtree: 20 };
-    worldEl.querySelectorAll('.label').forEach(el => {
-      const pl = map.world.byId[el.dataset.id];
-      el.style.left = el.dataset.x * zoom + 'px';
-      el.style.top = (el.dataset.y - (lift[pl.kind] || 12)) * zoom + 'px';
+    const m = st.map;
+    canvas.style.width = m.view.width * st.zoom + 'px'; canvas.style.height = m.view.height * st.zoom + 'px';
+    worldEl.querySelectorAll('.label').forEach(el => { el.style.left = el.dataset.x * st.zoom + 'px'; el.style.top = el.dataset.y * st.zoom + 'px'; });
+    worldEl.style.transform = `translate(${Math.round(st.panX)}px, ${Math.round(st.panY)}px)`;
+  }
+  function centreOn([sx, sy]) { st.panX = stage.clientWidth / 2 - sx * st.zoom; st.panY = stage.clientHeight / 2 - sy * st.zoom; layout(); }
+  function markLabel(key) { worldEl.querySelectorAll('.label').forEach(n => n.classList.toggle('sel', n.dataset.key === key)); }
+
+  // ---------------- selection ----------------
+  function tags(imp, ver) {
+    const t = [];
+    if (imp) t.push(`<span class="tag ${imp}">${imp === 'v245' ? 'v2.45 reference' : imp}</span>`);
+    if (ver === '2.45') t.push('<span class="tag v245">v2.45 only</span>');
+    return t.join('');
+  }
+  function evLinks(list) {
+    return list.length ? '<h3>Events</h3><ul class="list">' + list.map(n => { const e = STORY.events[n - 1];
+      return `<li data-ev="${n}"><span class="n">${n}</span><span class="t">${e.title}</span><span class="c">${e.part}</span></li>`; }).join('') + '</ul>' : '';
+  }
+  function showInfo(html) { $('#pane-info').innerHTML = html; bindLists($('#pane-info')); setTab('info'); }
+
+  function selectKey(key, move) {
+    const [kind, id] = key.split(':');
+    markLabel(key); st.sel = key;
+    if (kind === 'place') {
+      const pl = st.map.world.byId[id];
+      const evs = STORY.events.filter(e => e.where === id).map(e => e.n);
+      showInfo(`<h2>${pl.name}</h2><div class="meta">${pl.book}</div>${tags(null, pl.ver)}${pl.pos === 'guess' ? '<span class="tag">position guessed</span>' : '<span class="tag">position from text</span>'}
+        <p>${pl.desc}</p>${pl.city ? `<button class="linkbtn" data-goto="${pl.city}">Enter ${CITY_NAMES[pl.city]} →</button>` : ''}${evLinks(evs)}`);
+      if (move) centreOn(st.map.screenOf(id));
+    } else if (kind === 'cat') {
+      const c = CAT[id];
+      const placed = st.view !== 'kingdom' ? cityStory(st.view).find(s => s.cat.id === id) : null;
+      showInfo(`<h2>${c.name}</h2><div class="meta">${c.type} · ${CITY_NAMES[c.town] || c.town}</div>${tags(c.importance)}
+        <p>${c.desc}</p>${placed && placed.anchor ? '<p class="meta">Marked on the map; not a building of its own.</p>' : ''}
+        ${!placed && CITY_NAMES[c.town] && c.town !== st.view ? `<button class="linkbtn" data-goto="${c.town}" data-focus="${c.id}">Show in ${CITY_NAMES[c.town]} →</button>` : ''}
+        ${evLinks(c.events)}`);
+      if (placed) { st.map.highlight(placed.bid ? [placed.bid] : []); if (move) centreOn(st.map.screenOfTile(placed.tx, placed.ty, placed.h)); }
+    } else if (kind === 'bld') {
+      const g = window.ASHFALL_CITIES[st.view], b = g.buildings.find(x => x.id === +id);
+      if (b.story) return selectKey('cat:' + b.story, move);
+      st.map.highlight([b.id]);
+      const same = g.buildings.filter(x => x.type === b.type).length;
+      showInfo(`<h2>${b.type[0].toUpperCase() + b.type.slice(1)}</h2><div class="meta">${CITY_NAMES[st.view]} · building #${b.id}${b.inside ? ' · inside the walls' : ' · outside the walls'}</div>
+        <span class="tag">background</span><p>An ordinary ${b.type}, one of ${same} in ${CITY_NAMES[st.view]}. Not tied to a story event yet.</p>
+        <button class="linkbtn" data-type="${b.type}">Highlight all ${same} × ${b.type}</button>`);
+    }
+  }
+
+  function selectEvent(n) {
+    const e = STORY.events[n - 1]; st.event = n;
+    renderStoryMark();
+    const blds = eventBuildings(n).filter(b => b.importance !== 'v245');
+    const inCity = blds.filter(b => CITY_NAMES[b.town]);
+    const links = [];
+    if (e.where && KINGDOM.places.find(p => p.id === e.where)) links.push(`<button class="linkbtn" data-goto="kingdom" data-place="${e.where}">Kingdom map</button>`);
+    for (const b of inCity) links.push(`<button class="linkbtn" data-goto="${b.town}" data-focus="${b.id}">${b.name} · ${CITY_NAMES[b.town]}</button>`);
+    for (const b of blds.filter(b => !CITY_NAMES[b.town])) links.push(`<button class="linkbtn" data-cat="${b.id}">${b.name}</button>`);
+    const ref = e.v245 && st.showRef ? `<div class="ref"><b>v2.45 reference</b>${e.v245}</div>` : (e.v245 ? '<p class="meta">This beat changed from v2.45. Turn on <b>v2.45 ref</b> (kingdom view) to see how.</p>' : '');
+    showInfo(`<div class="meta">${e.book} · ${e.part} · event ${n} of ${STORY.events.length}</div><h2>${e.title}</h2><p>${e.text}</p>${ref}
+      ${links.length ? '<h3>Where</h3>' + links.join('') : '<p class="meta">No fixed place on the map.</p>'}
+      <div style="margin-top:14px"><button class="linkbtn" data-ev-step="-1">← prev</button><button class="linkbtn" data-ev-step="1">next →</button></div>`);
+    if (st.view === 'kingdom' && e.where && st.map.world.byId[e.where]) { markLabel('place:' + e.where); centreOn(st.map.screenOf(e.where)); }
+    else if (st.view !== 'kingdom') {
+      const here = cityStory(st.view).find(s => blds.some(b => b.id === s.cat.id));
+      if (here) { markLabel('cat:' + here.cat.id); st.map.highlight(here.bid ? [here.bid] : []); centreOn(st.map.screenOfTile(here.tx, here.ty, here.h)); }
+    }
+  }
+
+  // ---------------- panes ----------------
+  function renderStory() {
+    let html = '<h2>Story · Book 3.0</h2><p class="meta">The rewrite drives the map; v2.45 is reference only' + (st.showRef ? ' (notes shown)' : '') + '. Click an event to jump to it.</p>';
+    let part = null;
+    html += '<ul class="list">';
+    for (const e of STORY.events) {
+      const p = e.book + ' · ' + e.part;
+      if (p !== part) { html += `</ul><div class="part">${p}</div><ul class="list">`; part = p; }
+      html += `<li data-ev="${e.n}" class="${st.event === e.n ? 'on' : ''}"><span class="n">${e.n}</span><span class="t">${e.title}</span>${e.v245 && st.showRef ? '<span class="c" title="v2.45 differs">≠2.45</span>' : ''}</li>`;
+    }
+    $('#pane-story').innerHTML = html + '</ul>';
+    bindLists($('#pane-story'));
+  }
+
+  function renderBuildings() {
+    let html = '';
+    if (st.view === 'kingdom') {
+      html += '<h2>Story buildings</h2><p class="meta">Every building the books name, grouped by place and by how much the plot depends on it. <b>Key</b> means the plot cannot happen without it.</p>';
+      const towns = {};
+      for (const b of STORY.buildings) { if (b.importance === 'v245' && !st.showRef) continue; (towns[b.town] = towns[b.town] || []).push(b); }
+      for (const [town, list] of Object.entries(towns)) {
+        html += `<h3>${CITY_NAMES[town] || town}</h3><ul class="list">` + list.sort((a, b) => IMP_ORDER[a.importance] - IMP_ORDER[b.importance])
+          .map(b => `<li data-cat="${b.id}" ${CITY_NAMES[b.town] ? `data-goto="${b.town}" data-focus="${b.id}"` : ''}><span class="dot ${b.importance}"></span><span class="t">${b.name}</span><span class="c">${b.type}</span></li>`).join('') + '</ul>';
+      }
+      html += legend();
+    } else {
+      const g = window.ASHFALL_CITIES[st.view];
+      const story = cityStory(st.view).sort((a, b) => IMP_ORDER[a.cat.importance] - IMP_ORDER[b.cat.importance]);
+      html += `<h2>${CITY_NAMES[st.view]}</h2><p class="meta">${g.buildings.length} buildings on a ${g.w}×${g.h} tile layout from the Medieval Fantasy City Generator. The story buildings are placed by rule; move them in <code>tools/bake_city.py</code>.</p>`;
+      html += '<h3>Story buildings</h3><ul class="list">' + story.map(s => `<li data-cat="${s.cat.id}" data-move="1"><span class="dot ${s.cat.importance}"></span><span class="t">${s.cat.name}</span><span class="c">${s.anchor ? 'marker' : s.type}</span></li>`).join('') + '</ul>';
+      const offmap = STORY.buildings.filter(b => b.town === st.view && !story.some(s => s.cat.id === b.id) && (b.importance !== 'v245'));
+      if (offmap.length) html += '<h3>Named, not placed yet</h3><ul class="list">' + offmap.map(b => `<li data-cat="${b.id}"><span class="dot ${b.importance}"></span><span class="t">${b.name}</span></li>`).join('') + '</ul>';
+      const counts = {}; for (const b of g.buildings) counts[b.type] = (counts[b.type] || 0) + 1;
+      html += '<h3>All buildings by type · click to highlight</h3><ul class="list">' + Object.entries(counts).sort((a, b) => b[1] - a[1])
+        .map(([t, c]) => `<li data-type="${t}" class="${st.hlType === t ? 'on' : ''}"><span class="t">${t}</span><span class="c">${c}</span></li>`).join('') + '</ul>';
+      html += legend();
+    }
+    $('#pane-build').innerHTML = html; bindLists($('#pane-build'));
+  }
+  const legend = () => '<div class="legend" style="margin-top:12px"><div><span class="dot key"></span>Key: the plot cannot happen without it</div><div><span class="dot supporting"></span>Supporting</div><div><span class="dot mention"></span>Mentioned</div></div>';
+
+  function bindLists(root) {
+    root.querySelectorAll('[data-ev]').forEach(li => li.onclick = () => selectEvent(+li.dataset.ev));
+    root.querySelectorAll('[data-ev-step]').forEach(b => b.onclick = () => selectEvent(Math.min(STORY.events.length, Math.max(1, (st.event || 0) + +b.dataset.evStep))));
+    root.querySelectorAll('[data-goto]').forEach(b => b.onclick = async (e) => {
+      e.stopPropagation();
+      const view = b.dataset.goto, focus = b.dataset.focus, place = b.dataset.place;
+      if (view !== st.view) { st.view = view; params.delete('z'); await build(); }
+      if (focus) selectKey('cat:' + focus, true); else if (place) selectKey('place:' + place, true);
     });
-    worldEl.style.transform = `translate(${panX}px, ${panY}px)`;
+    root.querySelectorAll('[data-cat]:not([data-goto])').forEach(li => li.onclick = () => selectKey('cat:' + li.dataset.cat, true));
+    root.querySelectorAll('[data-type]').forEach(li => li.onclick = () => highlightType(li.dataset.type));
   }
-  function centre() {
-    panX = Math.round((stage.clientWidth - map.view.width * zoom) / 2);
-    panY = Math.round((stage.clientHeight - map.view.height * zoom) / 2);
-    layout();
+  function renderStoryMark() { document.querySelectorAll('#pane-story li').forEach(li => li.classList.toggle('on', +li.dataset.ev === st.event)); }
+  function highlightType(t) {
+    const g = window.ASHFALL_CITIES && window.ASHFALL_CITIES[st.view]; if (!g || st.view === 'kingdom') return;
+    st.hlType = st.hlType === t ? null : t;
+    st.map.highlight(st.hlType ? g.buildings.filter(b => b.type === t).map(b => b.id) : []);
+    document.querySelectorAll('#pane-build [data-type]').forEach(li => li.classList.toggle('on', li.dataset.type === st.hlType));
   }
-  function select(id) {
-    const pl = map.world.byId[id]; selected = id;
-    worldEl.querySelectorAll('.label').forEach(n => n.classList.toggle('sel', n.dataset.id === id));
-    const vtag = pl.ver === '2.45' ? '<span class="tag t245">v2.45 only</span>' : pl.ver === '3.0' ? '<span class="tag t30">3.0</span>' : '<span class="tag t30">3.0</span><span class="tag">v2.45</span>';
-    const ptag = pl.pos === 'guess' ? '<span class="tag">position guessed</span>' : '<span class="tag">position from text</span>';
-    info.innerHTML = `<h2>${pl.name}</h2><div class="meta">${pl.book}</div><div>${vtag}${ptag}</div><p>${pl.desc}</p>`;
+  function setTab(t) {
+    st.tab = t;
+    document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
+    document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'pane-' + t));
   }
 
-  // controls
-  const toggle = (btn, on) => btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-  document.getElementById('v245').onclick = (e) => { showOld = !showOld; toggle(e.target, showOld); build(); };
-  document.getElementById('labels').onclick = (e) => { const on = !stage.classList.toggle('hide-labels'); toggle(e.target, on); };
-  document.getElementById('walk').onclick = (e) => { walking = !walking; toggle(e.target, walking); build(); };
+  // ---------------- controls ----------------
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+  document.querySelectorAll('#views button').forEach(b => b.onclick = () => { if (b.dataset.view !== st.view) { st.view = b.dataset.view; params.delete('z'); build(); } });
+  $('#v245').onclick = async () => { st.showRef = !st.showRef; await build(); if (st.event) selectEvent(st.event); };
+  $('#labels').onclick = (e) => { const on = !stage.classList.toggle('hide-labels'); e.target.setAttribute('aria-pressed', on); };
+  $('#walk').onclick = () => { st.walking = !st.walking; build(); };
   const setZoom = (z) => { const cx = stage.clientWidth / 2, cy = stage.clientHeight / 2;
-    panX = cx - (cx - panX) * z / zoom; panY = cy - (cy - panY) * z / zoom; zoom = z; layout(); };
-  document.getElementById('zin').onclick = () => setZoom(Math.min(8, zoom + 1));
-  document.getElementById('zout').onclick = () => setZoom(Math.max(1, zoom - 1));
-  toggle(document.getElementById('v245'), showOld); toggle(document.getElementById('walk'), walking);
-
-  // drag to pan
+    st.panX = cx - (cx - st.panX) * z / st.zoom; st.panY = cy - (cy - st.panY) * z / st.zoom; st.zoom = z; layout(); };
+  $('#zin').onclick = () => setZoom(Math.min(8, st.zoom + 1));
+  $('#zout').onclick = () => setZoom(Math.max(1, st.zoom - 1));
   let drag = null;
-  stage.addEventListener('pointerdown', (e) => { drag = { x: e.clientX - panX, y: e.clientY - panY, moved: false }; stage.classList.add('drag'); stage.setPointerCapture(e.pointerId); });
-  stage.addEventListener('pointermove', (e) => { if (!drag) return; panX = e.clientX - drag.x; panY = e.clientY - drag.y; drag.moved = true; layout(); });
+  stage.addEventListener('pointerdown', (e) => { drag = { x: e.clientX - st.panX, y: e.clientY - st.panY, sx: e.clientX, sy: e.clientY, moved: false }; stage.classList.add('drag'); stage.setPointerCapture(e.pointerId); });
+  stage.addEventListener('pointermove', (e) => { if (!drag) return; if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) > 4) drag.moved = true; st.panX = e.clientX - drag.x; st.panY = e.clientY - drag.y; layout(); });
   stage.addEventListener('pointerup', (e) => {
     stage.classList.remove('drag');
-    if (drag && !drag.moved) { // click on the map: pick the nearest place on that tile
+    if (drag && !drag.moved && st.map) {
       const r = canvas.getBoundingClientRect();
-      const tl = map.tileAt((e.clientX - r.left) / zoom, (e.clientY - r.top) / zoom);
-      if (tl && tl.place) select(tl.place.id);
+      const tl = pickTile((e.clientX - r.left) / st.zoom, (e.clientY - r.top) / st.zoom);
+      if (tl && tl.place && st.view === 'kingdom') selectKey('place:' + tl.place.id, false);
+      else if (tl && tl.bld) selectKey('bld:' + tl.bld.id, false);
     }
     drag = null;
   });
-  stage.addEventListener('wheel', (e) => { e.preventDefault(); setZoom(Math.max(1, Math.min(8, zoom + (e.deltaY < 0 ? 1 : -1)))); }, { passive: false });
-
-  if (params.get('labels') === '0') { stage.classList.add('hide-labels'); toggle(document.getElementById('labels'), false); }
-  build(); centre();
-  if (params.get('sel')) select(params.get('sel'));
+  // picking that accounts for raised buildings: front-most tile whose block covers the point
+  function pickTile(px, py) {
+    const w = st.map.world; let best = null;
+    for (const tl of w.tiles) {
+      const raise = tl.raise || 0;
+      const [sx, sy] = st.map.screenOfTile(tl.x, tl.y, raise + (tl.h - 1) * 4);
+      const dx = Math.abs(px - sx);
+      if (dx > 8) continue;
+      const top = sy - (4 - dx / 2), bottom = sy + (4 - dx / 2) + raise;
+      if (py < top || py > bottom) continue;
+      if (!best || tl.x + tl.y > best.x + best.y) best = tl;
+    }
+    return best;
+  }
+  stage.addEventListener('wheel', (e) => { e.preventDefault(); setZoom(Math.max(1, Math.min(8, st.zoom + (e.deltaY < 0 ? 1 : -1)))); }, { passive: false });
   window.addEventListener('resize', layout);
+  if (params.get('labels') === '0') { stage.classList.add('hide-labels'); $('#labels').setAttribute('aria-pressed', 'false'); }
+
+  setTab(st.tab);
+  build().then(() => {
+    if (params.get('ev')) selectEvent(+params.get('ev'));
+    if (params.get('sel')) selectKey(params.get('sel'), true);
+    if (params.get('type')) { highlightType(params.get('type')); setTab('build'); }
+    if (params.get('tab')) setTab(params.get('tab'));
+    document.body.dataset.ready = '1';
+  });
 })();
 </script>
 </body>

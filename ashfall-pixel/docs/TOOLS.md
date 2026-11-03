@@ -16,9 +16,26 @@ Optional: [PixelLab](https://www.pixellab.ai) for draft isometric tiles and walk
 
 **Runner-up engine:** [Godot 4.7](https://godotengine.org) (free) if you want a visual scene editor. It has isometric and hex TileMapLayer, AnimationPlayer for cutscenes and 2D lights. The web build is about 30–40 MB and must use GDScript, not C#.
 
+## Medieval city planner
+
+**[Medieval Fantasy City Generator](https://watabou.itch.io/medieval-fantasy-city-generator)** by watabou is free, runs in a browser and is still updated (v0.11.5 was used here).
+- It generates walls, a citadel, a plaza, a temple, rivers, fields and districts.
+- It exports PNG, SVG or **JSON (GeoJSON-like)**. The JSON includes every building outline, roads, walls, squares, fields, greens and named districts ([devlog: GeoJSON export](https://watabou.itch.io/medieval-fantasy-city-generator/devlog/112574/073-bug-fixes-geojson-export)).
+- `?export=json` exports right after generation, so it can run headless. The same seed always gives the same city.
+- Limits: there is no import back into the generator, and towers and gatehouses are not in the JSON (we rebuild them from wall vertices).
+- Its sister tools are worth a look for later scenes: [Village Generator](https://watabou.itch.io/village-generator), [Dwellings](https://watabou.itch.io/dwellings) (house floor plans), [One Page Dungeon](https://watabou.itch.io/one-page-dungeon) (Harren's cellar, the ruin), and [Perilous Shores](https://watabou.itch.io/perilous-shores) (regions).
+- For the whole continent there is [Azgaar's Fantasy Map Generator](https://azgaar.github.io/Fantasy-Map-Generator/), which links to the city generator for each burg.
+
+**How it's wired in this project:**
+1. `tools/fetch_cities.mjs` drives the generator headlessly (Greymark: small walled border town; Valencourt: big city with a citadel, river and gardens).
+2. `tools/bake_city.py` rasterises the JSON into an isometric tile grid, gives every building a **type**, and places the **story buildings** by rule (the tavern nearest the square, the keep = largest in the Citadel, and so on).
+3. The engine draws every building as a block with a gable roof.
+
+To reroll a city you don't like, change its `seed` in `fetch_cities.mjs` and re-run both tools.
+
 ## What's in this folder now
 
-The kingdom map (`map/`) is a **zero-dependency canvas prototype**: plain JS, no build step. Map data lives in `world.js`, so moving a town is a one-line edit. It is a sandbox for the art direction and the geography. The full story will move to Phaser and Tiled.
+The map (`map/`) is a **zero-dependency canvas prototype**: plain JS, no build step. It has a kingdom view (104×104 tiles) and two city views (Greymark 126×188, Valencourt 302×377 tiles). It is a sandbox for the art direction and the geography. The full story will move to Phaser and Tiled.
 
 ## Everything considered
 

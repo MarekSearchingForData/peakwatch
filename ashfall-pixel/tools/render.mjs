@@ -21,16 +21,21 @@ async function shot(query, file, size = { width: 1600, height: 1000 }) {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(page_url(query));
-  await page.waitForTimeout(800);
+  await page.waitForSelector('body[data-ready]', { timeout: 120000 });
+  await page.waitForTimeout(600);
   await page.screenshot({ path: path.join(out, file) });
   if (errors.length) console.error(file, 'ERRORS:', errors);
   await page.close();
   return errors;
 }
 
-const errs = await shot('?z=2', 'kingdom.png');
-await shot('?z=2&v=245', 'kingdom-245.png');
-await shot('?z=3&sel=greymark', 'kingdom-greymark.png', { width: 1400, height: 900 });
+const errs = [];
+errs.push(...await shot('?tab=build', 'kingdom.png'));
+errs.push(...await shot('?v=245&ev=21', 'kingdom-245.png'));
+errs.push(...await shot('?view=greymark&tab=build', 'greymark.png'));
+errs.push(...await shot('?view=greymark&ev=9&z=3', 'greymark-well.png'));
+errs.push(...await shot('?view=valencourt&tab=build', 'valencourt.png'));
+errs.push(...await shot('?view=valencourt&type=tavern&z=1', 'valencourt-taverns.png'));
 
 if (!process.argv.includes('--png-only')) {
   // GIF: capture the bare canvas over time via the ?t= hook
@@ -40,6 +45,7 @@ if (!process.argv.includes('--png-only')) {
   const N = Number(process.env.FRAMES || 60), DT = 1 / 12;
   for (let i = 0; i < N; i++) {
     await page.goto(page_url(`?t=${(i * DT + 3).toFixed(3)}&z=1&labels=0`));
+    await page.waitForSelector('body[data-ready]');
     const el = await page.$('#map');
     await el.screenshot({ path: path.join(frames, `f${String(i).padStart(3, '0')}.png`) });
   }

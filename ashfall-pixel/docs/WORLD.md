@@ -12,7 +12,7 @@ Sources are the Ashfall Claude Docs: the Book 1 Greymark beat sheet, the Book 2 
   - The angel as a crystal entity.
 - **Old draft** places (Wilmsford, Harlow's Bridge, Odo, Halden) appear only in Ch XI "Winter Widow", which the Valencourt beat sheet says is replaced.
 
-On the map, v2.45-only places are hidden by default. The **+ v2.45** button shows them with dashed labels.
+**Book 3.0 is the source of truth.** `data/story.json` holds its 60 events in order (Prologue → Greymark → Valencourt → Book 2). Where v2.45 differs, the event has a `v245` note, shown only when the **v2.45 ref** layer is on. v2.45-only places (the boulder church, the river cave, Wilmsford, Harlow's Bridge) are hidden by default and marked "v2.45" when shown.
 
 ## Placement: what the text says vs. what I guessed
 

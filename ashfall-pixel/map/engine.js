@@ -59,6 +59,10 @@
     snow:   { top: [P.sn1, P.sn0, P.sn2, P.s2], side: [P.s1, P.s2] },
     road:   { top: [P.w2, P.w1, P.w3, P.w1], side: [P.soil1, P.soil2] },
     plaza:  { top: [P.s3, P.s2, P.s4, P.s1], side: [P.s0, P.s1] },
+    street: { top: ['#6e6258', '#5a4f47', '#8a7d70', '#463c36'], side: [P.soil1, P.soil2] },
+    flax:   { top: ['#4f7a52', '#6c8fb0', '#7fa070', '#2d5432'], side: [P.soil1, P.soil2], rows: true },
+    vines:  { top: ['#3f6e3a', '#5a2a4a', '#6a9a48', '#2d3a1e'], side: [P.soil1, P.soil2], rows: true },
+    wheat:  { top: ['#b89a48', '#8a7a34', '#d8c070', '#6a5a2a'], side: [P.soil1, P.soil2], rows: true },
   };
 
   // ---------- sprite helper: ascii pixel maps ----------
@@ -107,6 +111,29 @@
       '.....b.....', '....bBb....', '...bBBBb...', '..bBBdBBb..', '.bBBBddBBb.', 'bBBBBddBBBb'],
       { b: '#a88a52', B: '#d8bf7c', d: P.w0 }),
     banner: sprite(['p', 'pr', 'prr', 'pr', 'p', 'p', 'p'], { p: P.w0, r: P.roofR2 }),
+  };
+
+  // ---------- fast pixel buffer with a tiny canvas-like API ----------
+  const colourCache = new Map();
+  function rgba(hex) {
+    let v = colourCache.get(hex);
+    if (v === undefined) {
+      const n = parseInt(hex.slice(1, 7), 16);
+      v = (0xff << 24) | ((n & 255) << 16) | (n & 0xff00) | (n >> 16);
+      colourCache.set(hex, v >>> 0);
+      v = v >>> 0;
+    }
+    return v;
+  }
+  function PixelBuf(w, h) {
+    this.w = w; this.h = h; this.img = new ImageData(w, h);
+    this.px = new Uint32Array(this.img.data.buffer); this._c = 0;
+  }
+  Object.defineProperty(PixelBuf.prototype, 'fillStyle', { set(c) { this._c = rgba(c); }, get() { return ''; } });
+  PixelBuf.prototype.fillRect = function (x, y, w, h) {
+    x |= 0; y |= 0;
+    const x1 = Math.min(this.w, x + w), y1 = Math.min(this.h, y + h), c = this._c, px = this.px, W = this.w;
+    for (let yy = Math.max(0, y); yy < y1; yy++) for (let xx = Math.max(0, x); xx < x1; xx++) px[yy * W + xx] = c;
   };
 
   // ---------- column rasteriser (the heart of crisp iso pixels) ----------
@@ -236,7 +263,11 @@
     battlefield(ctx, cx, gy) {
       for (let i = 0; i < 7; i++) { const dx = Math.round((hash(i, 1, 4) - 0.5) * 18), dy = Math.round((hash(i, 2, 4) - 0.5) * 8); ctx.fillStyle = P.w1; ctx.fillRect(cx + dx, gy + dy - 4, 1, 4); ctx.fillRect(cx + dx - 1, gy + dy - 3, 3, 1); }
     },
-    bigtree(ctx, cx, gy) {
+    bigtree(ctx, cx, gy, pl) {
+      if (pl && pl.scale > 1) { const s2 = pl.scale; for (let i = -6; i <= 6; i++) { ctx.fillStyle = i < 0 ? P.w0 : P.w1; ctx.fillRect(cx + i, gy - 40, 1, 40 - Math.abs(i)); }
+        const bl = [[0, -62, 22], [-18, -50, 15], [18, -52, 15], [-8, -74, 13], [11, -72, 13], [0, -46, 16]];
+        for (const [bx, by, r] of bl) for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) { if (x * x + y * y * 1.6 > r * r) continue; const h = hash(cx + bx + x, gy + by + y, 8); const si = (y > r * 0.3) ? 0 : (x - y < -r * 0.6 ? 2 : 1); ctx.fillStyle = h < 0.05 ? P.gold : [P.g1, P.g2, P.g4][si]; ctx.fillRect(cx + bx + x, gy + by + y, 1, 1); }
+        return; }
       // colossal baobab-like tree: fat trunk, roots, layered crown
       for (let i = -3; i <= 3; i++) { ctx.fillStyle = i < 0 ? P.w0 : P.w1; ctx.fillRect(cx + i, gy - 22, 1, 22 - Math.abs(i)); }
       ctx.fillStyle = P.w0; ctx.fillRect(cx - 7, gy - 1, 15, 1); ctx.fillRect(cx - 5, gy - 2, 11, 1);
@@ -253,16 +284,81 @@
   };
 
   // ---------- world generation ----------
+  const ROOFS = {
+    house: [['#6a2a20', '#8e3a28'], ['#5a3a22', '#7a5230'], ['#4e3a2e', '#6e5444'], ['#6a2a20', '#8e3a28'], ['#7a5a30', '#9a7a44']],
+    cottage: [['#7a6232', '#9a8246']], shack: [['#4a3a2a', '#625040']], barn: [['#5e2a1e', '#7e3a28']], farmhouse: [['#7a6232', '#9a8246']],
+    church: [['#2c3036', '#454b53']], keep: [['#2f3b52', '#46587a']], hall: [['#3a4256', '#525c74']], manor: [['#3a4256', '#525c74']],
+    warehouse: [['#3e2a1c', '#5a3e28']], mill: [['#3e2a1c', '#5a3e28']], tavern: [['#5a2a1e', '#7e3e28']],
+  };
+  const WALLS = { church: P.bone, keep: '#9aa0a6', hall: '#c8b08a', manor: '#d8cbb0', tavern: '#b89a70', shack: '#7a6a58', barn: '#8a5c34' };
+  function buildGrid(spec) {
+    const g = spec.grid, W = g.w, H = g.h, tiles = new Array(W * H);
+    const blds = {}; for (const b of g.buildings) blds[b.id] = b;
+    const fieldT = g.fields === 'vines' ? 'vines' : g.fields === 'flax' ? 'flax' : 'wheat';
+    for (let k = 0; k < W * H; k++) {
+      const x = k % W, y = (k / W) | 0, c = g.cells[k];
+      const tl = { x, y, h: 1, t: 'grass', prop: null, place: null, road: false };
+      const n = hash(x, y, 31);
+      switch (c) {
+        case 'r': tl.t = 'street'; break;
+        case 'p': tl.t = 'plaza'; break;
+        case 'f': tl.t = fieldT; break;
+        case 'F': tl.t = fieldT === 'wheat' ? 'meadow' : 'wheat'; break;
+        case 'm': tl.t = 'meadow'; tl.prop = n < 0.25 ? 'round' : null; break;
+        case '~': tl.t = 'water'; tl.h = 0; break;
+        case 'w': tl.t = 'stone'; tl.raise = 7; tl.wall = true; break;
+        case 'T': tl.t = 'stone'; tl.raise = 12; tl.wall = true; tl.tower = true; break;
+        case 'W': tl.t = 'plaza'; tl.well = true; break;
+        case 'b': {
+          const b = blds[g.bid[k]];
+          tl.t = 'street'; tl.bld = b; tl.raise = b.h;
+          const pal = ROOFS[b.type] || ROOFS.house;
+          const r = pal[b.id % pal.length];
+          b.roof = b.roof || r; b.wallc = b.wallc || WALLS[b.type] || (b.id % 3 ? '#c8b08a' : P.bone);
+          break;
+        }
+        default: tl.t = 'grass'; tl.prop = n < 0.035 ? 'round' : n < 0.05 ? 'bush' : n < 0.055 ? 'pine' : null;
+      }
+      tiles[k] = tl;
+    }
+    const T = (x, y) => (x >= 0 && y >= 0 && x < W && y < H) ? tiles[y * W + x] : null;
+    // gable roofs: ridge along each building's long axis, roof rises toward it
+    const bb = {};
+    for (const tl of tiles) if (tl.bld) {
+      const r = bb[tl.bld.id] || (bb[tl.bld.id] = { x0: tl.x, x1: tl.x, y0: tl.y, y1: tl.y });
+      r.x0 = Math.min(r.x0, tl.x); r.x1 = Math.max(r.x1, tl.x); r.y0 = Math.min(r.y0, tl.y); r.y1 = Math.max(r.y1, tl.y);
+    }
+    for (const tl of tiles) if (tl.bld) {
+      const r = bb[tl.bld.id], alongX = (r.x1 - r.x0) >= (r.y1 - r.y0);
+      const v = alongX ? tl.y : tl.x, c = alongX ? (r.y0 + r.y1) / 2 : (r.x0 + r.x1) / 2, half = (alongX ? r.y1 - r.y0 : r.x1 - r.x0) / 2 + 0.5;
+      const d = Math.abs(v - c), slope = tl.bld.type === 'keep' ? 1.5 : 2.5;
+      tl.roofLift = Math.min(12, Math.max(0, Math.round((half - d) * slope)));
+      tl.roofSide = d < 0.5 ? 0 : (v < c ? -1 : 1);
+      tl.wallH = tl.bld.h; tl.raise = tl.bld.h + tl.roofLift;
+    }
+    const byId = {};
+    for (const pl of spec.places || []) { // snap each place onto the nearest open square tile
+      byId[pl.id] = pl; let best = null, bd = 1e9;
+      for (let dy = -12; dy <= 12; dy++) for (let dx = -12; dx <= 12; dx++) {
+        const tl = T(pl.x + dx, pl.y + dy); if (!tl || tl.t !== 'plaza' || tl.well || tl.raise) continue;
+        const d = dx * dx + dy * dy; if (d < bd) { bd = d; best = tl; }
+      }
+      if (best) { pl.x = best.x; pl.y = best.y; best.place = pl; }
+    }
+    return { W, H, tiles, T, byId, roads: [], spec, buildings: g.buildings, blds };
+  }
+
   function buildWorld(spec) {
-    const W = spec.w, H = spec.h;
+    if (spec.grid) return buildGrid(spec);
+    const W = spec.w, H = spec.h, ns = spec.noise || 1;
     const tiles = [];
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const n = fbm(x / 7, y / 7, spec.seed);
+      const n = fbm(x / (7 * ns), y / (7 * ns), spec.seed);
       const coast = spec.coast;
       let land = true;
       if (coast) {
         const dx = (x - coast.cx) / coast.rx, dy = (y - coast.cy) / coast.ry;
-        land = Math.sqrt(dx * dx + dy * dy) + (fbm(x / 5, y / 5, spec.seed + 99) - 0.5) * 0.55 < 1;
+        land = Math.sqrt(dx * dx + dy * dy) + (fbm(x / (5 * ns), y / (5 * ns), spec.seed + 99) - 0.5) * 0.55 < 1;
       }
       let t = land ? (n > 0.62 ? 'meadow' : 'grass') : 'deep', h = land ? 1 + Math.round(n * 2) : 0;
       if (!land && n > 0.5) t = 'water';
@@ -273,12 +369,12 @@
     for (const r of spec.regions) {
       for (const tl of tiles) {
         const dx = (tl.x - r.cx) / r.rx, dy = (tl.y - r.cy) / r.ry;
-        const d = Math.sqrt(dx * dx + dy * dy) + (fbm(tl.x / 4, tl.y / 4, spec.seed + r.cx * 3 + r.cy) - 0.5) * (r.wobble ?? 0.6);
+        const d = Math.sqrt(dx * dx + dy * dy) + (fbm(tl.x / (4 * ns), tl.y / (4 * ns), spec.seed + Math.round(r.cx * 3 + r.cy)) - 0.5) * (r.wobble ?? 0.6);
         if (d >= 1) continue;
         if (!r.overSea && TERRAIN[tl.t].water && tl.t !== 'water') continue;
         tl.t = r.t;
         if (r.h != null) {
-          const hn = fbm(tl.x / 3, tl.y / 3, spec.seed + 5);
+          const hn = fbm(tl.x / (3 * ns), tl.y / (3 * ns), spec.seed + 5);
           const lift = r.peak ? (1 - d) * r.peak : 0;
           tl.h = Math.round(r.h + hn * (r.hv || 0) + lift);
         }
@@ -397,13 +493,48 @@
       const tr = TERRAIN[tl.t];
       const [cx, cy0] = view.proj(tl.x, tl.y, tl.h);
       const cy = cy0 + TH / 2; // diamond centre
-      const depth = tl.h * HZ + BASE;
+      const raise = tl.raise || 0;
+      const depth = tl.h * HZ + BASE + raise;
+      const bld = tl.bld;
       const edge = tl.x === W - 1 || tl.y === H - 1;
       const nb = (dx, dy) => world.T(tl.x + dx, tl.y + dy);
       const back = nb(-1, 0), front = nb(1, 0);
       const cliffBack = back && back.h < tl.h, cliffFront = !front || front.h < tl.h;
       const patch = 0.06 + fbm(tl.x / 3.5, tl.y / 3.5, 41) * 0.3; // soft large-scale colour patches
-      isoPrism(ctx, cx, cy, HALF, depth, (u, left, part, x, y, dTop, rem) => {
+      const same = (dx, dy) => { const n = nb(dx, dy); return n && ((bld && n.bld === bld) || (tl.wall && n.wall && !bld)); };
+      const edgeBL = !same(-1, 0), edgeBR = !same(0, -1), edgeFL = !same(0, 1), edgeFR = !same(1, 0);
+      const outer = edgeBL || edgeBR || edgeFL || edgeFR;
+      isoPrism(ctx, cx, cy - raise, HALF, depth, (u, left, part, x, y, dTop, rem) => {
+        if (raise && part === 'top') {
+          if (bld) {
+            const [rd, rl] = bld.roof;
+            const base = tl.roofSide < 0 ? rl : tl.roofSide > 0 ? rd : shade(rl, 0.12);
+            if (rem === 1 && ((left && edgeFL) || (!left && edgeFR))) return shade(base, -0.3); // eaves shadow
+            if (((x + y * 2) & 3) === 0) return shade(base, -0.08);                          // shingle rows
+            return hash(x, y, 9) < 0.08 ? shade(base, 0.1) : base;
+          }
+          // wall walk / tower top with crenellations
+          if (dTop === 0 || rem === 1) return ((x + y) & 1) ? P.s4 : P.s1;
+          return tl.tower ? P.s2 : P.s3;
+        }
+        if (raise && part === 'side' && dTop < raise) {
+          if (bld && dTop < tl.roofLift) { // gable end / stepped roof face
+            const [rd, rl] = bld.roof; const f = tl.roofSide < 0 ? rl : rd;
+            return left ? shade(f, -0.3) : shade(f, -0.15);
+          }
+          if (bld) {
+            dTop -= tl.roofLift;
+            const w = bld.wallc, wall = left ? shade(w, -0.35) : shade(w, -0.1);
+            if (dTop === 0) return left ? shade(w, -0.2) : w;
+            const visible = left ? edgeFL : edgeFR;
+            if (visible && tl.wallH >= 6 && (dTop === 2 || dTop === 3) && ((x & 3) === 1)) return hash(x, bld.id, 4) < 0.35 ? P.e1 : P.ink;
+            if (dTop === tl.wallH - 1) return shade(wall, -0.2);
+            return wall;
+          }
+          const st = left ? P.s1 : P.s2;
+          return (dTop % 3 === 0 && ((x + (dTop / 3 | 0)) & 1)) ? P.s0 : st;
+        }
+        if (part === 'side' && raise) dTop -= raise;
         if (part === 'top') {
           const r = hash(x, y, 77);
           if (tr.water) {
@@ -411,6 +542,7 @@
           }
           if (dTop === 0 && left && cliffBack) return tr.top[2];   // lit lip of a raised tile
           if (rem === 1 && !left && cliffFront) return tr.top[3];  // shadowed lip toward a drop
+          if (tr.rows) { const row = ((x + 2 * y) >> 1) & 3; return row === 0 ? tr.top[3] : row === 2 ? (r < 0.5 ? tr.top[1] : tr.top[2]) : tr.top[0]; }
           if (r < patch) return tr.top[1];
           if (r > 0.95 - patch * 0.3) return tr.top[2];
           return tr.top[0];
@@ -426,6 +558,13 @@
         if (dTop === 0) return left ? shade(tr.side[0], 0.12) : shade(tr.side[1], 0.18);
         return left ? tr.side[0] : tr.side[1];
       });
+      if (tl.well) KITS.well(ctx, cx, cy + 1);
+      if (bld && bld.story && Math.abs(tl.x - Math.round(bld.tx)) + Math.abs(tl.y - Math.round(bld.ty)) === 0) {
+        if (bld.type === 'church') { tower(ctx, cx, cy - raise + 2, 3, 14, P.bone, [P.s1, P.s3]); ctx.fillStyle = P.gold; ctx.fillRect(cx, cy - raise - 22, 1, 3); ctx.fillRect(cx - 1, cy - raise - 21, 3, 1); }
+        if (bld.type === 'keep') { tower(ctx, cx, cy - raise + 2, 4, 14, '#9aa0a6', [P.roofB, P.roofB2]); }
+        if (bld.type === 'mill') { ctx.fillStyle = P.w0; for (let k = -7; k <= 7; k++) { ctx.fillRect(cx + k, cy - raise - 4 + (k >> 2), 1, 1); ctx.fillRect(cx + (k >> 1), cy - raise - 4 + k, 1, 1); } }
+        if (bld.type === 'tavern') { ctx.fillStyle = P.w2; ctx.fillRect(cx + 5, cy - raise + 2, 1, 5); ctx.fillStyle = P.gold; ctx.fillRect(cx + 5, cy - raise + 2, 3, 2); }
+      }
       // bridge planks
       if (tl.bridge) {
         isoPrism(ctx, cx, cy - 1, 4, 1, (u, left, part, x) => part === 'side' ? P.w0 : ((x & 1) ? P.w2 : P.w3));
@@ -471,7 +610,9 @@
         ctx.fillRect(cx + dx - 1, cy + (tl.x % 2) - 1, 2, 1);
       }
     }
-    for (const pl of world.spec.places) {
+    for (const tl of state.wells || []) { const [cx, cy0] = view.proj(tl.x, tl.y, tl.h); if (Math.sin(t * 2 + tl.x) > 0.2) { ctx.fillStyle = P.red3; ctx.fillRect(cx, cy0 + TH / 2 - 3, 1, 1); } }
+    for (const tl of state.smokers || []) { const [cx, cy0] = view.proj(tl.x, tl.y, tl.h); drawSmoke(ctx, cx, cy0 + TH / 2 - tl.raise - 2, t, tl.x * 31 + tl.y); }
+    for (const pl of world.spec.places || []) {
       const tl = world.T(pl.x, pl.y); if (!tl) continue;
       const [cx, cy0] = view.proj(pl.x, pl.y, tl.h); const gy = cy0 + TH / 2 + 1;
       const fx = pl.fx || {};
@@ -485,6 +626,26 @@
       if (pl.kind === 'city' || pl.kind === 'keep') { // flag flutter
         const f = Math.floor(t * 4) % 2; ctx.fillStyle = pl.flag || P.roofR2; ctx.fillRect(cx + 2, gy - 32 + f, 3, 1); ctx.fillRect(cx + 2, gy - 31, 2 + f, 1);
       }
+    }
+    // highlighted buildings (by type / story) and pins over key buildings
+    if (state.highlight && state.highlight.size && world.blds) {
+      const on = Math.floor(t * 3) % 2 === 0;
+      for (const tl of state.hlTiles) { // roof sparkle
+        const [cx, cy0] = view.proj(tl.x, tl.y, tl.h); const cy = cy0 + TH / 2 - tl.raise;
+        ctx.fillStyle = on ? P.e1 : P.e2; ctx.fillRect(cx - 1, cy - 1, 2, 2);
+      }
+      for (const b of state.hlBlds) { // bouncing arrow over each building
+        const [cx, cy0] = view.proj(b.tx, b.ty, 1); const cy = cy0 - b.h - 14 + Math.round(Math.sin(t * 5 + b.id) * 2);
+        ctx.fillStyle = P.ink; ctx.fillRect(cx - 4, cy - 1, 9, 7);
+        ctx.fillStyle = on ? P.e1 : P.e2; ctx.fillRect(cx - 3, cy, 7, 2); ctx.fillRect(cx - 2, cy + 2, 5, 1); ctx.fillRect(cx - 1, cy + 3, 3, 1); ctx.fillRect(cx, cy + 4, 1, 1);
+      }
+    }
+    for (const b of state.pins || []) {
+      const [cx, cy0] = view.proj(b.tx, b.ty, 1); const cy = cy0 + TH / 2 - b.h - (b.type === 'church' || b.type === 'keep' ? 30 : 10);
+      const bob = Math.round(Math.sin(t * 3 + b.id) * 1.5);
+      ctx.fillStyle = P.ink; ctx.fillRect(cx - 2, cy - 6 + bob, 5, 5);
+      ctx.fillStyle = b.importance === 'key' ? P.e1 : P.s4; ctx.fillRect(cx - 1, cy - 5 + bob, 3, 3);
+      ctx.fillStyle = P.ink; ctx.fillRect(cx, cy - 1 + bob, 1, 3);
     }
     // weather particles (screen-space)
     for (const p of state.particles) {
@@ -573,15 +734,22 @@
     ctx.imageSmoothingEnabled = false;
     const stat = document.createElement('canvas');
     stat.width = view.width; stat.height = view.height;
-    drawStatic(stat.getContext('2d'), world, view);
+    const buf = new PixelBuf(view.width, view.height);
+    drawStatic(buf, world, view);
+    stat.getContext('2d').putImageData(buf.img, 0, 0);
 
     const particles = [];
     const rnd = (i, s) => hash(i, s, spec.seed + 400);
-    for (let i = 0; i < (spec.ashfall || 120); i++) particles.push({ x: rnd(i, 1) * view.width, y: rnd(i, 2) * view.height, vx: -3 - rnd(i, 3) * 4, vy: 6 + rnd(i, 4) * 6, w: 1 + rnd(i, 5) * 2, c: rnd(i, 6) < 0.15 ? P.e2 : (rnd(i, 7) < 0.5 ? P.ash3 : P.ash4) });
+    const nPart = Math.round((spec.ashfall || 120) * Math.max(1, view.width * view.height / 1.2e6));
+    for (let i = 0; i < nPart; i++) particles.push({ x: rnd(i, 1) * view.width, y: rnd(i, 2) * view.height, vx: -3 - rnd(i, 3) * 4, vy: 6 + rnd(i, 4) * 6, w: 1 + rnd(i, 5) * 2, c: rnd(i, 6) < 0.15 ? P.e2 : (rnd(i, 7) < 0.5 ? P.ash3 : P.ash4) });
     const state = {
       particles,
       waterTiles: world.tiles.filter(tl => TERRAIN[tl.t].water && hash(tl.x, tl.y, 3) < 0.45),
       walker: null,
+      wells: world.tiles.filter(tl => tl.well),
+      smokers: world.blds ? world.buildings.filter(b => hash(b.id, 1, 2) < 0.06 || b.type === 'smithy' || b.type === 'tavern' || b.type === 'bakery')
+        .map(b => world.T(Math.round(b.tx), Math.round(b.ty))).filter(tl => tl && tl.bld) : [],
+      highlight: null, hlTiles: [], hlBlds: [], pins: [],
     };
     // Kethric's journey: chain roads between consecutive route stops
     if (spec.route && spec.route.length > 1) {
@@ -597,7 +765,7 @@
 
     let raf = null, t0 = performance.now(), paused = false, frozenT = 0;
     function frame(now) {
-      const t = paused ? frozenT : (now - t0) / 1000;
+      const t = paused ? frozenT : Math.max(0, (now - t0) / 1000);
       ctx.drawImage(stat, 0, 0);
       drawAnimated(ctx, world, view, t, state);
       if (opts.onFrame) opts.onFrame(t, state);
@@ -611,6 +779,13 @@
       pause(p) { paused = p; frozenT = (performance.now() - t0) / 1000; },
       renderAt,
       restartWalk() { t0 = performance.now(); },
+      highlight(ids) {
+        state.highlight = new Set(ids || []);
+        state.hlTiles = world.tiles.filter(tl => tl.bld && state.highlight.has(tl.bld.id) && ((tl.x + tl.y) % 2 === 0));
+        state.hlBlds = world.blds ? [...state.highlight].map(id => world.blds[id]).filter(Boolean) : [];
+      },
+      setPins(list) { state.pins = list || []; },
+      screenOfTile(x, y, raise) { const [sx, sy] = view.proj(x, y, 1); return [sx, sy + TH / 2 - (raise || 0)]; },
       screenOf(id) { const pl = world.byId[id]; const tl = world.T(pl.x, pl.y); const [x, y] = view.proj(pl.x, pl.y, tl.h); return [x, y + TH / 2]; },
       tileAt(px, py) { // reverse projection, best effort (top-most tile under the pixel)
         let best = null;
