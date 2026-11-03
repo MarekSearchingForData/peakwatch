@@ -54,6 +54,16 @@ Researched 3 Nov 2026. Most links below were opened and their licences read. Pri
 - Plan to clean up every keeper by hand.
 - Never feed the no-AI-training packs (Zato, KipperFalcon, BoostyBear) to a model, even as a style reference.
 
+## What we built first (free, here): the Ultima Online-style route
+
+UO's look comes from 3D models rendered at a fixed isometric angle, then reduced and touched up. We do the same with no purchases:
+1. `tools/blender/greymark_diorama.py` builds the scene from code in Blender. It has a kit for timber-framed houses with jettied upper storeys, braces, lit windows and lumpy thatch or slate gables, plus a well, palisade, gate, trees, figures and props.
+2. A Cycles render from a 2:1 isometric orthographic camera at dusk.
+3. `tools/pixelize.py` downsamples it, reduces it to 56 colours with no dithering, and adds a 1px outline.
+4. `map/scene.html` animates lanterns, fire, smoke, the red well and ash on top.
+
+The kit is reusable, so each new scene is mostly a layout. It is original art in UO's spirit, not copied UO assets.
+
 ## Recommended route: one Greymark diorama at reference quality
 
 1. **Base kit (about $17):** Zato Isoverse + Isometric Isolation, plus the free KipperFalcon forest. Recolour everything to one dark-autumn palette.

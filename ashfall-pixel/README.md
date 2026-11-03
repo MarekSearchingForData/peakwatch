@@ -2,6 +2,8 @@
 
 A 2D isometric pixel-art animated telling of **Kethric's adventure** from the *Ashfall* books.
 
+![Greymark square](out/greymark-square.gif)
+
 ![The Kingdom](out/kingdom.gif)
 
 ## What's here
@@ -9,6 +11,10 @@ A 2D isometric pixel-art animated telling of **Kethric's adventure** from the *A
 ```
 ashfall-pixel/
   map/index.html     the viewer: Kingdom / Greymark / Valencourt, Story + Buildings panels
+  map/scene.html     detailed animated scenes (pre-rendered iso pixel art), e.g. Greymark square
+  map/scenes/        rendered scene PNGs + overlay points (generated)
+  tools/blender/greymark_diorama.py  builds Greymark square in 3D and renders it (Blender)
+  tools/pixelize.py  render -> pixel art: downscale, 56-colour palette, outline, overlay points
   map/engine.js      pixel iso engine: terrain, gable-roofed buildings, walls, rifts, fire, smoke, ash
   map/world.js       the kingdom as data (places, regions, rivers, roads, Kethric's route)
   map/story.js       generated from data/story.json
@@ -32,6 +38,9 @@ Open `map/index.html` in a browser. There is nothing to install.
 - **v2.45 ref** shows the older draft's places and notes as reference only. The story always follows 3.0.
 - URL options: `?view=greymark`, `?ev=9`, `?type=tavern`, `?sel=cat:vex_mill`, `?z=3`, `?labels=0`, `?t=12`.
 
+**Detailed scenes (Ultima Online-style pre-rendered pixel art):** install Blender's Python module (`python3.11 -m venv bvenv && bvenv/bin/pip install bpy`), then
+`bvenv/bin/python tools/blender/greymark_diorama.py render.png --size 1500 --samples 40` and `python3 tools/pixelize.py render.png map/scenes/greymark-square.png --width 520 --colors 56`. Open `map/scene.html`.
+
 To rebuild everything: `node tools/fetch_cities.mjs` (only to reroll layouts), then `python3 tools/bake_city.py`, then `node tools/render.mjs`.
 
 ## Edit the world
@@ -44,7 +53,8 @@ To rebuild everything: `node tools/fetch_cities.mjs` (only to reroll layouts), t
 
 1. **Map v1** (done): kingdom map with places from the beat sheets and the animated route.
 1. **Map v2** (done): a kingdom map twice the size, Greymark and Valencourt city plans, the 3.0 event timeline and building types.
-2. **Art direction**: lock the palette (Resurrect 64), then redo the terrain and props as Aseprite tiles at 32×16.
+1. **Scene v1** (done): Greymark square as a pre-rendered pixel diorama (timber frames, thatch, the red well, Aldren's queue, the palisade and gate), animated.
+2. **Art direction**: more scenes from the same Blender kit (the mill interior, Harren's cellar, the ruin and young rift); paint over hero props in Aseprite; optional asset packs and AI drafts (see docs/ART_DIRECTION.md).
 3. **First diorama**: Greymark in the hexagon-diorama style of the reference, with the well, the mill, the Broken Compass and Harren's cellar.
 4. **Characters**: Kethric, Vex and Aldren with idle, walk and talk in 4 directions.
 5. **Story runtime**: Phaser 4, Tiled scenes and an Ink script for the prologue (the road, Ollen, the barn).

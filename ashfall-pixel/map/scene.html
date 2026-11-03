@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Greymark Square</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #141019; --panel: #1d1724; --line: #3d3638; --ink: #e9dfc4; --muted: #a99c94; --key: #ffc94a; --ember: #ff8a2a; --gold: #d9b350; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: radial-gradient(ellipse at 50% 40%, #2a2233 0%, #141019 70%); color: var(--ink); font-family: 'Pixelify Sans', ui-monospace, monospace; }
+  header { display: flex; gap: 12px; align-items: center; padding: 8px 16px; border-bottom: 2px solid var(--line); background: var(--panel); }
+  h1 { font-family: 'Silkscreen', monospace; font-size: 17px; margin: 0; color: var(--gold); }
+  header a, button { font: inherit; font-size: 13px; color: var(--ink); background: #2a2230; border: 2px solid var(--line); padding: 3px 9px; cursor: pointer; text-decoration: none; }
+  header a:hover, button:hover { border-color: var(--ember); }
+  .sp { flex: 1; }
+  main { display: grid; grid-template-columns: 1fr 340px; height: calc(100% - 50px); }
+  #stage { position: relative; overflow: hidden; display: grid; place-items: center; }
+  #wrap { position: relative; }
+  canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+  .label { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; font-family: 'Silkscreen', monospace; font-size: 11px;
+    padding: 1px 5px; background: rgba(14,11,18,.85); border: 1px solid #8a6a20; color: var(--ink); cursor: pointer; }
+  .label.person { border-color: var(--line); color: var(--muted); }
+  .label.sel { border-color: var(--ember); color: var(--key); }
+  .hide .label { display: none; }
+  aside { border-left: 2px solid var(--line); background: var(--panel); padding: 14px 16px; overflow: auto; }
+  h2 { font-family: 'Silkscreen', monospace; font-size: 14px; margin: 4px 0 6px; color: var(--gold); }
+  h3 { font-family: 'Silkscreen', monospace; font-size: 11px; margin: 14px 0 4px; color: var(--muted); }
+  p { line-height: 1.45; font-size: 15px; margin: 6px 0 10px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .tag { display: inline-block; font-size: 11px; padding: 0 5px; border: 1px solid var(--key); color: var(--key); }
+  ul { list-style: none; padding: 0; margin: 0; } li { font-size: 14px; padding: 3px 0; } li .n { color: var(--muted); font-family: 'Silkscreen', monospace; font-size: 11px; margin-right: 6px; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; grid-template-rows: 1fr 40vh; } aside { border-left: 0; border-top: 2px solid var(--line); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Greymark · the square</h1>
+  <span class="meta">Book 1 · Ch I · dusk at the well</span>
+  <span class="sp"></span>
+  <button id="labels">Labels</button><button id="zout">−</button><button id="zin">+</button>
+  <a href="index.html?view=greymark">City plan</a><a href="index.html">Kingdom</a>
+</header>
+<main>
+  <div id="stage"><div id="wrap"><canvas id="c"></canvas></div></div>
+  <aside id="info">
+    <h2>The well distribution</h2>
+    <div class="meta">Book 1 · Ch I · event 9</div>
+    <p>Aldren sits at his table by the well with the ledger and a chalice-shaped cup and hands out faintly red water. The faithful queue to sign. Kethric watches from the shadow of Harren's place and does not drink.</p>
+    <p class="meta">A pre-rendered isometric scene, built in 3D with code (Blender) and reduced to a 56-colour pixel palette. Click a label to read about it.</p>
+  </aside>
+</main>
+<script src="story.js"></script>
+<script>
+(async function () {
+  const SCENE = new URLSearchParams(location.search).get('scene') || 'greymark-square';
+  await new Promise((res) => { const s = document.createElement('script'); s.src = 'scenes/' + SCENE + '.js'; s.onload = res; s.onerror = res; document.head.appendChild(s); });
+  const meta = (window.SCENES || {})[SCENE];
+  const img = new Image(); img.src = 'scenes/' + SCENE + '.png'; await img.decode();
+  const W = img.width, H = img.height, P = (meta && meta.points) || {};
+  const c = document.getElementById('c'), ctx = c.getContext('2d'); c.width = W; c.height = H;
+  const wrap = document.getElementById('wrap'), stage = document.getElementById('stage'), info = document.getElementById('info');
+  let zoom = Math.max(1, Math.floor(Math.min(stage.clientWidth / W, stage.clientHeight / H)));
+  const CAT = Object.fromEntries((window.ASHFALL_STORY?.buildings || []).map(b => [b.id, b]));
+  const PEOPLE = {
+    aldren: { name: 'Aldren', desc: 'The priest at the well, with his estoc never far away. He believes every word: "We are making a saint." He never drinks.', events: [9, 15, 19] },
+    kethric: { name: 'Kethric', desc: 'Months after Greystone, drunk and hollow, owing Vex. He refuses the cup. "Part of me wanted to ask for a cup myself."', events: [6, 7, 10] },
+  };
+  const hash = (a, b) => { let h = (a * 374761393 + b * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+
+  // labels
+  for (const [id, [x, y]] of Object.entries(P.labels || {})) {
+    const item = CAT[id] || PEOPLE[id]; if (!item) continue;
+    const el = document.createElement('div'); el.className = 'label' + (PEOPLE[id] ? ' person' : '');
+    el.textContent = item.name; el.dataset.x = x; el.dataset.y = y; el.onclick = () => select(id, el);
+    wrap.appendChild(el);
+  }
+  function select(id, el) {
+    document.querySelectorAll('.label').forEach(n => n.classList.toggle('sel', n === el));
+    const it = CAT[id] || PEOPLE[id], evs = (it.events || []).map(n => window.ASHFALL_STORY.events[n - 1]).filter(Boolean);
+    info.innerHTML = `<h2>${it.name}</h2>${it.importance ? `<span class="tag">${it.importance}</span>` : ''}<p>${it.desc}</p>` +
+      (evs.length ? '<h3>EVENTS</h3><ul>' + evs.map(e => `<li><span class="n">${e.n}</span>${e.title} <span class="meta">· ${e.part}</span></li>`).join('') + '</ul>' : '');
+  }
+  function layout() {
+    c.style.width = W * zoom + 'px'; c.style.height = H * zoom + 'px';
+    wrap.querySelectorAll('.label').forEach(el => { el.style.left = el.dataset.x * zoom + 'px'; el.style.top = (el.dataset.y * zoom - 4) + 'px'; });
+  }
+  document.getElementById('zin').onclick = () => { zoom = Math.min(6, zoom + 1); layout(); };
+  document.getElementById('zout').onclick = () => { zoom = Math.max(1, zoom - 1); layout(); };
+  document.getElementById('labels').onclick = () => stage.classList.toggle('hide');
+  window.addEventListener('resize', layout); layout();
+
+  // ash and embers drifting over the scene
+  const ash = Array.from({ length: 70 }, (_, i) => ({ x: hash(i, 1) * W, y: hash(i, 2) * H, vx: -2 - hash(i, 3) * 3, vy: 5 + hash(i, 4) * 6, c: hash(i, 5) < 0.18 ? '#ff8a2a' : (hash(i, 6) < 0.5 ? '#857873' : '#b3a69c') }));
+  const tParam = new URLSearchParams(location.search).get('t');
+  const t0 = performance.now();
+  function frame(now) {
+    const t = tParam ? +tParam : (now - t0) / 1000;
+    ctx.clearRect(0, 0, W, H); ctx.drawImage(img, 0, 0);
+    // lantern + window glow flicker
+    for (const [i, [x, y]] of (P.lamps || []).entries()) {
+      const f = 0.75 + 0.25 * Math.sin(t * 9 + i * 2) * Math.sin(t * 3.3 + i);
+      ctx.globalAlpha = 0.18 * f; ctx.fillStyle = '#ffb050';
+      for (let r = 7; r > 0; r -= 2) { ctx.fillRect(x - r, y - r + 1, r * 2, r * 2 - 2); }
+      ctx.globalAlpha = 1; ctx.fillStyle = f > 0.8 ? '#fff0a0' : '#ffc94a'; ctx.fillRect(x - 1, y - 1, 2, 2);
+    }
+    for (const [i, [x, y]] of (P.windows || []).entries()) {
+      if (Math.sin(t * 1.7 + i * 5.1) > 0.92) { ctx.globalAlpha = 0.35; ctx.fillStyle = '#2a1a10'; ctx.fillRect(x - 1, y - 2, 3, 4); ctx.globalAlpha = 1; }
+    }
+    // campfire
+    for (const [x, y] of P.fires || []) {
+      const fr = Math.floor(t * 10) % 3;
+      const flames = [[[0, -1, '#ff8a2a'], [1, -1, '#d8401e'], [-1, -1, '#d8401e'], [0, -2, '#ffc94a'], [0, -3, '#fff0a0']],
+                      [[0, -1, '#ff8a2a'], [1, -1, '#ff8a2a'], [-1, -1, '#d8401e'], [1, -2, '#ffc94a'], [1, -3, '#fff0a0'], [0, -4, '#ffc94a']],
+                      [[0, -1, '#d8401e'], [-1, -1, '#ff8a2a'], [1, -1, '#d8401e'], [-1, -2, '#ffc94a'], [0, -3, '#ffc94a'], [-1, -4, '#fff0a0']]][fr];
+      ctx.globalAlpha = 0.2; ctx.fillStyle = '#ff9a3a'; ctx.fillRect(x - 6, y - 6, 13, 9); ctx.globalAlpha = 1;
+      for (const [dx, dy, col] of flames) { ctx.fillStyle = col; ctx.fillRect(x + dx, y + dy, 1, 1); }
+      smoke(x, y - 4, t, 9);
+    }
+    // chimney smoke
+    for (const [i, [x, y]] of (P.chimneys || []).entries()) smoke(x, y, t, i * 7 + 1);
+    // the red water shimmers
+    for (const [i, [x, y]] of (P.water || []).entries()) {
+      if (Math.sin(t * 2.4 + i * 1.7) > 0.3) { ctx.fillStyle = Math.sin(t * 5 + i) > 0 ? '#ef7a5a' : '#c24a3c'; ctx.fillRect(x + Math.round(Math.sin(t + i) * 2), y, 2, 1); }
+    }
+    // ash
+    for (const p of ash) {
+      const x = ((p.x + t * p.vx) % W + W) % W, y = ((p.y + t * p.vy) % H + H) % H;
+      ctx.fillStyle = p.c; ctx.fillRect(Math.round(x + Math.sin(t + p.x) * 2), Math.round(y), 1, 1);
+    }
+    if (!tParam) requestAnimationFrame(frame);
+    document.body.dataset.ready = '1';
+  }
+  function smoke(x, y, t, seed) {
+    for (let i = 0; i < 5; i++) {
+      const life = (t * 0.35 + i / 5 + hash(seed, i)) % 1;
+      ctx.globalAlpha = 0.55 * (1 - life); ctx.fillStyle = life < 0.4 ? '#857873' : '#5d5352';
+      const s = life < 0.3 ? 1 : life < 0.7 ? 2 : 3;
+      ctx.fillRect(Math.round(x + Math.sin(life * 4 + seed) * 2 + life * 6), Math.round(y - life * 22), s, s);
+    }
+    ctx.globalAlpha = 1;
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
