@@ -10,3 +10,4 @@ data/
 .streamlit/secrets.toml
 logs/
 ashfall-pixel/out/frames/
+ashfall-pixel/assets/vendor/
