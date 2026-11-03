@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ashfall Kingdom Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #141019; --panel: #1d1724; --line: #3d3638; --ink: #e9dfc4; --muted: #a99c94;
+    --ember: #ff8a2a; --gold: #d9b350; --void: #8a4fd0;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+    font-family: 'Pixelify Sans', ui-monospace, monospace; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px 16px;
+    border-bottom: 2px solid var(--line); background: var(--panel); }
+  h1 { font-family: 'Silkscreen', monospace; font-size: 18px; margin: 0; letter-spacing: 1px; color: var(--gold); }
+  h1 small { color: var(--muted); font-size: 11px; margin-left: 6px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+  button { font: inherit; font-size: 13px; color: var(--ink); background: #2a2230; border: 2px solid var(--line);
+    padding: 4px 10px; cursor: pointer; }
+  button:hover { border-color: var(--ember); }
+  button[aria-pressed="true"] { background: #4a1c14; border-color: var(--ember); }
+  main { display: grid; grid-template-columns: 1fr 300px; height: calc(100% - 52px); }
+  #stage { position: relative; overflow: hidden; cursor: grab; touch-action: none; }
+  #stage.drag { cursor: grabbing; }
+  #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+  .label { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; pointer-events: auto;
+    font-family: 'Silkscreen', monospace; font-size: 11px; padding: 1px 5px; background: rgba(14,11,18,.82);
+    border: 1px solid var(--line); color: var(--ink); cursor: pointer; }
+  .label.v245 { border-style: dashed; color: #c9b8a8; }
+  .label.guess::after { content: ' ?'; color: var(--muted); }
+  .label.sel { border-color: var(--ember); color: var(--e1, #ffc94a); }
+  .label.city { font-size: 13px; color: var(--gold); }
+  .hide-labels .label { display: none; }
+  aside { border-left: 2px solid var(--line); background: var(--panel); padding: 14px 16px; overflow: auto; }
+  aside h2 { font-family: 'Silkscreen', monospace; font-size: 15px; margin: 0 0 4px; color: var(--gold); }
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+  .tag { display: inline-block; font-size: 11px; padding: 0 5px; border: 1px solid var(--line); margin-right: 4px; }
+  .tag.t30 { border-color: var(--ember); } .tag.t245 { border-style: dashed; }
+  aside p { line-height: 1.45; font-size: 15px; }
+  .legend { margin-top: 18px; font-size: 13px; color: var(--muted); }
+  .legend div { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+  .sw { width: 14px; height: 8px; display: inline-block; }
+  @media (max-width: 760px) {
+    main { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+    aside { border-left: 0; border-top: 2px solid var(--line); max-height: 38vh; }
+    .controls { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>The Kingdom <small>Ashfall · Kethric's road</small></h1>
+  <div class="controls">
+    <button id="v30" aria-pressed="true" title="Current rewrite">3.0</button>
+    <button id="v245" aria-pressed="false" title="Show places from the older v2.45 draft">+ v2.45</button>
+    <button id="labels" aria-pressed="true">Labels</button>
+    <button id="walk" aria-pressed="true">Kethric</button>
+    <button id="zout">−</button><button id="zin">+</button>
+  </div>
+</header>
+<main>
+  <div id="stage"><div id="world"><canvas id="map"></canvas></div></div>
+  <aside id="info">
+    <h2>Kethric's Kingdom</h2>
+    <div class="meta">Click a place to read about it</div>
+    <p>An isometric pixel map built from the Ashfall beat sheets and chapters. The little cloaked figure walks Kethric's route in story order: the wildling farm, Greystone, Greymark and the young rift beneath it, south to Valencourt, then north over the passes towards House Aldric.</p>
+    <p>A label ending in <b>?</b> means the book names the place but never says where it is, so its position is a guess. Dashed labels are from v2.45 only.</p>
+    <div class="legend">
+      <div><span class="sw" style="background:#2d5432"></span>Forest around Greymark</div>
+      <div><span class="sw" style="background:#b4471f"></span>Autumn woods, orchards</div>
+      <div><span class="sw" style="background:#6a9a48"></span>Valencourt basin (warm, never sees snow)</div>
+      <div><span class="sw" style="background:#b8c6d0"></span>Snow peaks and the northern plains</div>
+      <div><span class="sw" style="background:#5d5352"></span>Eastern Territories, ash</div>
+      <div><span class="sw" style="background:#8a4fd0"></span>Rifts (void crystal, red water)</div>
+    </div>
+  </aside>
+</main>
+<script src="engine.js"></script>
+<script src="world.js"></script>
+<script>
+(function () {
+  const stage = document.getElementById('stage'), worldEl = document.getElementById('world');
+  const canvas = document.getElementById('map'), info = document.getElementById('info');
+  const params = new URLSearchParams(location.search);
+  let showOld = params.get('v') === '245', walking = params.get('walk') !== '0';
+  let zoom = +(params.get('z') || 0), panX = 0, panY = 0, map = null, selected = null;
+
+  function spec() {
+    const base = window.ASHFALL_WORLD;
+    const keep = (o) => !o.ver || o.ver !== '2.45' || showOld;
+    const places = base.places.filter(keep), ids = new Set(places.map(p => p.id));
+    return Object.assign({}, base, {
+      places, rivers: base.rivers.filter(keep),
+      roads: base.roads.filter(([a, b]) => ids.has(a) && ids.has(b)),
+      route: walking ? base.route.filter(id => ids.has(id)) : [],
+    });
+  }
+  function build() {
+    if (map) map.stop();
+    worldEl.querySelectorAll('.label').forEach(n => n.remove());
+    map = AshfallIso.create(canvas, spec());
+    if (!zoom) zoom = Math.max(1, Math.min(4, Math.round(stage.clientWidth / map.view.width)));
+    for (const pl of map.world.spec.places) {
+      const [x, y] = map.screenOf(pl.id);
+      const el = document.createElement('div');
+      el.className = 'label' + (pl.ver === '2.45' ? ' v245' : '') + (pl.pos === 'guess' ? ' guess' : '') + (pl.kind === 'city' ? ' city' : '');
+      el.textContent = pl.name; el.dataset.id = pl.id; el.dataset.x = x; el.dataset.y = y;
+      el.addEventListener('click', (e) => { e.stopPropagation(); select(pl.id); });
+      worldEl.appendChild(el);
+    }
+    layout(); map.start();
+    if (params.get('t')) { map.stop(); map.renderAt(+params.get('t')); }
+  }
+  function layout() {
+    canvas.style.width = map.view.width * zoom + 'px';
+    canvas.style.height = map.view.height * zoom + 'px';
+    const lift = { city: 34, keep: 26, church: 30, town: 16, ruin: 18, rift: 18, gate: 18, bigtree: 20 };
+    worldEl.querySelectorAll('.label').forEach(el => {
+      const pl = map.world.byId[el.dataset.id];
+      el.style.left = el.dataset.x * zoom + 'px';
+      el.style.top = (el.dataset.y - (lift[pl.kind] || 12)) * zoom + 'px';
+    });
+    worldEl.style.transform = `translate(${panX}px, ${panY}px)`;
+  }
+  function centre() {
+    panX = Math.round((stage.clientWidth - map.view.width * zoom) / 2);
+    panY = Math.round((stage.clientHeight - map.view.height * zoom) / 2);
+    layout();
+  }
+  function select(id) {
+    const pl = map.world.byId[id]; selected = id;
+    worldEl.querySelectorAll('.label').forEach(n => n.classList.toggle('sel', n.dataset.id === id));
+    const vtag = pl.ver === '2.45' ? '<span class="tag t245">v2.45 only</span>' : pl.ver === '3.0' ? '<span class="tag t30">3.0</span>' : '<span class="tag t30">3.0</span><span class="tag">v2.45</span>';
+    const ptag = pl.pos === 'guess' ? '<span class="tag">position guessed</span>' : '<span class="tag">position from text</span>';
+    info.innerHTML = `<h2>${pl.name}</h2><div class="meta">${pl.book}</div><div>${vtag}${ptag}</div><p>${pl.desc}</p>`;
+  }
+
+  // controls
+  const toggle = (btn, on) => btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  document.getElementById('v245').onclick = (e) => { showOld = !showOld; toggle(e.target, showOld); build(); };
+  document.getElementById('labels').onclick = (e) => { const on = !stage.classList.toggle('hide-labels'); toggle(e.target, on); };
+  document.getElementById('walk').onclick = (e) => { walking = !walking; toggle(e.target, walking); build(); };
+  const setZoom = (z) => { const cx = stage.clientWidth / 2, cy = stage.clientHeight / 2;
+    panX = cx - (cx - panX) * z / zoom; panY = cy - (cy - panY) * z / zoom; zoom = z; layout(); };
+  document.getElementById('zin').onclick = () => setZoom(Math.min(8, zoom + 1));
+  document.getElementById('zout').onclick = () => setZoom(Math.max(1, zoom - 1));
+  toggle(document.getElementById('v245'), showOld); toggle(document.getElementById('walk'), walking);
+
+  // drag to pan
+  let drag = null;
+  stage.addEventListener('pointerdown', (e) => { drag = { x: e.clientX - panX, y: e.clientY - panY, moved: false }; stage.classList.add('drag'); stage.setPointerCapture(e.pointerId); });
+  stage.addEventListener('pointermove', (e) => { if (!drag) return; panX = e.clientX - drag.x; panY = e.clientY - drag.y; drag.moved = true; layout(); });
+  stage.addEventListener('pointerup', (e) => {
+    stage.classList.remove('drag');
+    if (drag && !drag.moved) { // click on the map: pick the nearest place on that tile
+      const r = canvas.getBoundingClientRect();
+      const tl = map.tileAt((e.clientX - r.left) / zoom, (e.clientY - r.top) / zoom);
+      if (tl && tl.place) select(tl.place.id);
+    }
+    drag = null;
+  });
+  stage.addEventListener('wheel', (e) => { e.preventDefault(); setZoom(Math.max(1, Math.min(8, zoom + (e.deltaY < 0 ? 1 : -1)))); }, { passive: false });
+
+  if (params.get('labels') === '0') { stage.classList.add('hide-labels'); toggle(document.getElementById('labels'), false); }
+  build(); centre();
+  if (params.get('sel')) select(params.get('sel'));
+  window.addEventListener('resize', layout);
+})();
+</script>
+</body>
+</html>

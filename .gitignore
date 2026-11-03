@@ -9,3 +9,4 @@ venv/
 data/
 .streamlit/secrets.toml
 logs/
+ashfall-pixel/out/frames/
