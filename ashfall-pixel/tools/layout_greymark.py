@@ -233,7 +233,8 @@ if os.path.exists(os.path.join(ROOT, 'map', 'assets', 'mill_annex.png')):
     for y in range(MY0, MY1 + 1):
         for x in range(MX0, MX1 + 1):
             if inb(x, y) and cells[y][x] != '~': cells[y][x] = 'g'
-    sprites.append({'id': 'mill_annex', 'src': 'assets/mill_annex.png', 'x0': MX0, 'y0': MY0, 'x1': MX1, 'y1': MY1})
+    RV = 4   # the asset brings its own river on its left: stretch the slot that way so it lies over the map's river
+    sprites.append({'id': 'mill_annex', 'src': 'assets/mill_annex.png', 'x0': MX0 - RV, 'y0': MY0, 'x1': MX1, 'y1': MY1 + RV})
     anchor('vex_mill', mcx - 1, mcy - 2); anchor('vex', mcx + 3, mcy + 4)
 else:
     building(int(mcx) - 4, int(mcy) - 4, 8, 6, 'mill', 10, story='vex_mill')
