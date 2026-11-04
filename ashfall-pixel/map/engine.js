@@ -544,7 +544,7 @@
       const v = world.spec.spriteArt[b.art].variants[b.variant || 0]; if (!v) continue;
       const m = v.meta, x1 = b.x0 + b.w - 1, y1 = b.y0 + b.d - 1, gh = b.gh || 1;
       const span = (b.w + b.d) * HALF;                                     // footprint width on screen
-      const s = Math.round(span * 1.1 / (m.right[0] - m.left[0]) * 200) / 200;
+      const s = Math.round(span * (b.fit || 1) / (m.right[0] - m.left[0]) * 200) / 200;
       const bx = b.flip ? m.w - m.bottom[0] : m.bottom[0];
       const [cx, cy0] = view.proj(x1, y1, gh);
       const key = x1 + ',' + y1, prev = spriteAt[key];

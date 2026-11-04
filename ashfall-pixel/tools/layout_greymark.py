@@ -222,7 +222,7 @@ for _pass in range(2):
         for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
             fx, fy = x + dx, y + dy                     # the first tile off the street
             if not inb(fx, fy) or cells[fy][fx] != 'Y' or hgt[fy][fx] > 2: continue
-            depth, width = rnd.choice([4, 5, 5]), 2
+            depth, width = rnd.choice([4, 5, 5]), 3
             if dx:   # street runs along y here: the unit extends in x, 2 tiles along y
                 x0 = fx if dx > 0 else fx - depth + 1; y0 = fy
                 rect = (x0, y0, depth, width)
@@ -236,7 +236,8 @@ for _pass in range(2):
                 for yy in range(ry, ry + rd):
                     for xx in range(rx, rx + rw): cells[yy][xx] = 'a'
                 continue
-            building(rx, ry, rw, rd, 'rowhouse', 5 + 2 * rnd.choice([1, 1, 2]))
+            hb = building(rx, ry, rw, rd, 'rowhouse', 5 + 2 * rnd.choice([1, 1, 2]))
+            hb['face'] = [-dx, -dy]                       # direction from the house to its street
             count += 1
 for y in range(H):
     for x in range(W):
@@ -252,10 +253,20 @@ if ROW_ART:
     weights = [14, 12, 22, 22, 12, 6]
     for b in buildings:
         if b['type'] != 'rowhouse': continue
-        b['art'] = 'rowhouse_set'
+        # the camera sees the +y (left) and +x (right) faces. Front view = door gable on the left face.
+        #   street at +y: front view | street at +x: front mirrored | street at -y: rear view | street at -x: rear mirrored
+        fx, fy = b.get('face', [0, 1])
+        b['art'] = 'rowhouse_set' if (fx, fy) in ((0, 1), (1, 0)) else 'rowhouse_rear_set'
         b['variant'] = rnd.choices(range(6), weights)[0]
-        b['flip'] = b['w'] > b['d']          # long side along x: mirror so the narrow gable stays on the short side
+        b['flip'] = fx != 0
+        b['fit'] = 0.92
         b['gh'] = hgt[b['y0'] + b['d'] - 1][b['x0'] + b['w'] - 1]
+STALL_ART = os.path.exists(os.path.join(ROOT, 'map', 'assets', 'stall_set.meta.js'))
+if STALL_ART:   # 0 pottery, 1 bread+cheese, 2 vegetables, 3 butcher, 4 cloth, 5 trestle table, 6 barrels+sacks, 7 cooking fire
+    for b in buildings:
+        if b['type'] != 'stall': continue
+        b['art'] = 'stall_set'; b['variant'] = rnd.choices(range(8), [16, 16, 16, 12, 14, 10, 10, 4])[0]
+        b['flip'] = rnd.random() < 0.5; b['fit'] = 1.25; b['gh'] = hgt[b['y0'] + b['d'] - 1][b['x0'] + b['w'] - 1]
 
 # ------------------------------------------------------------------ write ---
 out = {
