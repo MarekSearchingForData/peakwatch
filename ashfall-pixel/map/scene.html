@@ -81,9 +81,10 @@
   const CAT = Object.fromEntries((window.ASHFALL_STORY?.buildings || []).map(b => [b.id, b]));
   const PEOPLE = {
     aldren: { name: 'Aldren', desc: 'The priest at the well, with his estoc never far away. He believes every word: "We are making a saint." He never drinks.', events: [9, 15, 19] },
-    kethric: { name: 'Kethric', desc: 'Months after Greystone, drunk and hollow, owing Vex. He refuses the cup. "Part of me wanted to ask for a cup myself."', events: [6, 7, 10] },
+    kethric_greymark: { name: 'Kethric', desc: 'Months after Greystone, drunk and hollow, owing Vex. He refuses the cup. "Part of me wanted to ask for a cup myself."', events: [6, 7, 10] },
     demon_aldren: { name: 'Aldren, transformed', desc: 'Having drunk from the chalice, Aldren becomes the thing he worshipped: twice Kethric\'s height, bloated blue and pink, his face split on rows of teeth, nine eyes, a bone spear for an arm and a barbed tentacle for the other, three bone-white hands guarding his heart. "HE LISTENS!" (Ch VIII–IX)', events: [19, 23] },
     angel_vex: { name: 'The angel', desc: 'On the altar of the temple terrace: a figure of glittering crystal, "all planes and edges", three pairs of thin wings with flayed skin stretched between them, Vex\'s almond eyes. The chalice in one hand glows royal blue, the thurible in the other burns gold. (Ch VII)', events: [23, 24] },
+    kethric: { name: 'Kethric', desc: 'Burned by the thurible\'s chain and fighting with a sword wrapped in "thick liquid fire", droplets dripping onto the sand. Dented armor, a ruined forest-green cloak, the golden chain fused round his wrist. (Ch VIII–IX)', events: [23, 24] },
     vex: { name: 'Vex', desc: 'Runs the mill. Counts her workers at the gate every morning; eleven are missing. Covered for Kethric with the priest\'s men, so he owes her.', events: [7, 11, 14, 16] },
   };
   const hash = (a, b) => { let h = (a * 374761393 + b * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
@@ -133,9 +134,17 @@
     const t = tParam ? +tParam : (now - t0) / 1000;
     ctx.clearRect(0, 0, W, H); ctx.drawImage(img, 0, 0);
     for (const sp of SPRITES) {
-      const breathe = Math.round(Math.sin(t * 1.6) * 1.5);       // slow heave of the bloated body
+      const breathe = sp.pixel ? 0 : Math.round(Math.sin(t * 1.6) * 1.5);   // pixel sprites stay 1:1 and crisp       // slow heave of the bloated body
       if (sp.shadow) { ctx.globalAlpha = 0.4; ctx.fillStyle = '#0a0812'; ctx.beginPath(); ctx.ellipse(sp.x, sp.y - sp.h * 0.1, sp.w * 0.36, sp.h * 0.06, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
-      ctx.imageSmoothingEnabled = !sp.pixel; ctx.drawImage(sp.im, Math.round(sp.x - sp.w / 2), sp.y - sp.h - breathe, sp.w, sp.h + breathe); ctx.imageSmoothingEnabled = false;
+      ctx.imageSmoothingEnabled = !sp.pixel;
+      if (sp.flip) { ctx.save(); ctx.translate(Math.round(sp.x), 0); ctx.scale(-1, 1); ctx.drawImage(sp.im, -Math.round(sp.w / 2), sp.y - sp.h - breathe, sp.w, sp.h + breathe); ctx.restore(); }
+      else ctx.drawImage(sp.im, Math.round(sp.x - sp.w / 2), sp.y - sp.h - breathe, sp.w, sp.h + breathe);
+      ctx.imageSmoothingEnabled = false;
+      if (sp.id === 'kethric') {   // embers rising off the burning blade
+        for (let k = 0; k < 6; k++) { const life = (t * 0.8 + k / 6) % 1; ctx.globalAlpha = 1 - life; ctx.fillStyle = k % 2 ? '#ffc94a' : '#ff8a2a';
+          ctx.fillRect(Math.round(sp.x - sp.w * (sp.flip ? -0.35 : 0.35) + Math.sin(k * 3 + t * 2) * 4), Math.round(sp.y - sp.h * 0.35 - life * 18), 2, 2); }
+        ctx.globalAlpha = 1;
+      }
     }
     // lantern + window glow flicker
     for (const [i, [x, y]] of (P.lamps || []).entries()) {
