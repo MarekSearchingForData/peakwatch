@@ -302,5 +302,7 @@ def emit_story():
 
 if __name__ == '__main__':
     emit_story()
-    for cid in (sys.argv[1:] or CONFIG):
+    # Greymark's map now comes from the hand-made blockout (tools/layout_greymark.py);
+    # bake it from the planner only when asked explicitly: python3 tools/bake_city.py greymark
+    for cid in (sys.argv[1:] or [c for c in CONFIG if c != 'greymark']):
         bake(cid)

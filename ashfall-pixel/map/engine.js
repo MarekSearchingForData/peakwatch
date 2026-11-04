@@ -228,6 +228,11 @@
       drawSprite(ctx, SPR.rock, cx - 8, gy + 6);
       ctx.fillStyle = P.g3; ctx.fillRect(cx - 6, gy - 9, 2, 1); ctx.fillRect(cx + 3, gy - 15, 3, 1);
     },
+    fountain(ctx, cx, gy) {
+      box(ctx, cx, gy, 5, 3, P.s2, P.s3, P.s4);
+      isoPrism(ctx, cx, gy - 3, 4, 0, () => P.waterL);
+      ctx.fillStyle = P.s3; ctx.fillRect(cx, gy - 9, 1, 6); ctx.fillStyle = P.foam; ctx.fillRect(cx - 1, gy - 10, 3, 1);
+    },
     well(ctx, cx, gy) {
       box(ctx, cx, gy, 4, 3, P.s1, P.s2, P.s3);
       isoPrism(ctx, cx, gy - 3, 2, 0, () => P.red1);
@@ -309,6 +314,10 @@
         case 'w': tl.t = 'stone'; tl.raise = 7; tl.wall = true; break;
         case 'T': tl.t = 'stone'; tl.raise = 12; tl.wall = true; tl.tower = true; break;
         case 'W': tl.t = 'plaza'; tl.well = true; break;
+        case 'U': tl.t = 'plaza'; tl.well = true; tl.fountain = true; break;
+        case 'k': tl.t = 'forest'; tl.prop = n < 0.55 ? 'round' : n < 0.85 ? 'pine' : 'autumn'; break;
+        case 'Y': tl.t = n < 0.5 ? 'meadow' : 'grass'; tl.prop = n < 0.04 ? 'bush' : null; break;
+        case 'd': tl.t = 'road'; break;
         case 'b': {
           const b = blds[g.bid[k]];
           tl.t = 'street'; tl.bld = b; tl.raise = b.h;
@@ -319,6 +328,7 @@
         }
         default: tl.t = 'grass'; tl.prop = n < 0.035 ? 'round' : n < 0.05 ? 'bush' : n < 0.055 ? 'pine' : null;
       }
+      if (g.hgt) tl.h = +g.hgt[k];   // terrain height (e.g. the church hill)
       tiles[k] = tl;
     }
     const T = (x, y) => (x >= 0 && y >= 0 && x < W && y < H) ? tiles[y * W + x] : null;
@@ -558,7 +568,7 @@
         if (dTop === 0) return left ? shade(tr.side[0], 0.12) : shade(tr.side[1], 0.18);
         return left ? tr.side[0] : tr.side[1];
       });
-      if (tl.well) KITS.well(ctx, cx, cy + 1);
+      if (tl.well) (tl.fountain ? KITS.fountain : KITS.well)(ctx, cx, cy + 1);
       if (bld && bld.story && Math.abs(tl.x - Math.round(bld.tx)) + Math.abs(tl.y - Math.round(bld.ty)) === 0) {
         if (bld.type === 'church') { tower(ctx, cx, cy - raise + 2, 3, 14, P.bone, [P.s1, P.s3]); ctx.fillStyle = P.gold; ctx.fillRect(cx, cy - raise - 22, 1, 3); ctx.fillRect(cx - 1, cy - raise - 21, 3, 1); }
         if (bld.type === 'keep') { tower(ctx, cx, cy - raise + 2, 4, 14, '#9aa0a6', [P.roofB, P.roofB2]); }
