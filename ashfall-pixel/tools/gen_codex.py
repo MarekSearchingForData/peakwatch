@@ -36,7 +36,7 @@ def run(item):
               + "When the image is generated, copy it into the current directory as result.png and reply only with OK.")
     cmd = ['codex', 'exec', '--skip-git-repo-check', '--sandbox', 'workspace-write', '-C', work]
     if '--refs' in args:  # -i takes several values, so join them and end the option list with --
-        cmd += ['-i', ','.join(os.path.join(ROOT, r) for r in spec['references'])]
+        cmd += ['-i', ','.join(os.path.join(ROOT, r) for r in item.get('refs', spec['references']))]
     before = set(glob.glob(os.path.join(gen_dir, '*', '*.png')))
     p = subprocess.run(cmd + ['--', prompt], capture_output=True, text=True, timeout=900, stdin=subprocess.DEVNULL)
     src = os.path.join(work, 'result.png')

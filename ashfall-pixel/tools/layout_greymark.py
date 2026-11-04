@@ -79,7 +79,8 @@ def building(x0, y0, w, d, typ, h, story=None, label=None):
     for y in range(y0, y0 + d):
         for x in range(x0, x0 + w):
             cells[y][x] = 'b'; bid[y][x] = i
-    b = {'id': i, 'type': typ, 'n': w * d, 'tx': x0 + (w - 1) / 2, 'ty': y0 + (d - 1) / 2, 'h': h, 'district': '', 'inside': True}
+    b = {'id': i, 'type': typ, 'n': w * d, 'tx': x0 + (w - 1) / 2, 'ty': y0 + (d - 1) / 2, 'h': h, 'district': '', 'inside': True,
+         'x0': x0, 'y0': y0, 'w': w, 'd': d}
     if story: b['story'] = story
     buildings.append(b)
     if story or label: slots.append({'id': story or label, 'kind': typ, 'x': x0, 'y': y0, 'w': w, 'd': d})
@@ -243,6 +244,18 @@ for y in range(H):
 gx, gy = gates['gate_main']
 for (x, y) in [(gx + 6, gy + 12), (gx - 7, gy + 20), (gx + 8, gy + 28)]:
     if free(x, y, x + 4, y + 4, 'gfF'): building(x, y, 4, 4, 'cottage', 5); count += 1
+
+# ------------------------------------------------- finished art for row houses ---
+ROW_ART = os.path.exists(os.path.join(ROOT, 'map', 'assets', 'rowhouse_set.meta.js'))
+if ROW_ART:
+    # variants: 0 brown shingle, 1 red shingle, 2 thatch, 3 thatch+dormer, 4 three-storey slate, 5 shop with sign
+    weights = [14, 12, 22, 22, 12, 6]
+    for b in buildings:
+        if b['type'] != 'rowhouse': continue
+        b['art'] = 'rowhouse_set'
+        b['variant'] = rnd.choices(range(6), weights)[0]
+        b['flip'] = b['w'] > b['d']          # long side along x: mirror so the narrow gable stays on the short side
+        b['gh'] = hgt[b['y0'] + b['d'] - 1][b['x0'] + b['w'] - 1]
 
 # ------------------------------------------------------------------ write ---
 out = {

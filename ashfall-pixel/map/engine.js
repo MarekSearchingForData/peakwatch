@@ -333,7 +333,7 @@
         case 'd': tl.t = 'road'; break;
         case 'b': {
           const b = blds[g.bid[k]];
-          tl.t = 'street'; tl.bld = b; tl.raise = b.h;
+          tl.t = 'street'; tl.bld = b; tl.raise = b.art ? 0 : b.h;   // buildings with finished art are drawn as sprites
           const pal = ROOFS[b.type] || ROOFS.house;
           const r = pal[b.id % pal.length];
           b.roof = b.roof || r; b.wallc = b.wallc || WALLS[b.type] || (b.id % 3 ? '#c8b08a' : P.bone);
@@ -525,6 +525,31 @@
       const data = c2.getImageData(0, 0, w, h).data;
       const dx = L[0] - m.left[0] * s, dy = (L[1] + R[1]) / 2 - ((m.left[1] + m.right[1]) / 2) * s;
       spriteAt[sp.x1 + ',' + sp.y1] = () => ctx.blit(data, w, h, dx, dy);
+    }
+    // per-building art from a sprite set (row houses): fitted by footprint width, standing on its front corner
+    const setCache = {};
+    function scaled(set, k, flip, s) {
+      const key = set + k + flip + s.toFixed(3);
+      if (setCache[key]) return setCache[key];
+      const art = world.spec.spriteArt[set].variants[k], m = art.meta;
+      const w = Math.max(1, Math.round(m.w * s)), h = Math.max(1, Math.round(m.h * s));
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      const c2 = cv.getContext('2d'); c2.imageSmoothingEnabled = true; c2.imageSmoothingQuality = 'high';
+      if (flip) { c2.translate(w, 0); c2.scale(-1, 1); }
+      c2.drawImage(art.img, 0, 0, w, h);
+      return (setCache[key] = { data: c2.getImageData(0, 0, w, h).data, w, h });
+    }
+    for (const b of world.buildings || []) {
+      if (!b.art || !world.spec.spriteArt || !world.spec.spriteArt[b.art]) continue;
+      const v = world.spec.spriteArt[b.art].variants[b.variant || 0]; if (!v) continue;
+      const m = v.meta, x1 = b.x0 + b.w - 1, y1 = b.y0 + b.d - 1, gh = b.gh || 1;
+      const span = (b.w + b.d) * HALF;                                     // footprint width on screen
+      const s = Math.round(span * 1.1 / (m.right[0] - m.left[0]) * 200) / 200;
+      const bx = b.flip ? m.w - m.bottom[0] : m.bottom[0];
+      const [cx, cy0] = view.proj(x1, y1, gh);
+      const key = x1 + ',' + y1, prev = spriteAt[key];
+      spriteAt[key] = () => { if (prev) prev(); const sc = scaled(b.art, b.variant || 0, !!b.flip, s);
+        ctx.blit(sc.data, sc.w, sc.h, cx - bx * s, cy0 + TH - m.bottom[1] * s); };
     }
     for (const tl of order) {
       const tr = TERRAIN[tl.t];

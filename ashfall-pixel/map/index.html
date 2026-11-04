@@ -166,8 +166,18 @@ const CITY_NAMES = { greymark: 'Greymark', valencourt: 'Valencourt' };
       await loadCity(st.view); await new Promise(r => setTimeout(r, 30));
     }
     const spec = st.view === 'kingdom' ? kingdomSpec() : citySpec(st.view);
+    const sets = spec.grid ? [...new Set(spec.grid.buildings.filter(b => b.art).map(b => b.art))] : [];
+    if (sets.length) {                                              // sprite sets for buildings (row houses)
+      spec.spriteArt = spec.spriteArt || {};
+      for (const set of sets) {
+        await new Promise((res) => { const sc = document.createElement('script'); sc.src = 'assets/' + set + '.meta.js'; sc.onload = res; sc.onerror = res; document.head.appendChild(sc); });
+        const metaSet = window.ASSET_META && window.ASSET_META[set]; if (!metaSet) continue;
+        const variants = await Promise.all(metaSet.variants.map(async (meta) => { const img = new Image(); img.src = meta.src; await img.decode(); return { img, meta }; }));
+        spec.spriteArt[set] = { variants };
+      }
+    }
     if (spec.grid && spec.grid.sprites && spec.grid.sprites.length) {   // finished art for layout slots
-      spec.spriteArt = {};
+      spec.spriteArt = spec.spriteArt || {};
       await Promise.all(spec.grid.sprites.map(async (sp) => {
         const img = new Image(); img.src = sp.src;
         const meta = await new Promise((res) => { const sc = document.createElement('script'); sc.src = sp.src.replace('.png', '.meta.js'); sc.onload = () => res(window.ASSET_META && window.ASSET_META[sp.id]); sc.onerror = () => res(null); document.head.appendChild(sc); });
