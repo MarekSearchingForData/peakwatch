@@ -302,12 +302,13 @@
 
   // ---------- world generation ----------
   const ROOFS = {
+    rowhouse: [['#7a6232', '#a08646'], ['#6a5428', '#8e7438'], ['#806838', '#a8904e'], ['#5e4a26', '#82683a']],
     house: [['#6a2a20', '#8e3a28'], ['#5a3a22', '#7a5230'], ['#4e3a2e', '#6e5444'], ['#6a2a20', '#8e3a28'], ['#7a5a30', '#9a7a44']],
     cottage: [['#7a6232', '#9a8246']], shack: [['#4a3a2a', '#625040']], barn: [['#5e2a1e', '#7e3a28']], farmhouse: [['#7a6232', '#9a8246']],
     church: [['#2c3036', '#454b53']], keep: [['#2f3b52', '#46587a']], hall: [['#3a4256', '#525c74']], manor: [['#3a4256', '#525c74']],
     warehouse: [['#3e2a1c', '#5a3e28']], mill: [['#3e2a1c', '#5a3e28']], tavern: [['#5a2a1e', '#7e3e28']],
   };
-  const WALLS = { church: P.bone, keep: '#9aa0a6', hall: '#c8b08a', manor: '#d8cbb0', tavern: '#b89a70', shack: '#7a6a58', barn: '#8a5c34' };
+  const WALLS = { rowhouse: '#a0503a', church: P.bone, keep: '#9aa0a6', hall: '#c8b08a', manor: '#d8cbb0', tavern: '#b89a70', shack: '#7a6a58', barn: '#8a5c34' };
   function buildGrid(spec) {
     const g = spec.grid, W = g.w, H = g.h, tiles = new Array(W * H);
     const blds = {}; for (const b of g.buildings) blds[b.id] = b;
@@ -340,7 +341,7 @@
         }
         default: tl.t = 'grass'; tl.prop = n < 0.035 ? 'round' : n < 0.05 ? 'bush' : n < 0.055 ? 'pine' : null;
       }
-      if (g.hgt) tl.h = +g.hgt[k];   // terrain height (e.g. the church hill)
+      if (g.hgt) tl.h = parseInt(g.hgt[k], 36);   // terrain height in levels (base 36: the church hill is tall)
       tiles[k] = tl;
     }
     const T = (x, y) => (x >= 0 && y >= 0 && x < W && y < H) ? tiles[y * W + x] : null;
@@ -515,7 +516,7 @@
     const spriteAt = {};
     for (const sp of (world.spec.grid && world.spec.grid.sprites) || []) {
       const art = (world.spec.spriteArt || {})[sp.id]; if (!art) continue;
-      const [lx, ly0] = view.proj(sp.x0, sp.y1, 1), [rx, ry0] = view.proj(sp.x1, sp.y0, 1);
+      const [lx, ly0] = view.proj(sp.x0, sp.y1, sp.h || 1), [rx, ry0] = view.proj(sp.x1, sp.y0, sp.h || 1);
       const L = [lx - HALF, ly0 + TH / 2], R = [rx + HALF, ry0 + TH / 2], m = art.meta;
       const s = (R[0] - L[0]) / (m.right[0] - m.left[0]);
       const w = Math.round(m.w * s), h = Math.round(m.h * s);

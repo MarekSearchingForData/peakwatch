@@ -139,26 +139,34 @@ ms = SK['market_square']
 for y in range(H):
     for x in range(W):
         u, v = to_sketch(x + 0.5, y + 0.5)
-        if ((u - ms['cx']) / ms['rx']) ** 2 + ((v - ms['cy']) / ms['ry']) ** 2 < 1:
+        if ((u - ms['cx']) / (ms['rx'] * 1.35)) ** 2 + ((v - ms['cy']) / (ms['ry'] * 1.35)) ** 2 < 1:
             cells[y][x] = 'p'
 wx, wy = to_grid((ms['cx'], ms['cy'])); cells[int(wy)][int(wx)] = 'W'; anchor('town_well', int(wx), int(wy))
-for k, (du, dv) in enumerate([(-45, -12), (30, -18), (-20, 22), (45, 15)]):
-    sx, sy = to_grid((ms['cx'] + du, ms['cy'] + dv)); building(int(sx), int(sy), 2, 2, 'stall', 4, label=f'stall_{k}')
+stalls = 0
+for sy in range(int(wy) - 14, int(wy) + 15, 3):          # rows of 2x2 stalls with 1-tile aisles
+    for sx in range(int(wx) - 14, int(wx) + 15, 3):
+        if abs(sx - wx) < 4 and abs(sy - wy) < 4: continue  # keep the well and Aldren's table clear
+        if free(sx, sy, sx + 2, sy + 2, 'p') and rnd.random() < 0.85:
+            building(sx, sy, 2, 2, 'stall', 4); stalls += 1
+slots.append({'id': 'market_square', 'kind': 'square', 'x': int(wx) - 16, 'y': int(wy) - 16, 'w': 33, 'd': 33})
 
 # ------------------------------------------------------- church compound ---
 loop = [to_grid(p) for p in SK['church']['loop']]
 CX0, CY0 = int(min(p[0] for p in loop)), int(min(p[1] for p in loop))
 CX1, CY1 = int(max(p[0] for p in loop)) + 1, int(max(p[1] for p in loop)) + 1
 HC = ((CX0 + CX1) / 2, (CY0 + CY1) / 2)
-for y in range(CY0 - 10, CY1 + 11):            # the hill the switchback road climbs
-    for x in range(CX0 - 10, CX1 + 11):
+TOP, SLOPE = 20, 26                                # plateau height (levels) and slope length (tiles)
+for y in range(CY0 - SLOPE, CY1 + SLOPE + 1):      # a high hill: flat top for the compound, long slopes
+    for x in range(CX0 - SLOPE, CX1 + SLOPE + 1):
         if not inb(x, y) or cells[y][x] in '~': continue
-        dd = max(abs(x - HC[0]) / ((CX1 - CX0) / 2 + 10), abs(y - HC[1]) / ((CY1 - CY0) / 2 + 10))
-        hgt[y][x] = max(hgt[y][x], 1 + round(max(0, 1 - dd) * 7))
+        ex = max(0, CX0 - x, x - CX1); ey = max(0, CY0 - y, y - CY1)
+        dist = math.hypot(ex, ey)
+        hgt[y][x] = max(hgt[y][x], 1 + round(max(0.0, 1 - dist / SLOPE) ** 1.3 * (TOP - 1)))
+HILLTOP = TOP
 if os.path.exists(os.path.join(ROOT, 'map', 'assets', 'church_compound.png')):
     for y in range(CY0, CY1 + 1):
-        for x in range(CX0, CX1 + 1): cells[y][x] = 'g'; hgt[y][x] = hgt[CY1][CX1]
-    sprites.append({'id': 'church_compound', 'src': 'assets/church_compound.png', 'x0': CX0, 'y0': CY0, 'x1': CX1, 'y1': CY1})
+        for x in range(CX0, CX1 + 1): cells[y][x] = 'g'
+    sprites.append({'id': 'church_compound', 'src': 'assets/church_compound.png', 'x0': CX0, 'y0': CY0, 'x1': CX1, 'y1': CY1, 'h': HILLTOP})
 else:
     for y in range(CY0, CY1 + 1):
         for x in range(CX0, CX1 + 1):
@@ -202,17 +210,36 @@ if hp: anchor('ancient_ruin', hp['tx'] - 3, hp['ty'] - 3)
 near((ms['cx'] + 120, ms['cy'] - 20), 5, 4, 'house', 7, 'husk_house')
 near((SK['main_gate'][0] - 40, SK['main_gate'][1] - 30), 5, 4, 'smithy', 7, 'greymark_blacksmith')
 
-# ------------------------------------------- ordinary houses along streets ---
+# ------------------------------- rows of narrow Dutch thatched houses along the streets ---
+# Every street frontage gets a continuous row: narrow units (2 wide along the street, 4-5 deep) with
+# the gable end facing the street, shoulder to shoulder; now and then a 1-tile alley; gardens behind.
 road = {(x, y) for y in range(H) for x in range(W) if cells[y][x] == 'r'}
-def near_road(x0, y0, w, d, reach=3):
-    return any((x, y) in road for y in range(y0 - reach, y0 + d + reach) for x in range(x0 - reach, x0 + w + reach))
+def is_road(x, y): return (x, y) in road
 count = 0
-cands = [(x, y) for y in range(0, H, 2) for x in range(0, W, 2) if cells[y][x] == 'Y']
-rnd.shuffle(cands)
-for (x, y) in cands:
-    w, d = rnd.choice([(4, 4), (5, 4), (4, 3), (4, 5), (5, 5)])
-    if free(x - 1, y - 1, x + w + 1, y + d + 1, 'Y') and near_road(x, y, w, d, 3):
-        building(x, y, w, d, 'house', 3 + 2 * rnd.choice([1, 2, 2, 3])); count += 1
+for _pass in range(2):
+    for (x, y) in sorted(road, key=lambda p: (p[0] + p[1], p[0])):
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            fx, fy = x + dx, y + dy                     # the first tile off the street
+            if not inb(fx, fy) or cells[fy][fx] != 'Y' or hgt[fy][fx] > 2: continue
+            depth, width = rnd.choice([4, 5, 5]), 2
+            if dx:   # street runs along y here: the unit extends in x, 2 tiles along y
+                x0 = fx if dx > 0 else fx - depth + 1; y0 = fy
+                rect = (x0, y0, depth, width)
+            else:
+                y0 = fy if dy > 0 else fy - depth + 1; x0 = fx
+                rect = (x0, y0, width, depth)
+            rx, ry, rw, rd = rect
+            if not free(rx, ry, rx + rw, ry + rd, 'Y') or any(hgt[yy][xx] > 2 for yy in range(ry, ry + rd) for xx in range(rx, rx + rw)):
+                continue
+            if rnd.random() < 0.13:                        # an alley: leave this frontage open
+                for yy in range(ry, ry + rd):
+                    for xx in range(rx, rx + rw): cells[yy][xx] = 'a'
+                continue
+            building(rx, ry, rw, rd, 'rowhouse', 5 + 2 * rnd.choice([1, 1, 2]))
+            count += 1
+for y in range(H):
+    for x in range(W):
+        if cells[y][x] == 'a': cells[y][x] = 'r'          # alleys become narrow lanes
 gx, gy = gates['gate_main']
 for (x, y) in [(gx + 6, gy + 12), (gx - 7, gy + 20), (gx + 8, gy + 28)]:
     if free(x, y, x + 4, y + 4, 'gfF'): building(x, y, 4, 4, 'cottage', 5); count += 1
@@ -221,7 +248,7 @@ for (x, y) in [(gx + 6, gy + 12), (gx - 7, gy + 20), (gx + 8, gy + 28)]:
 out = {
     'id': 'greymark', 'w': W, 'h': H, 'unit': 2,
     'cells': ''.join(''.join(r) for r in cells),
-    'hgt': ''.join(''.join(str(min(9, v)) for v in r) for r in hgt),
+    'hgt': ''.join(''.join('0123456789abcdefghijklmnopqrstuvwxyz'[min(35, v)] for v in r) for r in hgt),   # base-36 levels
     'bid': [v for r in bid for v in r],
     'gates': [list(g) for g in gates.values()], 'square': [round(wx), round(wy)], 'fields': 'flax',
     'districts': [], 'buildings': buildings, 'anchors': anchors, 'sprites': sprites,
