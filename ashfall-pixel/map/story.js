@@ -602,6 +602,24 @@ window.ASHFALL_STORY = {
    "desc": "A stone fountain in the churchyard on the hill. Its water runs clear, unlike the well's."
   },
   {
+   "id": "church_gatehouse",
+   "name": "The church keep gate",
+   "town": "greymark",
+   "type": "gate",
+   "importance": "supporting",
+   "events": [],
+   "desc": "Stone gatehouse in the inner wall that cuts the church hill off from the town; the switchback road climbs through it. Where Kethric runs into the priest's men."
+  },
+  {
+   "id": "inner_wall",
+   "name": "The inner wall",
+   "town": "greymark",
+   "type": "gate",
+   "importance": "supporting",
+   "events": [],
+   "desc": "A stone curtain wall with battlements and towers round the church hill, keeping the church keep apart from the rest of Greymark."
+  },
+  {
    "id": "greymark_walls",
    "name": "Town walls & old foundations",
    "town": "greymark",

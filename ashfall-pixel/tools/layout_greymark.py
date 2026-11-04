@@ -118,7 +118,7 @@ for k in range(0, 360, 14):
     t = k / 360 * math.tau
     x, y = to_grid((o['cx'] + o['rx'] * math.cos(t), o['cy'] + o['ry'] * math.sin(t)))
     for yy in range(int(y) - 1, int(y) + 2):
-        for xx in range(int(x) - 1, int(x) + 2): setc(xx, yy, 'T')
+        for xx in range(int(x) - 1, int(x) + 2): setc(xx, yy, 'Q')      # timber watchtower
 
 # streets: cobbles inside the walls; dirt roads out of the gates
 for road in SK['roads']:
@@ -132,8 +132,8 @@ for gname, gp in [('gate_main', SK['main_gate']), ('gate_east', SK['east_gate'])
         for dy in range(-5, 6):
             xx, yy = int(gx) + dx, int(gy) + dy
             if not inb(xx, yy): continue
-            if cells[yy][xx] in 'wT':
-                cells[yy][xx] = 'r' if abs(dx) + abs(dy) <= 2 else 'T'   # opening + bone-white gate towers
+            if cells[yy][xx] in 'wTQ':
+                cells[yy][xx] = 'r' if abs(dx) + abs(dy) <= 2 else 'G'   # opening + bone-white stone gate towers
 anchor('greymark_walls', *gates['gate_main'])
 
 # ---------------------------------------------------------- market square ---
@@ -189,6 +189,34 @@ else:
     cells[int(HC[1]) + 1][int(HC[0]) + 2] = 'U'
 slots.append({'id': 'church_compound', 'kind': 'walls', 'x': CX0, 'y': CY0, 'w': CX1 - CX0 + 1, 'd': CY1 - CY0 + 1})
 anchor('greymark_church', HC[0] - 2, HC[1] - 3); anchor('church_fountain', HC[0] + 1, HC[1] + 2)
+
+# the INNER WALL: a stone curtain wall with battlements round the church hill, cutting the church
+# keep off from the rest of the town; it runs from the outer palisade round the hill and back to it.
+# Where a street crosses it there is a stone gatehouse (the switchback road climbs through it).
+IW = 17                                         # distance from the compound's footprint to the inner wall
+inner_tiles, inner_gates = [], []
+for y in range(CY0 - IW - 2, CY1 + IW + 3):
+    for x in range(CX0 - IW - 2, CX1 + IW + 3):
+        if not inb(x, y): continue
+        ex = max(0, CX0 - x, x - CX1); ey = max(0, CY0 - y, y - CY1)
+        dd = math.hypot(ex, ey)
+        if IW <= dd < IW + 1.25 and in_oval(x, y, shrink=6) and cells[y][x] not in '~':
+            if cells[y][x] == 'r': inner_gates.append((x, y))
+            else: cells[y][x] = 'S'; inner_tiles.append((x, y))
+inner_tiles.sort(key=lambda p: math.atan2(p[1] - HC[1], p[0] - HC[0]))
+for k, (x, y) in enumerate(inner_tiles):        # towers every ~10 tiles along the curtain
+    if k % 10 == 0:
+        for yy in range(y - 1, y + 2):
+            for xx in range(x - 1, x + 2):
+                if inb(xx, yy) and cells[yy][xx] in 'SY g': cells[yy][xx] = 'T'
+for (x, y) in inner_gates:                      # gatehouse towers either side of the road
+    for dx, dy in ((-2, -2), (2, 2), (-2, 2), (2, -2)):
+        for yy in range(y + dy - 1, y + dy + 1):
+            for xx in range(x + dx - 1, x + dx + 1):
+                if inb(xx, yy) and cells[yy][xx] in 'SY': cells[yy][xx] = 'T'
+if inner_gates: anchor('church_gatehouse', *inner_gates[len(inner_gates) // 2])
+slots.append({'id': 'inner_wall', 'kind': 'walls', 'x': CX0 - IW, 'y': CY0 - IW, 'w': CX1 - CX0 + 2 * IW, 'd': CY1 - CY0 + 2 * IW})
+print('inner wall', len(inner_tiles), 'tiles,', len(inner_gates), 'gate tiles')
 
 # --------------------------------------------------------- the mill annex ---
 ma = SK['mill_annex']

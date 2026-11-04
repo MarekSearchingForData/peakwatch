@@ -339,8 +339,11 @@
         case 'F': tl.t = fieldT === 'wheat' ? 'meadow' : 'wheat'; break;
         case 'm': tl.t = 'meadow'; tl.prop = n < 0.25 ? 'round' : null; break;
         case '~': tl.t = 'water'; tl.h = 0; break;
-        case 'w': tl.t = 'stone'; tl.raise = 7; tl.wall = true; break;
-        case 'T': tl.t = 'stone'; tl.raise = 12; tl.wall = true; tl.tower = true; break;
+        case 'w': tl.t = 'road'; tl.raise = 9; tl.wall = true; tl.palisade = true; break;            // dark timber stakes
+        case 'Q': tl.t = 'road'; tl.raise = 16; tl.wall = true; tl.palisade = true; tl.tower = true; break; // timber watchtower
+        case 'S': tl.t = 'stone'; tl.raise = 9; tl.wall = true; break;                                  // stone curtain wall
+        case 'T': tl.t = 'stone'; tl.raise = 14; tl.wall = true; tl.tower = true; break;                // stone tower
+        case 'G': tl.t = 'stone'; tl.raise = 15; tl.wall = true; tl.tower = true; tl.bone = true; break; // bone-white gate tower
         case 'W': tl.t = 'plaza'; tl.well = true; break;
         case 'U': tl.t = 'plaza'; tl.well = true; tl.fountain = true; break;
         case 'k': tl.t = 'forest'; tl.prop = n < 0.55 ? 'round' : n < 0.85 ? 'pine' : 'autumn'; break;
@@ -591,9 +594,14 @@
             if (((x + y * 2) & 3) === 0) return shade(base, -0.08);                          // shingle rows
             return hash(x, y, 9) < 0.08 ? shade(base, 0.1) : base;
           }
+          if (tl.palisade) {   // sharpened stake tops, tarred dark timber; watchtowers get a plank platform
+            if (tl.tower) return (x + y) % 3 === 0 ? P.w0 : P.w2;
+            return (x % 3 === 1) ? P.w2 : (x % 3 === 0 ? P.ink : P.w0);
+          }
+          const sl = tl.bone ? ['#bfb6a2', '#e9dfc4', '#d6ccb4', '#f4ecd8'] : [P.s1, P.s4, P.s2, P.s3];
           // wall walk / tower top with crenellations
-          if (dTop === 0 || rem === 1) return ((x + y) & 1) ? P.s4 : P.s1;
-          return tl.tower ? P.s2 : P.s3;
+          if (dTop === 0 || rem === 1) return ((x + y) & 1) ? sl[1] : sl[0];
+          return tl.tower ? sl[2] : sl[3];
         }
         if (raise && part === 'side' && dTop < raise) {
           if (bld && dTop < tl.roofLift) { // gable end / stepped roof face
@@ -609,6 +617,14 @@
             if (dTop === tl.wallH - 1) return shade(wall, -0.2);
             return wall;
           }
+          if (tl.palisade) {   // vertical stakes with gaps, pointed tips catching the light
+            const stake = x % 3;
+            if (dTop < 2) return stake === 1 ? (dTop === 0 ? P.w3 : P.w2) : (dTop === 0 ? P.night : P.w0);
+            if (stake === 0) return P.ink;
+            if (tl.tower && dTop === 3) return P.w3;                     // platform rail
+            return left ? (stake === 1 ? P.w1 : P.w0) : (stake === 1 ? P.w2 : P.w1);
+          }
+          if (tl.bone) { const b2 = left ? '#bfb6a2' : '#d6ccb4'; return (dTop % 3 === 0 && ((x + (dTop / 3 | 0)) & 1)) ? '#9a927e' : b2; }
           const st = left ? P.s1 : P.s2;
           return (dTop % 3 === 0 && ((x + (dTop / 3 | 0)) & 1)) ? P.s0 : st;
         }
