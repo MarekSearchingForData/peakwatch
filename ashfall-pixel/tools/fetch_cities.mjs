@@ -21,7 +21,7 @@ mkdirSync(dir, { recursive: true });
 
 export const CITIES = {
   // Small border town: palisade, a church on the high point, a square with the well.
-  greymark: { size: 14, seed: 2121, citadel: 0, urban_castle: 0, walls: 1, temple: 1, plaza: 1, river: 0, coast: 0, shantytown: 1, greens: 0 },
+  greymark: { size: 18, seed: 2121, citadel: 0, urban_castle: 0, walls: 1, temple: 1, plaza: 1, river: 0, coast: 0, shantytown: 1, greens: 0 },
   // Large basin city: House Deveraux's keep (citadel), walls, a stream, gardens, vineyards around it.
   valencourt: { size: 36, seed: 7777, citadel: 1, urban_castle: 0, walls: 1, temple: 1, plaza: 1, river: 1, coast: 0, shantytown: 1, greens: 1 },
 };

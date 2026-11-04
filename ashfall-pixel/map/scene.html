@@ -16,8 +16,9 @@
   header a:hover, button:hover { border-color: var(--ember); }
   .sp { flex: 1; }
   main { display: grid; grid-template-columns: 1fr 340px; height: calc(100% - 50px); }
-  #stage { position: relative; overflow: hidden; display: grid; place-items: center; }
-  #wrap { position: relative; }
+  #stage { position: relative; overflow: hidden; cursor: grab; touch-action: none; }
+  #stage.drag { cursor: grabbing; }
+  #wrap { position: absolute; left: 0; top: 0; }
   canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
   .label { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; font-family: 'Silkscreen', monospace; font-size: 11px;
     padding: 1px 5px; background: rgba(14,11,18,.85); border: 1px solid #8a6a20; color: var(--ink); cursor: pointer; }
@@ -61,11 +62,19 @@
   const W = img.width, H = img.height, P = (meta && meta.points) || {};
   const c = document.getElementById('c'), ctx = c.getContext('2d'); c.width = W; c.height = H;
   const wrap = document.getElementById('wrap'), stage = document.getElementById('stage'), info = document.getElementById('info');
-  let zoom = Math.max(1, Math.floor(Math.min(stage.clientWidth / W, stage.clientHeight / H)));
+  const fit = Math.min(stage.clientWidth / W, stage.clientHeight / H);
+  let zoom = fit >= 1 ? Math.floor(fit) : Math.round(fit * 4) / 4;   // big scenes start zoomed out to fit
+  let panX = 0, panY = 0;
+  const SCENE_INFO = {
+    'greymark-square': ['Greymark · the square', 'Book 1 · Ch I · dusk at the well'],
+    'greymark-town': ['Greymark', 'The whole town · about 450 buildings · dusk'],
+  }[SCENE] || [SCENE, ''];
+  document.querySelector('h1').textContent = SCENE_INFO[0]; document.querySelector('header .meta').textContent = SCENE_INFO[1];
   const CAT = Object.fromEntries((window.ASHFALL_STORY?.buildings || []).map(b => [b.id, b]));
   const PEOPLE = {
     aldren: { name: 'Aldren', desc: 'The priest at the well, with his estoc never far away. He believes every word: "We are making a saint." He never drinks.', events: [9, 15, 19] },
     kethric: { name: 'Kethric', desc: 'Months after Greystone, drunk and hollow, owing Vex. He refuses the cup. "Part of me wanted to ask for a cup myself."', events: [6, 7, 10] },
+    vex: { name: 'Vex', desc: 'Runs the mill. Counts her workers at the gate every morning; eleven are missing. Covered for Kethric with the priest\'s men, so he owes her.', events: [7, 11, 14, 16] },
   };
   const hash = (a, b) => { let h = (a * 374761393 + b * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
 
@@ -85,14 +94,29 @@
   function layout() {
     c.style.width = W * zoom + 'px'; c.style.height = H * zoom + 'px';
     wrap.querySelectorAll('.label').forEach(el => { el.style.left = el.dataset.x * zoom + 'px'; el.style.top = (el.dataset.y * zoom - 4) + 'px'; });
+    wrap.style.transform = `translate(${Math.round(panX)}px, ${Math.round(panY)}px)`;
   }
-  document.getElementById('zin').onclick = () => { zoom = Math.min(6, zoom + 1); layout(); };
-  document.getElementById('zout').onclick = () => { zoom = Math.max(1, zoom - 1); layout(); };
+  const ZS = [0.25, 0.5, 0.75, 1, 2, 3, 4, 6];
+  function setZoom(z, cx = stage.clientWidth / 2, cy = stage.clientHeight / 2) {
+    panX = cx - (cx - panX) * z / zoom; panY = cy - (cy - panY) * z / zoom; zoom = z; layout();
+  }
+  const step = (d) => { const i = ZS.findIndex(z => z >= zoom - 1e-6); setZoom(ZS[Math.max(0, Math.min(ZS.length - 1, (i < 0 ? ZS.length - 1 : i) + d))]); };
+  document.getElementById('zin').onclick = () => step(1);
+  document.getElementById('zout').onclick = () => step(-1);
+  stage.addEventListener('wheel', (e) => { e.preventDefault(); const r = stage.getBoundingClientRect(); const i = ZS.findIndex(z => z >= zoom - 1e-6);
+    setZoom(ZS[Math.max(0, Math.min(ZS.length - 1, i + (e.deltaY < 0 ? 1 : -1)))], e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+  let drag = null;
+  stage.addEventListener('pointerdown', (e) => { if (e.target.classList.contains('label')) return; drag = { x: e.clientX - panX, y: e.clientY - panY }; stage.classList.add('drag'); stage.setPointerCapture(e.pointerId); });
+  stage.addEventListener('pointermove', (e) => { if (!drag) return; panX = e.clientX - drag.x; panY = e.clientY - drag.y; layout(); });
+  stage.addEventListener('pointerup', () => { drag = null; stage.classList.remove('drag'); });
+  panX = (stage.clientWidth - W * zoom) / 2; panY = (stage.clientHeight - H * zoom) / 2;
+  const focus = new URLSearchParams(location.search).get('focus');
+  if (focus && P.labels && P.labels[focus]) { zoom = +(new URLSearchParams(location.search).get('z') || 2); const [fx, fy] = P.labels[focus]; panX = stage.clientWidth / 2 - fx * zoom; panY = stage.clientHeight / 2 - fy * zoom; }
   document.getElementById('labels').onclick = () => stage.classList.toggle('hide');
   window.addEventListener('resize', layout); layout();
 
   // ash and embers drifting over the scene
-  const ash = Array.from({ length: 70 }, (_, i) => ({ x: hash(i, 1) * W, y: hash(i, 2) * H, vx: -2 - hash(i, 3) * 3, vy: 5 + hash(i, 4) * 6, c: hash(i, 5) < 0.18 ? '#ff8a2a' : (hash(i, 6) < 0.5 ? '#857873' : '#b3a69c') }));
+  const ash = Array.from({ length: Math.round(70 * Math.max(1, W * H / 2e5)) }, (_, i) => ({ x: hash(i, 1) * W, y: hash(i, 2) * H, vx: -2 - hash(i, 3) * 3, vy: 5 + hash(i, 4) * 6, c: hash(i, 5) < 0.18 ? '#ff8a2a' : (hash(i, 6) < 0.5 ? '#857873' : '#b3a69c') }));
   const tParam = new URLSearchParams(location.search).get('t');
   const t0 = performance.now();
   function frame(now) {
@@ -123,6 +147,10 @@
     // the red water shimmers
     for (const [i, [x, y]] of (P.water || []).entries()) {
       if (Math.sin(t * 2.4 + i * 1.7) > 0.3) { ctx.fillStyle = Math.sin(t * 5 + i) > 0 ? '#ef7a5a' : '#c24a3c'; ctx.fillRect(x + Math.round(Math.sin(t + i) * 2), y, 2, 1); }
+    }
+    // the church fountain: clear water sparkling
+    for (const [i, [x, y]] of (P.fountain || []).entries()) {
+      if (Math.sin(t * 3.1 + i * 2.3) > 0.1) { ctx.fillStyle = Math.sin(t * 6 + i) > 0 ? '#c8f0ff' : '#7ac8e8'; ctx.fillRect(x + Math.round(Math.sin(t * 2 + i) * 1.5), y - (i === 4 ? Math.round(Math.abs(Math.sin(t * 4)) * 3) : 0), 1, 1); }
     }
     // ash
     for (const p of ash) {

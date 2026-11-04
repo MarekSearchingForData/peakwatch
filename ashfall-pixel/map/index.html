@@ -308,7 +308,7 @@ const CITY_NAMES = { greymark: 'Greymark', valencourt: 'Valencourt' };
     } else {
       const g = window.ASHFALL_CITIES[st.view];
       const story = cityStory(st.view).sort((a, b) => IMP_ORDER[a.cat.importance] - IMP_ORDER[b.cat.importance]);
-      if (st.view === 'greymark') html += '<p><a class="linkbtn" style="display:inline-block;text-decoration:none" href="scene.html?scene=greymark-square">Enter the square: detailed scene →</a></p>';
+      if (st.view === 'greymark') html += '<p><a class="linkbtn" style="display:inline-block;text-decoration:none" href="scene.html?scene=greymark-town">Greymark diorama: the whole town →</a> <a class="linkbtn" style="display:inline-block;text-decoration:none" href="scene.html?scene=greymark-square">The square up close →</a></p>';
       html += `<h2>${CITY_NAMES[st.view]}</h2><p class="meta">${g.buildings.length} buildings on a ${g.w}×${g.h} tile layout from the Medieval Fantasy City Generator. The story buildings are placed by rule; move them in <code>tools/bake_city.py</code>.</p>`;
       html += '<h3>Story buildings</h3><ul class="list">' + story.map(s => `<li data-cat="${s.cat.id}" data-move="1"><span class="dot ${s.cat.importance}"></span><span class="t">${s.cat.name}</span><span class="c">${s.anchor ? 'marker' : s.type}</span></li>`).join('') + '</ul>';
       const offmap = STORY.buildings.filter(b => b.town === st.view && !story.some(s => s.cat.id === b.id) && (b.importance !== 'v245'));

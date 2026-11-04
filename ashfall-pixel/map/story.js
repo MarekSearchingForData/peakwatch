@@ -581,6 +581,27 @@ window.ASHFALL_STORY = {
    "desc": "Below the ruin. Small, dark and flooded, with warm red shallows and rows of husks, mouths open. Vex sits in a crystal cage at its heart; the sky holds singing stars."
   },
   {
+   "id": "greymark_church",
+   "name": "The church on the hill",
+   "town": "greymark",
+   "type": "church",
+   "importance": "supporting",
+   "events": [
+    13,
+    15
+   ],
+   "desc": "Sits like a crown on the town's highest point (drafted Ch IV). Bone-white stone, a bell tower and spire, a churchyard. Seat of Aldren's priests, who take the husks away as a 'blessing'."
+  },
+  {
+   "id": "church_fountain",
+   "name": "The church fountain",
+   "town": "greymark",
+   "type": "fountain",
+   "importance": "mention",
+   "events": [],
+   "desc": "A stone fountain in the churchyard on the hill. Its water runs clear, unlike the well's."
+  },
+  {
    "id": "greymark_walls",
    "name": "Town walls & old foundations",
    "town": "greymark",

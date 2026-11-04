@@ -1,4 +1,6 @@
-"""Greymark square as a 3D diorama, rendered for a pre-rendered isometric pixel look.
+"""Shared Blender kit for Ashfall dioramas (import with `from kit import *`).
+
+Originally the Greymark square script; see greymark_square.py / greymark_town.py.
 
 Run with Blender's Python module (bpy 5.x):
     <venv-with-bpy>/bin/python tools/blender/greymark_diorama.py [out.png] [--size 1400] [--samples 32]
@@ -193,7 +195,7 @@ def gable_roof(w, d, h, overhang, loc, material, rot_z=0.0, name='roof'):
     return o
 
 
-def timber_house(x, y, w, d, h, rot=0.0, roof='thatch', storeys=2, plaster='plaster', chimney=True, lit=0.5, seed=0, name='house'):
+def timber_house(x, y, w, d, h, rot=0.0, roof='thatch', storeys=2, plaster='plaster', chimney=True, lit=0.5, seed=0, name='house', lite=False):
     rr = random.Random(seed)
     root = bpy.data.objects.new(name, None); bpy.context.collection.objects.link(root)
     root.location = (x, y, 0); root.rotation_euler[2] = rot
@@ -214,7 +216,7 @@ def timber_house(x, y, w, d, h, rot=0.0, roof='thatch', storeys=2, plaster='plas
         # posts + braces on all four faces
         for face in range(4):
             length = ww if face < 2 else dd
-            n = max(2, int(length / 0.55))
+            n = 1 if lite else max(2, int(length / 0.55))
             for i in range(n + 1):
                 t = -length / 2 + i * length / n
                 if face == 0: p = (t, -dd / 2 - 0.02, z0 + sh / 2)
@@ -223,7 +225,7 @@ def timber_house(x, y, w, d, h, rot=0.0, roof='thatch', storeys=2, plaster='plas
                 else: p = (ww / 2 + 0.02, t, z0 + sh / 2)
                 box(T if face < 2 else T, T if face < 2 else T, sh, p, M['timber'], parent=root)
                 # diagonal brace in alternating panels
-                if i < n and (i + s) % 2 == 0:
+                if not lite and i < n and (i + s) % 2 == 0:
                     ang = math.atan2(sh * 0.9, length / n) * (1 if (i % 4 == 0) else -1)
                     mid = t + length / n / 2
                     L = math.hypot(sh * 0.9, length / n)
@@ -236,7 +238,7 @@ def timber_house(x, y, w, d, h, rot=0.0, roof='thatch', storeys=2, plaster='plas
         # windows
         for face in (0, 2):
             length = ww if face == 0 else dd
-            for i in range(max(1, int(length / 1.1))):
+            for i in range(1 if lite else max(1, int(length / 1.1))):
                 t = -length / 2 + (i + 0.5) * length / max(1, int(length / 1.1))
                 glow = M['glass'] if rr.random() < lit else M['iron']
                 if face == 0: p = (t + 0.15, -dd / 2 - 0.04, z0 + sh * 0.55); sz = (0.26, 0.04, 0.3)
@@ -293,126 +295,6 @@ def lantern_post(x, y, h=1.5):
     L = bpy.data.lights.new('lamp', 'POINT'); L.energy = 18; L.color = (1.0, 0.72, 0.4); L.shadow_soft_size = 0.2
     o = bpy.data.objects.new('lamp', L); bpy.context.collection.objects.link(o); o.location = (x + 0.3, y, h - 0.3)
 
-
-# ---------------------------------------------------------------- build ---
-R = 7.5  # slab radius
-# hexagonal floating slab with soil strata
-cyl(R, 1.6, (0, 0, -0.8), M['soil'], 6, rot=(0, 0, math.radians(30)), name='slab')
-cyl(R - 0.02, 0.12, (0, 0, -0.04), M['grass'], 6, rot=(0, 0, math.radians(30)), name='turf')
-# soil slab only (like the reference diorama); a mossy lip hangs over the rim
-for i in range(10):  # moss/grass lip hanging over the edge
-    a = i / 10 * math.tau + 0.3
-    blob(0.4, (math.cos(a) * (R - 0.2), math.sin(a) * (R - 0.2), -0.15), M['moss'], seed=300 + i, rough=0.5, subdiv=1, squash=0.5)
-
-# cobbled square + roads
-cyl(2.6, 0.06, (0.3, 0.2, 0.03), M['cobble'], 10, name='square')
-box(1.3, 7.0, 0.04, (0.3, -4.2, 0.02), M['dirt'], name='road_s')
-box(5.5, 1.1, 0.04, (3.6, 0.2, 0.02), M['dirt'], name='road_e')
-
-# the town well: stone ring, red water, timber frame, little roof, bucket
-cyl(0.62, 0.55, (0.3, 0.2, 0.3), M['stone'], 14, name='well')
-cyl(0.5, 0.05, (0.3, 0.2, 0.52), M['redwater'], 14, name='water')
-POINTS['water'] += [(0.3 + 0.3 * math.cos(a), 0.2 + 0.3 * math.sin(a), 0.56) for a in (0, 1.6, 3.2, 4.7)]
-for dx in (-0.55, 0.55): box(0.08, 0.08, 1.3, (0.3 + dx, 0.2, 0.9), M['timber'])
-box(1.3, 0.08, 0.08, (0.3, 0.2, 1.5), M['timber'])
-gable_roof(1.3, 0.8, 0.35, 0.1, (0.3, 0.2, 1.55), M['thatch_dark'], name='well_roof')
-cyl(0.1, 0.16, (0.3, 0.2, 1.1), M['wood'], 8)
-# Aldren's ledger table, ledger, chalice; Aldren in charcoal; the queue
-box(0.9, 0.45, 0.06, (1.35, -0.6, 0.5), M['wood']); box(0.06, 0.4, 0.47, (1.0, -0.6, 0.24), M['wood']); box(0.06, 0.4, 0.47, (1.7, -0.6, 0.24), M['wood'])
-box(0.3, 0.22, 0.04, (1.25, -0.6, 0.55), M['paper'])
-cyl(0.05, 0.14, (1.55, -0.55, 0.6), M['gold'], 8, r2=0.08)
-figure(1.4, -1.05, M['robe'], hood=True, s=1.1)                     # Aldren
-figure(1.0, 0.05, M['robe'], hood=True)                              # his man with the cup
-for i, c in enumerate(['cloth_b', 'cloth_w', 'cloth_r', 'cloth_b', 'cloth_w']):
-    figure(1.9 + i * 0.45, -0.1 - i * 0.2, M[c], s=0.95)             # the line of the faithful
-figure(-1.5, 1.6, M['cloak'], s=1.05, hood=True)                     # Kethric, watching, not drinking
-box(0.05, 0.05, 0.5, (-1.32, 1.6, 0.45), M['iron'], rot=(0, math.radians(20), 0))  # his sword
-
-# buildings around the square
-timber_house(-3.0, -1.4, 2.6, 1.9, 2.4, rot=math.radians(90), roof='thatch', seed=1, name='broken_compass', lit=0.9)
-box(0.05, 0.05, 0.8, (-1.85, -2.6, 1.7), M['iron'])                              # sign bracket
-box(0.5, 0.05, 0.35, (-1.85, -2.6, 1.25), M['wood'])                             # the Broken Compass sign
-timber_house(-2.2, 2.6, 2.2, 1.7, 2.2, rot=math.radians(0), roof='thatch_dark', seed=2, name='harren', plaster='plaster2')
-timber_house(1.6, 3.6, 2.0, 1.6, 2.3, rot=math.radians(0), roof='thatch', seed=3, name='house_n')
-timber_house(4.2, 3.6, 1.8, 1.6, 1.6, rot=math.radians(0), roof='thatch_dark', storeys=1, seed=4, name='house_ne')
-timber_house(-1.2, 5.0, 2.2, 1.7, 2.6, rot=math.radians(0), roof='slate', seed=5, name='house_back', plaster='plaster2')
-timber_house(-4.6, 2.0, 1.6, 1.4, 1.5, rot=math.radians(0), roof='thatch', storeys=1, seed=6, name='cottage')
-
-# old ancient stones: carved doorstep and a mossy ruin fragment by Harren's
-box(0.9, 0.5, 0.12, (-2.2, 1.6, 0.06), M['bone'])
-for i, (dx, dy, hh) in enumerate([(-4.2, -0.2, 1.4), (-4.3, 0.7, 0.9)]):
-    box(0.45, 0.45, hh, (dx, dy, hh / 2), M['bone']); box(0.47, 0.47, 0.12, (dx, dy, hh), M['moss'])
-
-# Vex's mill (south-east): long stone-and-timber shed + treadwheel, linen drying
-timber_house(4.4, 0.9, 2.6, 1.8, 1.8, rot=math.radians(90), roof='thatch_dark', storeys=1, seed=7, name='vex_mill', plaster='plaster2', chimney=False)
-cyl(0.85, 0.22, (3.3, 0.2, 0.95), M['wood'], 16, rot=(math.radians(90), 0, 0), name='treadwheel')
-cyl(0.7, 0.24, (3.3, 0.2, 0.95), M['timber'], 16, rot=(math.radians(90), 0, 0))
-for i in range(3):
-    box(0.04, 0.04, 0.9, (3.4 + i * 0.5, -2.2, 0.45), M['timber'])
-box(1.1, 0.02, 0.02, (3.9, -2.2, 0.88), M['iron'])
-for i in range(4):
-    box(0.2, 0.02, 0.32, (3.5 + i * 0.27, -2.2, 0.7), M['linen'])
-# flax field
-for i in range(90):
-    fx, fy = 3.0 + rnd.random() * 2.6, -3.0 - rnd.random() * 1.8
-    if math.hypot(fx, fy) < R - 0.8:
-        cyl(0.05, 0.35 + rnd.random() * 0.15, (fx, fy, 0.2), M['flax'], 5, r2=0.0)
-
-# palisade: dark stakes on the back (north-west) arc + bone-white stone gate south
-for i in range(70):
-    a = math.radians(95 + i * 2.6)
-    px, py = math.cos(a) * (R - 0.45), math.sin(a) * (R - 0.45)
-    if abs(math.degrees(a) - 270) < 6: continue  # gap for the gate
-    hh = 1.3 + rnd.random() * 0.25
-    cyl(0.1, hh, (px, py, hh / 2), M['timber'], 6)
-    cyl(0.1, 0.25, (px, py, hh + 0.12), M['timber'], 6, r2=0.0)
-for gx in (-0.45, 1.05):
-    box(0.6, 0.6, 2.0, (gx, -R + 0.5, 1.0), M['bone'])
-    for cx in (-0.2, 0.2):
-        for cy in (-0.2, 0.2): box(0.14, 0.14, 0.18, (gx + cx, -R + 0.5 + cy, 2.09), M['bone'])
-box(1.0, 0.4, 0.3, (0.3, -R + 0.5, 1.75), M['bone'])
-
-# trees: autumn around the edge, a couple of dark pines
-for i, (tx, ty, k, s) in enumerate([(-5.2, -2.6, 'o', 1.1), (-5.6, 3.6, 'r', 1.0), (-1.0, 5.6, 'o', 1.2), (2.8, 5.3, 'r', 0.9),
-                                    (6.0, 1.8, 'o', 0.9), (-3.4, -4.8, 'r', 1.0), (2.6, -5.2, 'o', 1.0), (5.4, -4.6, 'g', 0.8)]):
-    tree(tx, ty, s, k, seed=i + 3)
-for (px, py) in [(-6.0, 0.9), (-4.6, 5.0), (0.8, 6.2)]:
-    pine(px, py, 1.2)
-
-# props: barrels, crates, cart, lanterns, campfire by the gate
-for (bx, by) in [(-1.75, -0.7), (-1.75, -0.3), (-1.4, -0.5), (3.5, -1.0)]: barrel(bx, by)
-for i, (cx_, cy_) in enumerate([(-1.6, -1.2), (2.4, 1.6), (2.7, 1.8), (2.6, -0.9)]): crate(cx_, cy_, rz=i * 0.4)
-lantern_post(-1.2, 0.9); lantern_post(2.2, -1.5); lantern_post(1.4, 2.0)
-POINTS['fires'].append((-0.9, -4.2, 0.2)); cyl(0.25, 0.08, (-0.9, -4.2, 0.05), M['stone'], 8); cyl(0.12, 0.3, (-0.9, -4.2, 0.2), M['fire'], 6, r2=0.0)
-Lf = bpy.data.lights.new('fire', 'POINT'); Lf.energy = 40; Lf.color = (1, 0.55, 0.25)
-of = bpy.data.objects.new('fire', Lf); bpy.context.collection.objects.link(of); of.location = (-0.9, -4.2, 0.6)
-# rocks + grass tufts
-for i in range(28):
-    a = rnd.random() * math.tau; d = 2.8 + rnd.random() * (R - 3.6)
-    blob(0.1 + rnd.random() * 0.15, (math.cos(a) * d, math.sin(a) * d, 0.05), M['stone'] if i % 3 else M['moss'], seed=100 + i, rough=0.6, subdiv=1)
-
-# story labels (world positions) -> ids match data/story.json where they exist
-POINTS['labels'] = {
-    'town_well': (0.3, 0.2, 2.0), 'broken_compass': (-3.0, -1.4, 4.2), 'harrens_place': (-2.2, 2.6, 4.0),
-    'vex_mill': (4.4, 0.9, 3.3), 'aldren': (1.4, -1.05, 1.1), 'kethric': (-1.5, 1.6, 1.2),
-    'greymark_walls': (0.3, -R + 0.5, 2.4), 'flax_farms': (4.2, -3.8, 0.8),
-}
-
-# ---------------------------------------------------------- light + cam ---
-sun = bpy.data.lights.new('sun', 'SUN'); sun.energy = 5.2; sun.color = (1.0, 0.78, 0.55); sun.angle = math.radians(3)
-if NIGHT:
-    sun.energy = 4.5; sun.color = (0.85, 0.92, 1.0)
-    bg.inputs['Strength'].default_value = 0.35
-so = bpy.data.objects.new('sun', sun); bpy.context.collection.objects.link(so)
-so.rotation_euler = (math.radians(55), 0, math.radians(-35))  # low warm dusk light from the left
-if NIGHT: so.rotation_euler = (math.radians(42), 0, math.radians(-15))  # moon: lit tops + left faces, dark right faces
-
-cam = bpy.data.cameras.new('cam'); cam.type = 'ORTHO'; cam.ortho_scale = 21.0; cam.shift_y = -0.05
-co = bpy.data.objects.new('cam', cam); bpy.context.collection.objects.link(co); scene.camera = co
-# classic 2:1 isometric: 60 deg tilt, 45 deg turn
-co.rotation_euler = (math.radians(60), 0, math.radians(45))
-d = 40
-co.location = (d * math.sin(math.radians(60)) * math.sin(math.radians(45)), -d * math.sin(math.radians(60)) * math.cos(math.radians(45)), d * math.cos(math.radians(60)) + 0.4)
 
 # ------------------------------------------------------------ toon mode ---
 # Replace every material with flat emission in an exact palette colour:
@@ -478,29 +360,43 @@ def toonify(m):
     L.new(fac, ramp.inputs['Fac']); L.new(ramp.outputs['Color'], em.inputs['Color'])
 
 
-if TOON:
-    for m in bpy.data.materials: toonify(m)
-    for ob in bpy.data.objects:
-        if ob.type == 'LIGHT': ob.hide_render = True
-    bg.inputs['Strength'].default_value = 0.0
-    scene.cycles.samples = 4; scene.cycles.use_denoising = False
-    scene.render.filter_size = 0.01
-    scene.view_settings.exposure = 0.0
 
-# project tracked points into render pixels for the animation overlay
-import json
-from bpy_extras.object_utils import world_to_camera_view
-bpy.context.view_layer.update()
-for kind, o, off in TRACK:
-    p = o.matrix_world.translation + Vector(off)
-    POINTS[kind].append(tuple(p))
-def to_px(p):
-    v = world_to_camera_view(scene, co, Vector(p))
-    return [round(v.x * SIZE, 1), round((1 - v.y) * SIZE, 1)]
-proj = {k: ([to_px(p) for p in v] if isinstance(v, list) else {kk: to_px(pp) for kk, pp in v.items()}) for k, v in POINTS.items()}
-with open(OUT.replace('.png', '.json'), 'w') as f:
-    json.dump({'size': SIZE, 'points': proj}, f)
-
-scene.render.filepath = OUT
-bpy.ops.render.render(write_still=True)
-print('rendered', OUT)
+# ------------------------------------------------------------ finishing ---
+def finish(ortho_scale, target=(0.0, 0.0, 0.0), res=None, shift_y=0.0):
+    """Light, camera (classic 2:1 iso from the south-east), optional toon, overlay points, render."""
+    import json
+    from bpy_extras.object_utils import world_to_camera_view
+    rx, ry = res or (SIZE, SIZE)
+    scene.render.resolution_x, scene.render.resolution_y = rx, ry
+    sun = bpy.data.lights.new('sun', 'SUN'); sun.energy = 5.2; sun.color = (1.0, 0.78, 0.55); sun.angle = math.radians(3)
+    so = bpy.data.objects.new('sun', sun); bpy.context.collection.objects.link(so)
+    so.rotation_euler = (math.radians(55), 0, math.radians(-35))  # low warm dusk light from the left
+    if NIGHT:
+        sun.energy = 4.5; sun.color = (0.85, 0.92, 1.0); bg.inputs['Strength'].default_value = 0.35
+        so.rotation_euler = (math.radians(42), 0, math.radians(-15))
+    cam = bpy.data.cameras.new('cam'); cam.type = 'ORTHO'; cam.ortho_scale = ortho_scale; cam.shift_y = shift_y
+    cam.clip_end = 500
+    co = bpy.data.objects.new('cam', cam); bpy.context.collection.objects.link(co); scene.camera = co
+    co.rotation_euler = (math.radians(60), 0, math.radians(45))  # 60 deg tilt, 45 deg turn = 2:1 isometric
+    d = 120
+    tx, ty, tz = target
+    co.location = (tx + d * math.sin(math.radians(60)) * math.sin(math.radians(45)), ty - d * math.sin(math.radians(60)) * math.cos(math.radians(45)), tz + d * math.cos(math.radians(60)))
+    if TOON:
+        for m in bpy.data.materials: toonify(m)
+        for ob in bpy.data.objects:
+            if ob.type == 'LIGHT': ob.hide_render = True
+        bg.inputs['Strength'].default_value = 0.0
+        scene.cycles.samples = 4; scene.cycles.use_denoising = False
+        scene.render.filter_size = 0.01; scene.view_settings.exposure = 0.0
+    bpy.context.view_layer.update()
+    for kind, o, off in TRACK:
+        POINTS[kind].append(tuple(o.matrix_world.translation + Vector(off)))
+    def to_px(p):
+        v = world_to_camera_view(scene, co, Vector(p))
+        return [round(v.x * rx, 1), round((1 - v.y) * ry, 1)]
+    proj = {k: ([to_px(p) for p in v] if isinstance(v, list) else {kk: to_px(pp) for kk, pp in v.items()}) for k, v in POINTS.items()}
+    with open(OUT.replace('.png', '.json'), 'w') as f:
+        json.dump({'size': [rx, ry], 'points': proj}, f)
+    scene.render.filepath = OUT
+    bpy.ops.render.render(write_still=True)
+    print('rendered', OUT)
