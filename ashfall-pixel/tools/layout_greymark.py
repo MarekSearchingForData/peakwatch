@@ -76,11 +76,12 @@ def in_oval(x, y, shrink=0.0):
 
 def building(x0, y0, w, d, typ, h, story=None, label=None):
     i = len(buildings) + 1
+    ground = cells[y0][x0]
     for y in range(y0, y0 + d):
         for x in range(x0, x0 + w):
             cells[y][x] = 'b'; bid[y][x] = i
     b = {'id': i, 'type': typ, 'n': w * d, 'tx': x0 + (w - 1) / 2, 'ty': y0 + (d - 1) / 2, 'h': h, 'district': '', 'inside': True,
-         'x0': x0, 'y0': y0, 'w': w, 'd': d}
+         'x0': x0, 'y0': y0, 'w': w, 'd': d, 'ground': ground if ground in 'Yrp' else 'r'}
     if story: b['story'] = story
     buildings.append(b)
     if story or label: slots.append({'id': story or label, 'kind': typ, 'x': x0, 'y': y0, 'w': w, 'd': d})
@@ -143,12 +144,20 @@ for y in range(H):
         if ((u - ms['cx']) / (ms['rx'] * 1.35)) ** 2 + ((v - ms['cy']) / (ms['ry'] * 1.35)) ** 2 < 1:
             cells[y][x] = 'p'
 wx, wy = to_grid((ms['cx'], ms['cy'])); cells[int(wy)][int(wx)] = 'W'; anchor('town_well', int(wx), int(wy))
+# market: straight rows of stalls with 3-tile aisles, every stall in a row facing the same way,
+# and an open centre (radius 6) round the well where Aldren's table and the queue stand
 stalls = 0
-for sy in range(int(wy) - 14, int(wy) + 15, 3):          # rows of 2x2 stalls with 1-tile aisles
-    for sx in range(int(wx) - 14, int(wx) + 15, 3):
-        if abs(sx - wx) < 4 and abs(sy - wy) < 4: continue  # keep the well and Aldren's table clear
-        if free(sx, sy, sx + 2, sy + 2, 'p') and rnd.random() < 0.85:
-            building(sx, sy, 2, 2, 'stall', 4); stalls += 1
+for dy, face in [(-12, 1), (-8, -1), (6, 1), (10, -1)]:       # back-to-back pairs of rows, facing the aisles
+    for sx in range(int(wx) - 18, int(wx) + 18, 3):
+        sy = int(wy) + dy
+        if math.hypot(sx + 1 - wx, sy + 1 - wy) < 7: continue
+        if free(sx, sy, sx + 2, sy + 2, 'p') and free(sx - 1, sy - 1, sx + 3, sy + 3, 'pbr'):
+            st_ = building(sx, sy, 2, 2, 'stall', 4); st_['face'] = face; stalls += 1
+for dx, face in [(-16, 1), (15, -1)]:                         # a short row down each side
+    for sy in range(int(wy) - 4, int(wy) + 4, 3):
+        sx = int(wx) + dx
+        if free(sx, sy, sx + 2, sy + 2, 'p') and free(sx - 1, sy - 1, sx + 3, sy + 3, 'pbr'):
+            st_ = building(sx, sy, 2, 2, 'stall', 4); st_['face'] = face; stalls += 1
 slots.append({'id': 'market_square', 'kind': 'square', 'x': int(wx) - 16, 'y': int(wy) - 16, 'w': 33, 'd': 33})
 
 # ------------------------------------------------------- church compound ---
@@ -265,8 +274,31 @@ STALL_ART = os.path.exists(os.path.join(ROOT, 'map', 'assets', 'stall_set.meta.j
 if STALL_ART:   # 0 pottery, 1 bread+cheese, 2 vegetables, 3 butcher, 4 cloth, 5 trestle table, 6 barrels+sacks, 7 cooking fire
     for b in buildings:
         if b['type'] != 'stall': continue
-        b['art'] = 'stall_set'; b['variant'] = rnd.choices(range(8), [16, 16, 16, 12, 14, 10, 10, 4])[0]
-        b['flip'] = rnd.random() < 0.5; b['fit'] = 1.25; b['gh'] = hgt[b['y0'] + b['d'] - 1][b['x0'] + b['w'] - 1]
+        b['art'] = 'stall_set'; b['variant'] = rnd.choices(range(6), [18, 18, 18, 12, 16, 8])[0]   # stalls + tables only
+        b['flip'] = b.get('face', 1) < 0; b['fit'] = 1.0; b['gh'] = hgt[b['y0'] + b['d'] - 1][b['x0'] + b['w'] - 1]
+PROP_ART = os.path.exists(os.path.join(ROOT, 'map', 'assets', 'props_set.meta.js'))
+if PROP_ART:
+    # bits and bobs: by house doors, in yards, at the market edge. 0 barrels 1 crates 2 handcart 3 woodpile
+    # 4 flower box 5 bench 6 lantern 7 hay bale 8 trough 9 chickens 10 sacks 11 wheel+bucket 12 herb bed
+    # 13 rain barrel 14 cobble pile 15 dog
+    house_tiles = {(x, y) for b in buildings if b['type'] == 'rowhouse' for y in range(b['y0'], b['y0'] + b['d']) for x in range(b['x0'], b['x0'] + b['w'])}
+    def touches(x, y, pool): return any((x + dx, y + dy) in pool for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+    props = 0
+    for y in range(H):
+        for x in range(W):
+            c = cells[y][x]
+            if c == 'Y' and touches(x, y, house_tiles) and hgt[y][x] <= 2 and rnd.random() < 0.09:
+                k = rnd.choices([0, 1, 3, 4, 5, 7, 9, 10, 12, 13, 11], [10, 8, 12, 8, 6, 5, 6, 6, 8, 8, 3])[0]
+            elif c == 'r' and touches(x, y, house_tiles) and rnd.random() < 0.035:
+                k = rnd.choices([0, 1, 2, 4, 6, 10, 14, 15], [10, 8, 4, 8, 6, 6, 2, 2])[0]
+            elif c == 'p' and math.hypot(x - wx, y - wy) > 8 and rnd.random() < 0.02:
+                k = rnd.choices([0, 1, 2, 10, 9, 15], [10, 10, 4, 8, 4, 2])[0]
+            else:
+                continue
+            pb = building(x, y, 1, 1, 'prop', 1)
+            pb.update({'art': 'props_set', 'variant': k, 'flip': rnd.random() < 0.5, 'fit': 1.3, 'gh': hgt[y][x]})
+            props += 1
+    print('props', props)
 
 # ------------------------------------------------------------------ write ---
 out = {

@@ -148,6 +148,21 @@
     for (let yy = Math.max(0, y); yy < y1; yy++) for (let xx = Math.max(0, x); xx < x1; xx++) px[yy * W + xx] = c;
   };
 
+  // ---------- cobblestones: staggered rows of small stones with dark mortar ----------
+  const COB = { street: ['#5a5048', '#695e54', '#776b5e', '#857868', '#9a8c7a'], gap: '#352d28',
+                plaza: ['#5e5c58', '#6e6b66', '#7e7a73', '#8d8880', '#a39d93'], gapP: '#3a3734' };
+  function cobble(x, y, plaza) {
+    const row = Math.floor(y / 3), ly = y - row * 3, off = (row & 1) * 2 + ((row >> 1) & 1);
+    const col = Math.floor((x + off) / 5), lx = (x + off) - col * 5;
+    if (lx === 4 || ly === 2) return plaza ? COB.gapP : COB.gap;                 // mortar
+    const pal = plaza ? COB.plaza : COB.street, r = hash(col, row, plaza ? 71 : 17);
+    if (r < 0.04) return plaza ? COB.gapP : COB.gap;                               // a missing stone
+    const base = r < 0.3 ? 1 : r < 0.75 ? 2 : 3;
+    if (lx === 0 && ly === 0) return pal[Math.min(4, base + 1)];                    // lit top-left edge
+    if (lx === 3 && ly === 1) return pal[base - 1];                                 // shaded corner
+    return pal[base];
+  }
+
   // ---------- column rasteriser (the heart of crisp iso pixels) ----------
   // Fills an iso diamond of half-width a centred at (cx,cy), optional vertical
   // extrusion `depth` below it. colFn(u, isLeft, part, px, py) -> colour.
@@ -333,7 +348,8 @@
         case 'd': tl.t = 'road'; break;
         case 'b': {
           const b = blds[g.bid[k]];
-          tl.t = 'street'; tl.bld = b; tl.raise = b.art ? 0 : b.h;   // buildings with finished art are drawn as sprites
+          tl.t = b.ground === 'Y' ? (n < 0.5 ? 'meadow' : 'grass') : b.ground === 'p' ? 'plaza' : 'street';
+          tl.bld = b; tl.raise = b.art ? 0 : b.h;   // buildings with finished art are drawn as sprites
           const pal = ROOFS[b.type] || ROOFS.house;
           const r = pal[b.id % pal.length];
           b.roof = b.roof || r; b.wallc = b.wallc || WALLS[b.type] || (b.id % 3 ? '#c8b08a' : P.bone);
@@ -604,6 +620,8 @@
           }
           if (dTop === 0 && left && cliffBack) return tr.top[2];   // lit lip of a raised tile
           if (rem === 1 && !left && cliffFront) return tr.top[3];  // shadowed lip toward a drop
+          if (tl.t === 'street' || tl.t === 'plaza') return cobble(x, y, tl.t === 'plaza');
+          if (tl.t === 'road') { const rr = hash(x >> 1, y, 13); if (((x + 2 * y) & 7) === 0) return P.w1; return rr < 0.25 ? P.w1 : rr > 0.9 ? P.w3 : P.w2; }
           if (tr.rows) { const row = ((x + 2 * y) >> 1) & 3; return row === 0 ? tr.top[3] : row === 2 ? (r < 0.5 ? tr.top[1] : tr.top[2]) : tr.top[0]; }
           if (r < patch) return tr.top[1];
           if (r > 0.95 - patch * 0.3) return tr.top[2];

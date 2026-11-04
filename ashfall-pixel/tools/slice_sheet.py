@@ -38,13 +38,26 @@ while merged:
                 boxes.remove(b); merged = True; break
         if merged: break
 items = []
+if '--grid' in sys.argv:   # regular grid (cols x rows): each cell is one sprite, even if it has several parts
+    gc, gr = map(int, sys.argv[sys.argv.index('--grid') + 1].split('x'))
+    boxes = []
+    for r in range(gr):
+        for c in range(gc):
+            cy0, cy1, cx0, cx1 = r * H // gr, (r + 1) * H // gr, c * W // gc, (c + 1) * W // gc
+            cell = fg[cy0:cy1, cx0:cx1]
+            ys_, xs_ = np.nonzero(cell)
+            if len(ys_) == 0: continue
+            boxes.append([cy0 + ys_.min(), cy0 + ys_.max() + 1, cx0 + xs_.min(), cx0 + xs_.max() + 1, None])
+    for y0, y1, x0, x1, _ in boxes:
+        sl = (slice(y0, y1), slice(x0, x1)); items.append((sl, fg[sl]))
+    boxes = []
 for y0, y1, x0, x1, ids in boxes:
     sl = (slice(y0, y1), slice(x0, x1))
     m = np.isin(lab[sl], ids)
     m = ndimage.binary_fill_holes(ndimage.binary_closing(m, iterations=8))
     if m.sum() < MIN: continue
     items.append((sl, m))
-items.sort(key=lambda t: (round(t[0][0].start / (H / 4)), t[0][1].start))   # rows, then left to right
+if '--grid' not in sys.argv: items.sort(key=lambda t: (round(t[0][0].start / (H / 4)), t[0][1].start))   # rows, then left to right
 variants = []
 os.makedirs(os.path.join(ROOT, 'map', 'assets'), exist_ok=True)
 for k, (sl, m) in enumerate(items):
