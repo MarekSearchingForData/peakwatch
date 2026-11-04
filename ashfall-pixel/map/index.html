@@ -258,7 +258,7 @@ const CITY_NAMES = { greymark: 'Greymark', valencourt: 'Valencourt' };
       const pl = st.map.world.byId[id];
       const evs = STORY.events.filter(e => e.where === id).map(e => e.n);
       showInfo(`<h2>${pl.name}</h2><div class="meta">${pl.book}</div>${tags(null, pl.ver)}${pl.pos === 'guess' ? '<span class="tag">position guessed</span>' : '<span class="tag">position from text</span>'}
-        <p>${pl.desc}</p>${pl.city ? `<button class="linkbtn" data-goto="${pl.city}">Enter ${CITY_NAMES[pl.city]} →</button>` : ''}${evLinks(evs)}`);
+        <p>${pl.desc}</p>${pl.city ? `<button class="linkbtn" data-goto="${pl.city}">Enter ${CITY_NAMES[pl.city]} →</button>` : ''}${pl.scene ? `<a class="linkbtn" style="display:inline-block;text-decoration:none" href="scene.html?scene=${pl.scene}">Enter the rift →</a>` : ''}${evLinks(evs)}`);
       if (move) centreOn(st.map.screenOf(id));
     } else if (kind === 'cat') {
       const c = CAT[id];

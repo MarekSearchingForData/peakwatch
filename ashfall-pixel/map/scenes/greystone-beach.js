@@ -1,0 +1,2 @@
+window.SCENES = window.SCENES || {};
+window.SCENES["greystone-beach"] = {"w": 1774, "h": 887, "points": {"labels": {"arrival_disc": [255, 385], "trio_graves": [845, 575], "silk_temple": [1340, 330], "temple_terrace": [1150, 215], "titan_island": [470, 170], "unreachable_forest": [1560, 170]}, "water": [[290, 610], [350, 640], [410, 690], [460, 730], [520, 755], [570, 770]], "lamps": [[1113, 265], [1158, 265]], "fires": [], "chimneys": [], "windows": [], "fountain": []}};

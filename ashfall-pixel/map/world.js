@@ -21,8 +21,8 @@
     // ---- prologue / Greystone ----
     at(-5, -14, { id: 'barn', name: 'The Wildling Farm', kind: 'battlefield', ver: 'both', pos: 'guess',
       book: 'Book 1 · Prologue', desc: 'The road with Ollen and the turnips, then the barn full of wildlings that explodes. Marin, Desso, Wren and Kethric fight here.' }),
-    at(-16, 3, { id: 'greystone', name: 'Greystone', kind: 'rift', ground: 'sand', ver: 'both', pos: 'guess', size: 1.2, glow: '#6a8cff',
-      book: 'Book 1 · memory', desc: 'Where Marin, Desso and Wren die. Kept offstage. Inside the rift: a long grey beach under endless twilight, a temple in crystal silk, the trio’s graves.' }),
+    at(-11, 12, { id: 'greystone', scene: 'greystone-beach', name: 'Greystone', kind: 'rift', ground: 'sand', ver: 'both', pos: 'guess', size: 1.2, glow: '#6a8cff',
+      book: 'Book 1 · memory', desc: 'Far down the south-west coast, days from Greymark. Where Marin, Desso and Wren die. Kept offstage. Inside the rift: a long grey beach under endless twilight, a temple in crystal silk, the trio’s graves.' }),
 
     // ---- Greymark (3.0 layout: one water, one source — the well) ----
     at(-10, -6, { id: 'greymark', name: 'Greymark', kind: 'town', ver: 'both', pos: 'text', city: 'greymark', houses: { wall: '#cfc6b4', roof: ['#3a2a1e', '#5a4430'] },
@@ -88,7 +88,7 @@
     reg(-6, -12, 5, 4, { t: 'autumn', h: 1, hv: 1 }),
     reg(-10, -6, 3.2, 3.2, { t: 'grass', h: 2, hv: 0, wobble: 0.2 }),  // town clearing
     reg(-7, -6, 2.5, 2, { t: 'meadow', h: 1, hv: 0 }),                 // flax fields by the mill
-    reg(-16, 3, 3, 3, { t: 'sand', h: 1, hv: 0 }),                     // grey beach of Greystone
+    reg(-11, 12, 3.5, 3, { t: 'sand', h: 1, hv: 0, overSea: true }),   // grey beach of Greystone, far from Greymark on the south-west coast
     reg(-3, 3, 6, 5, { t: 'grass', h: 1, hv: 1 }),                     // lowland road south
     reg(-8, 4, 5, 6, { t: 'forest', h: 1, hv: 1 }),                    // western woods
     reg(-1, -8, 4, 4, { t: 'forest', h: 2, hv: 1 }),

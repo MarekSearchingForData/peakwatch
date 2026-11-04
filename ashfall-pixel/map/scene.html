@@ -68,7 +68,9 @@
   const SCENE_INFO = {
     'greymark-square': ['Greymark · the square', 'Book 1 · Ch I · dusk at the well'],
     'greymark-town': ['Greymark', 'The whole town · about 450 buildings · dusk'],
+    'greystone-beach': ['Greystone', 'Inside the rift · the beach where the trio died · endless twilight'],
   }[SCENE] || [SCENE, ''];
+  if (SCENE === 'greystone-beach') info.innerHTML = '<h2>Greystone</h2><div class="meta">Book 1 · memory · far down the south-west coast</div><p>"A long grey beach curved away into the dusk under a sky scattered with stars." Where Marin, Desso and Wren died. Permanent twilight, the tired hush of the waves, the Drunk Goat in a hostile sky.</p><p class="meta">Empty for now: figures come next. Click a label.</p>';
   if (SCENE === 'greymark-town') info.innerHTML = '<h2>Greymark</h2><div class="meta">Book 1 · Ch I–III · the border town</div><p>The whole town at dusk: about 450 timber-framed houses inside and around the dark palisade, bone-white stone gates, the church crowning the hill with its fountain, the square with the red well, Vex\'s mill and the flax farms outside, the autumn forest closing in behind.</p><p class="meta">Drag to pan, scroll or +/− to zoom, click a label. The street plan is the same one the city-plan view uses.</p>';
   document.querySelector('h1').textContent = SCENE_INFO[0]; document.querySelector('header .meta').textContent = SCENE_INFO[1];
   const CAT = Object.fromEntries((window.ASHFALL_STORY?.buildings || []).map(b => [b.id, b]));
@@ -117,7 +119,7 @@
   window.addEventListener('resize', layout); layout();
 
   // ash and embers drifting over the scene
-  const ash = Array.from({ length: Math.round(70 * Math.max(1, W * H / 2e5)) }, (_, i) => ({ x: hash(i, 1) * W, y: hash(i, 2) * H, vx: -2 - hash(i, 3) * 3, vy: 5 + hash(i, 4) * 6, c: hash(i, 5) < 0.18 ? '#ff8a2a' : (hash(i, 6) < 0.5 ? '#857873' : '#b3a69c') }));
+  const ash = Array.from({ length: Math.round(70 * Math.max(1, W * H / 2e5)) }, (_, i) => ({ x: hash(i, 1) * W, y: hash(i, 2) * H, vx: -2 - hash(i, 3) * 3, vy: 5 + hash(i, 4) * 6, c: SCENE === 'greystone-beach' ? (hash(i, 5) < 0.2 ? '#d6a4ff' : '#9cb4d8') : (hash(i, 5) < 0.18 ? '#ff8a2a' : (hash(i, 6) < 0.5 ? '#857873' : '#b3a69c')) }));
   const tParam = new URLSearchParams(location.search).get('t');
   const t0 = performance.now();
   function frame(now) {

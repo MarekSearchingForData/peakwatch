@@ -698,18 +698,6 @@ window.ASHFALL_STORY = {
    "desc": "Where Kethric grew up under Merik. Seen only in memory, and rebuilt in his Book 2 unmaking rift. Location unknown."
   },
   {
-   "id": "silk_temple",
-   "name": "Silk temple (beach rift)",
-   "town": "memory",
-   "type": "temple",
-   "importance": "v245",
-   "events": [
-    22,
-    51
-   ],
-   "desc": "v2.45 Ch VI: Wren dragged into it by the wrists while Kethric watched; echoed in Ch XXIX. Beach of gritty sand."
-  },
-  {
    "id": "valencourt_palisade",
    "name": "Palisade & watchtowers",
    "town": "valencourt",
@@ -966,6 +954,66 @@ window.ASHFALL_STORY = {
     58
    ],
    "desc": "Matriarch's seat where the survivors are held. Keepers of the Blood examine Kethric, the dark blessing ritual is held and a portal opens."
+  },
+  {
+   "id": "arrival_disc",
+   "name": "The arrival cave and the disc",
+   "town": "greystone",
+   "type": "cave",
+   "importance": "key",
+   "events": [
+    5
+   ],
+   "desc": "A small round sea cave lit by \"pale light that seemed to emanate from nowhere\". On the floor, a stone disc \"wide as a threshing floor\", carved in rings like cartwheel spokes, \"Men bowing. Waves. Things with too many legs.\" At its centre \"an eye, carved wide open\". A pulsing trickle of scarlet water. (Ch VI)"
+  },
+  {
+   "id": "trio_graves",
+   "name": "The trio's graves",
+   "town": "greystone",
+   "type": "graves",
+   "importance": "key",
+   "events": [
+    5
+   ],
+   "desc": "\"three humps in the sand\" where Marin, Desso and Wren were buried. Years later Kethric finds them empty and leaves his helm: \"a token for a grave marker\". (Ch VI–VII)"
+  },
+  {
+   "id": "silk_temple",
+   "name": "The silk temple",
+   "town": "greystone",
+   "type": "temple",
+   "importance": "key",
+   "events": [
+    5
+   ],
+   "desc": "\"a small temple covered in crystalline silk\" at the edge of the coast. The spiders dragged Wren here by the wrists. (Ch VI)"
+  },
+  {
+   "id": "temple_terrace",
+   "name": "The temple terrace",
+   "town": "greystone",
+   "type": "altar",
+   "importance": "supporting",
+   "events": [],
+   "desc": "A stone platform \"jutting gently out into the sea\", with steps and an altar, bathed in \"twin luminescence of royal blue and pure gold\" from the chalice and the thurible. From afar, \"a twinkle of white light\". (Ch VII–VIII, v2.45)"
+  },
+  {
+   "id": "titan_island",
+   "name": "The island",
+   "town": "greystone",
+   "type": "titan",
+   "importance": "supporting",
+   "events": [],
+   "desc": "\"A distant black mass, an island of sorts blocked the horizon.\" Lit up, \"A bone-white scaffold outlined its greater form\": the sleeping apostle of the Unborn One, which spiders cover in butchered flesh. (Ch VII)"
+  },
+  {
+   "id": "unreachable_forest",
+   "name": "The forest out of reach",
+   "town": "greystone",
+   "type": "forest",
+   "importance": "mention",
+   "events": [],
+   "desc": "\"the dark forest that no matter how far you walked would always remain out of reach\". (Ch VI)"
   }
  ]
 };
