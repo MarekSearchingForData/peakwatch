@@ -24,7 +24,8 @@ OUT = next((a for a in args if a.endswith('.png')), '/tmp/greymark_render.png')
 SIZE = int(args[args.index('--size') + 1]) if '--size' in args else 1400
 SAMPLES = int(args[args.index('--samples') + 1]) if '--samples' in args else 32
 NIGHT = '--night' in args  # cool moonlight for the limited-palette night style
-TOON = '--toon' in args    # flat palette shading: every face gets an exact palette colour
+TOON = '--toon' in args or '--flat' in args  # flat palette shading: every face gets an exact palette colour
+FLAT = '--flat' in args    # simple daytime style: 4 hand-picked shades per material
 rnd = random.Random(1337)
 POINTS = {'lamps': [], 'fires': [], 'chimneys': [], 'windows': [], 'water': [], 'labels': {}}
 TRACK = []  # (kind, object, offset) resolved after the scene is built
@@ -312,14 +313,44 @@ TOON_BASE = {  # name: (base level, pattern, pattern scale); final = base + ligh
 }
 
 
+# simple daytime style: per material [shadow, mid, lit, highlight]
+FLAT_RAMPS = {
+    'grass': ['#3a5a2a', '#4f7a34', '#62903c', '#78a648'], 'soil': ['#3a2618', '#523822', '#6a4a2c', '#80603a'],
+    'cobble': ['#5a5652', '#7a746c', '#968e84', '#b0a89a'], 'dirt': ['#6a4a2e', '#86603c', '#a07a4c', '#b8925e'],
+    'road': ['#6a4a2e', '#86603c', '#a07a4c', '#b8925e'], 'plaster': ['#a8987a', '#cfc0a0', '#e8dcc0', '#f6eedc'],
+    'plaster2': ['#9a8466', '#bca684', '#d4c09c', '#e6d6b4'], 'timber': ['#24160e', '#3a2416', '#4e3220', '#62422c'],
+    'wood': ['#4a2e1a', '#6a4428', '#8a5c34', '#a87440'], 'fence': ['#4a2e1a', '#6a4428', '#8a5c34', '#a87440'],
+    'thatch': ['#6a5028', '#8a6c34', '#a88a44', '#c4a656'], 'thatch_dark': ['#4a3820', '#64502c', '#806838', '#9a8046'],
+    'slate': ['#2e3640', '#404a58', '#56626e', '#6e7a86'], 'stone': ['#5a5a5a', '#76746e', '#928e86', '#aca69c'],
+    'bone': ['#a8a090', '#c8c0ae', '#e0d8c6', '#f2ecdc'], 'moss': ['#2e4a22', '#3e6030', '#527a3c', '#6a9448'],
+    'iron': ['#1e1e22', '#2e2e34', '#40404a', '#54545e'], 'leaf_o': ['#8a3a18', '#b8541f', '#e0762b', '#f4a04a'],
+    'leaf_r': ['#6a1e18', '#9a2e22', '#c4482c', '#e06a3a'], 'leaf_g': ['#1e3a22', '#2d5432', '#3f6e3a', '#5a8a42'],
+    'hedge': ['#1e3a22', '#2d5432', '#3f6e3a', '#5a8a42'], 'bark': ['#2e1e14', '#3e2a1c', '#52382a', '#664838'],
+    'flax': ['#3a5a5a', '#4f7a7a', '#6c9ab0', '#8ab8c8'], 'field': ['#3e2c1c', '#523a26', '#6a4c30', '#80603a'],
+    'field2': ['#3a5a46', '#4a7058', '#5e8a6c', '#7aa88a'], 'field3': ['#8a7034', '#a88a44', '#c4a656', '#dcc070'],
+    'robe': ['#1c1c22', '#2a2a32', '#3a3a44', '#4a4a56'], 'cloak': ['#2a1e26', '#3b2a3a', '#4e3448', '#62405a'],
+    'cloth_b': ['#2a3a5a', '#3a5078', '#5a70a0', '#7a90c0'], 'cloth_w': ['#8a8478', '#b8b0a0', '#d8d0c0', '#eee8da'],
+    'cloth_r': ['#5a1e1a', '#7a2e24', '#9a4030', '#b8583e'], 'skin': ['#a8785a', '#c48e6a', '#d9a77c', '#ecc49a'],
+    'paper': ['#c8bca0', '#d8ccb0', '#efe6d0', '#fff8e8'], 'linen': ['#8a8478', '#b8b0a0', '#d8d0c0', '#eee8da'],
+    'dye': ['#1e2c5a', '#2a3f7a', '#3a56a0', '#5070c0'], 'water': ['#2a5a7a', '#3a7aa0', '#5aa0c0', '#8ac8e0'],
+    'awning': ['#7a2e24', '#a8432f', '#c85a3a', '#e9dfc4'], 'burnt': ['#0e0a0a', '#1e1614', '#2e2420', '#3e322c'],
+}
+FLAT_WARM = {'glass': '#ffd060', 'lamp': '#fff0a0', 'fire': '#ff8a2a', 'redwater': '#a8342e', 'gold': '#e8c050'}
+
+
 def toonify(m):
     nt = m.node_tree; N = nt.nodes; L = nt.links
     for n in list(N): N.remove(n)
     out = N.new('ShaderNodeOutputMaterial'); em = N.new('ShaderNodeEmission'); L.new(em.outputs[0], out.inputs['Surface'])
     name = m.name
-    if name in TOON_WARM:
-        em.inputs['Color'].default_value = hexc(TOON_WARM[name]); return
+    warm = FLAT_WARM if FLAT else TOON_WARM
+    if name in warm:
+        em.inputs['Color'].default_value = hexc(warm[name]); return
     base, pat, sc = TOON_BASE.get(name, (3, None, 0))
+    ramp_cols = TOON_RAMP
+    if FLAT:  # 4 shades: mid face = index 1-2, light step -1..+2, pattern line -1
+        ramp_cols = FLAT_RAMPS.get(name, FLAT_RAMPS['stone']); base = 1
+        if pat == 'noise': pat = None  # flat style: no speckle on grass, leaves, dirt
     geo = N.new('ShaderNodeNewGeometry'); sep = N.new('ShaderNodeSeparateXYZ'); L.new(geo.outputs['Normal'], sep.inputs[0])
     def math(op, a, b=None):
         n = N.new('ShaderNodeMath'); n.operation = op
@@ -331,7 +362,7 @@ def toonify(m):
     # quantised light: moon from above / screen-left -> tops brightest, left faces mid, right faces dark
     dot = N.new('ShaderNodeVectorMath'); dot.operation = 'DOT_PRODUCT'
     L.new(geo.outputs['Normal'], dot.inputs[0]); dot.inputs[1].default_value = (-0.25, -0.5, 0.83)
-    lvl = math('FLOOR', math('ADD', math('MULTIPLY', dot.outputs['Value'], 3.0), 0.5))
+    lvl = math('FLOOR', math('ADD', math('MULTIPLY', dot.outputs['Value'], 2.0 if FLAT else 3.0), 0.5))
     lvl = math('ADD', lvl, float(base))
     if pat:
         tc = N.new('ShaderNodeTexCoord')
@@ -350,13 +381,13 @@ def toonify(m):
             t = N.new('ShaderNodeTexNoise'); t.inputs['Scale'].default_value = sc; L.new(tc.outputs['Object'], t.inputs['Vector'])
             line = math('LESS_THAN', t.outputs['Fac'], 0.38)
         lvl = math('SUBTRACT', lvl, line)
-    n_ = len(TOON_RAMP)
+    n_ = len(ramp_cols)
     fac = math('DIVIDE', math('ADD', lvl, 0.5), float(n_))
     ramp = N.new('ShaderNodeValToRGB'); ramp.color_ramp.interpolation = 'CONSTANT'
     el = ramp.color_ramp.elements
-    el[0].position = 0.0; el[0].color = hexc(TOON_RAMP[0]); el[1].position = (n_ - 1) / n_; el[1].color = hexc(TOON_RAMP[-1])
+    el[0].position = 0.0; el[0].color = hexc(ramp_cols[0]); el[1].position = (n_ - 1) / n_; el[1].color = hexc(ramp_cols[-1])
     for i in range(1, n_ - 1):
-        e = el.new(i / n_); e.color = hexc(TOON_RAMP[i])
+        e = el.new(i / n_); e.color = hexc(ramp_cols[i])
     L.new(fac, ramp.inputs['Fac']); L.new(ramp.outputs['Color'], em.inputs['Color'])
 
 
