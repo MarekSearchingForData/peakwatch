@@ -964,7 +964,7 @@ window.ASHFALL_STORY = {
    "events": [
     5
    ],
-   "desc": "A small round sea cave lit by \"pale light that seemed to emanate from nowhere\". On the floor, a stone disc \"wide as a threshing floor\", carved in rings like cartwheel spokes, \"Men bowing. Waves. Things with too many legs.\" At its centre \"an eye, carved wide open\". A pulsing trickle of scarlet water. (Ch VI)"
+   "desc": "A small round sea cave opening onto the surf lit by \"pale light that seemed to emanate from nowhere\". On the floor, a stone disc \"wide as a threshing floor\", carved in rings like cartwheel spokes, \"Men bowing. Waves. Things with too many legs.\" At its centre \"an eye, carved wide open\". A pulsing trickle of scarlet water. (Ch VI)"
   },
   {
    "id": "trio_graves",
@@ -999,12 +999,12 @@ window.ASHFALL_STORY = {
   },
   {
    "id": "titan_island",
-   "name": "The island",
+   "name": "The spider titan",
    "town": "greystone",
    "type": "titan",
    "importance": "supporting",
    "events": [],
-   "desc": "\"A distant black mass, an island of sorts blocked the horizon.\" Lit up, \"A bone-white scaffold outlined its greater form\": the sleeping apostle of the Unborn One, which spiders cover in butchered flesh. (Ch VII)"
+   "desc": "Out at sea, what looks like \"a distant black mass, an island of sorts\" is the skeleton of a colossal spider: the sleeping apostle of the Unborn One. \"A bone-white scaffold outlined its greater form\", and the spider-hosts swarm over it, layering \"butchered flesh onto the sleeping giant\". (Ch VII)"
   },
   {
    "id": "unreachable_forest",
