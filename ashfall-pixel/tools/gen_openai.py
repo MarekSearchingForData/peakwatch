@@ -5,7 +5,7 @@ Needs OPENAI_API_KEY in the environment (add it in the environment settings; nev
     python3 tools/gen_openai.py                      # every item in data/art_prompts.json
     python3 tools/gen_openai.py greymark_square      # one item
     python3 tools/gen_openai.py --refs greymark_square   # also send the style reference images (edits endpoint)
-    options: --quality low|medium|high  --n 2  --model gpt-image-1
+    options: --quality low|medium|high  --n 2  --model gpt-image-2
 
 Outputs go to out/ai/<id>-<n>.png with the prompt saved next to them.
 """
@@ -20,7 +20,7 @@ import uuid
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 args = sys.argv[1:]
 opt = lambda k, d: args[args.index(k) + 1] if k in args else d
-MODEL, QUALITY, N = opt('--model', 'gpt-image-1'), opt('--quality', 'medium'), int(opt('--n', '1'))
+MODEL, QUALITY, N = opt('--model', 'gpt-image-2'), opt('--quality', 'medium'), int(opt('--n', '1'))
 USE_REFS = '--refs' in args
 skip = {opt('--model', None), opt('--quality', None), opt('--n', None)}
 want = [a for a in args if not a.startswith('--') and a not in skip]
