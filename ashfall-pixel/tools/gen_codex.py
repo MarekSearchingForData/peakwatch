@@ -35,10 +35,10 @@ def run(item):
               + ("Match the art style of the attached reference images, not their content.\n\n" if '--refs' in args else '')
               + "When the image is generated, copy it into the current directory as result.png and reply only with OK.")
     cmd = ['codex', 'exec', '--skip-git-repo-check', '--sandbox', 'workspace-write', '-C', work]
-    if '--refs' in args:
-        for r in spec['references']: cmd += ['-i', os.path.join(ROOT, r)]
+    if '--refs' in args:  # -i takes several values, so join them and end the option list with --
+        cmd += ['-i', ','.join(os.path.join(ROOT, r) for r in spec['references'])]
     before = set(glob.glob(os.path.join(gen_dir, '*', '*.png')))
-    p = subprocess.run(cmd + [prompt], capture_output=True, text=True, timeout=900)
+    p = subprocess.run(cmd + ['--', prompt], capture_output=True, text=True, timeout=900, stdin=subprocess.DEVNULL)
     src = os.path.join(work, 'result.png')
     if not os.path.exists(src):  # fall back to whatever the tool wrote
         new = sorted(set(glob.glob(os.path.join(gen_dir, '*', '*.png'))) - before, key=os.path.getmtime)

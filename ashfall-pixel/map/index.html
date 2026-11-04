@@ -166,6 +166,15 @@ const CITY_NAMES = { greymark: 'Greymark', valencourt: 'Valencourt' };
       await loadCity(st.view); await new Promise(r => setTimeout(r, 30));
     }
     const spec = st.view === 'kingdom' ? kingdomSpec() : citySpec(st.view);
+    if (spec.grid && spec.grid.sprites && spec.grid.sprites.length) {   // finished art for layout slots
+      spec.spriteArt = {};
+      await Promise.all(spec.grid.sprites.map(async (sp) => {
+        const img = new Image(); img.src = sp.src;
+        const meta = await new Promise((res) => { const sc = document.createElement('script'); sc.src = sp.src.replace('.png', '.meta.js'); sc.onload = () => res(window.ASSET_META && window.ASSET_META[sp.id]); sc.onerror = () => res(null); document.head.appendChild(sc); });
+        if (meta && meta.src) img.src = meta.src;   // embedded copy: readable even from file://
+        try { await img.decode(); if (meta) spec.spriteArt[sp.id] = { img, meta }; } catch (e) { /* missing art: blockout shows */ }
+      }));
+    }
     st.map = AshfallIso.create(canvas, spec);
     if (loading) loading.remove();
     st.zoom = +(params.get('z') || 0) || (st.view === 'greymark' ? 2 : 1);

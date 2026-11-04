@@ -130,6 +130,18 @@
     this.px = new Uint32Array(this.img.data.buffer); this._c = 0;
   }
   Object.defineProperty(PixelBuf.prototype, 'fillStyle', { set(c) { this._c = rgba(c); }, get() { return ''; } });
+  PixelBuf.prototype.blit = function (src, sw, sh, dx, dy) {  // RGBA pixels, alpha-tested
+    const px = this.px, W = this.w, H = this.h, s32 = new Uint32Array(src.buffer);
+    dx = Math.round(dx); dy = Math.round(dy);
+    for (let y = 0; y < sh; y++) {
+      const ty = y + dy; if (ty < 0 || ty >= H) continue;
+      for (let x = 0; x < sw; x++) {
+        const tx = x + dx; if (tx < 0 || tx >= W) continue;
+        const v = s32[y * sw + x]; if ((v >>> 24) < 128) continue;
+        px[ty * W + tx] = v | 0xff000000;
+      }
+    }
+  };
   PixelBuf.prototype.fillRect = function (x, y, w, h) {
     x |= 0; y |= 0;
     const x1 = Math.min(this.w, x + w), y1 = Math.min(this.h, y + h), c = this._c, px = this.px, W = this.w;
@@ -499,6 +511,20 @@
     const { tiles, W, H } = world;
     ctx.fillStyle = P.night; ctx.fillRect(0, 0, view.width, view.height);
     const order = tiles.slice().sort((a, b) => (a.x + a.y) - (b.x + b.y) || a.x - b.x);
+    // finished art fitted onto layout slots: drawn right after the slot's front corner tile
+    const spriteAt = {};
+    for (const sp of (world.spec.grid && world.spec.grid.sprites) || []) {
+      const art = (world.spec.spriteArt || {})[sp.id]; if (!art) continue;
+      const [lx, ly0] = view.proj(sp.x0, sp.y1, 1), [rx, ry0] = view.proj(sp.x1, sp.y0, 1);
+      const L = [lx - HALF, ly0 + TH / 2], R = [rx + HALF, ry0 + TH / 2], m = art.meta;
+      const s = (R[0] - L[0]) / (m.right[0] - m.left[0]);
+      const w = Math.round(m.w * s), h = Math.round(m.h * s);
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      const c2 = cv.getContext('2d'); c2.imageSmoothingEnabled = true; c2.imageSmoothingQuality = 'high'; c2.drawImage(art.img, 0, 0, w, h);
+      const data = c2.getImageData(0, 0, w, h).data;
+      const dx = L[0] - m.left[0] * s, dy = (L[1] + R[1]) / 2 - ((m.left[1] + m.right[1]) / 2) * s;
+      spriteAt[sp.x1 + ',' + sp.y1] = () => ctx.blit(data, w, h, dx, dy);
+    }
     for (const tl of order) {
       const tr = TERRAIN[tl.t];
       const [cx, cy0] = view.proj(tl.x, tl.y, tl.h);
@@ -583,6 +609,7 @@
       if (tl.t === 'road') { ctx.fillStyle = P.w1; ctx.fillRect(cx - 1, cy, 2, 1); }
       // props
       if (tl.prop) drawProp(ctx, tl, cx, cy);
+      const spr = spriteAt[tl.x + ',' + tl.y]; if (spr) spr();
       if (tl.place) {
         const kit = KITS[tl.place.kind] || KITS.marker;
         kit(ctx, cx, cy + 1, tl.place);
