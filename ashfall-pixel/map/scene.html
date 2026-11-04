@@ -75,7 +75,7 @@
     'greymark-town': ['Greymark', 'The whole town · about 450 buildings · dusk'],
     'greystone-beach': ['Greystone', 'Inside the rift · the beach where the trio died · endless twilight'],
   }[SCENE] || [SCENE, ''];
-  if (SCENE === 'greystone-beach') info.innerHTML = '<h2>Greystone</h2><div class="meta">Book 1 · memory · far down the south-west coast</div><p>"A long grey beach curved away into the dusk under a sky scattered with stars." Where Marin, Desso and Wren died. Permanent twilight, the tired hush of the waves, the Drunk Goat in a hostile sky.</p><p class="meta">Empty for now: figures come next. Click a label.</p>';
+  if (SCENE === 'greystone-beach') info.innerHTML = '<h2>Greystone</h2><div class="meta">Book 1 · memory · far down the south-west coast</div><p>"A long grey beach curved away into the dusk under a sky scattered with stars." Where Marin, Desso and Wren died. Permanent twilight, the tired hush of the waves, the Drunk Goat in a hostile sky.</p><p class="meta">The angel stands on the altar; transformed Aldren waits in the shallows. Click a label.</p>';
   if (SCENE === 'greymark-town') info.innerHTML = '<h2>Greymark</h2><div class="meta">Book 1 · Ch I–III · the border town</div><p>The whole town at dusk: about 450 timber-framed houses inside and around the dark palisade, bone-white stone gates, the church crowning the hill with its fountain, the square with the red well, Vex\'s mill and the flax farms outside, the autumn forest closing in behind.</p><p class="meta">Drag to pan, scroll or +/− to zoom, click a label. The street plan is the same one the city-plan view uses.</p>';
   document.querySelector('h1').textContent = SCENE_INFO[0]; document.querySelector('header .meta').textContent = SCENE_INFO[1];
   const CAT = Object.fromEntries((window.ASHFALL_STORY?.buildings || []).map(b => [b.id, b]));
@@ -83,6 +83,7 @@
     aldren: { name: 'Aldren', desc: 'The priest at the well, with his estoc never far away. He believes every word: "We are making a saint." He never drinks.', events: [9, 15, 19] },
     kethric: { name: 'Kethric', desc: 'Months after Greystone, drunk and hollow, owing Vex. He refuses the cup. "Part of me wanted to ask for a cup myself."', events: [6, 7, 10] },
     demon_aldren: { name: 'Aldren, transformed', desc: 'Having drunk from the chalice, Aldren becomes the thing he worshipped: twice Kethric\'s height, bloated blue and pink, his face split on rows of teeth, nine eyes, a bone spear for an arm and a barbed tentacle for the other, three bone-white hands guarding his heart. "HE LISTENS!" (Ch VIII–IX)', events: [19, 23] },
+    angel_vex: { name: 'The angel', desc: 'On the altar of the temple terrace: a figure of glittering crystal, "all planes and edges", three pairs of thin wings with flayed skin stretched between them, Vex\'s almond eyes. The chalice in one hand glows royal blue, the thurible in the other burns gold. (Ch VII)', events: [23, 24] },
     vex: { name: 'Vex', desc: 'Runs the mill. Counts her workers at the gate every morning; eleven are missing. Covered for Kethric with the priest\'s men, so he owes her.', events: [7, 11, 14, 16] },
   };
   const hash = (a, b) => { let h = (a * 374761393 + b * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
@@ -133,8 +134,8 @@
     ctx.clearRect(0, 0, W, H); ctx.drawImage(img, 0, 0);
     for (const sp of SPRITES) {
       const breathe = Math.round(Math.sin(t * 1.6) * 1.5);       // slow heave of the bloated body
-      if (sp.shadow) { ctx.globalAlpha = 0.4; ctx.fillStyle = '#0a0812'; ctx.beginPath(); ctx.ellipse(sp.x, sp.y - 2, sp.w * 0.4, sp.h * 0.07, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
-      ctx.imageSmoothingEnabled = true; ctx.drawImage(sp.im, Math.round(sp.x - sp.w / 2), sp.y - sp.h - breathe, sp.w, sp.h + breathe); ctx.imageSmoothingEnabled = false;
+      if (sp.shadow) { ctx.globalAlpha = 0.4; ctx.fillStyle = '#0a0812'; ctx.beginPath(); ctx.ellipse(sp.x, sp.y - sp.h * 0.1, sp.w * 0.36, sp.h * 0.06, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+      ctx.imageSmoothingEnabled = !sp.pixel; ctx.drawImage(sp.im, Math.round(sp.x - sp.w / 2), sp.y - sp.h - breathe, sp.w, sp.h + breathe); ctx.imageSmoothingEnabled = false;
     }
     // lantern + window glow flicker
     for (const [i, [x, y]] of (P.lamps || []).entries()) {
