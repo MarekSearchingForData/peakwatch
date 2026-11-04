@@ -964,7 +964,7 @@ window.ASHFALL_STORY = {
    "events": [
     5
    ],
-   "desc": "A small round sea cave opening onto the surf lit by \"pale light that seemed to emanate from nowhere\". On the floor, a stone disc \"wide as a threshing floor\", carved in rings like cartwheel spokes, \"Men bowing. Waves. Things with too many legs.\" At its centre \"an eye, carved wide open\". A pulsing trickle of scarlet water. (Ch VI)"
+   "desc": "A low rock hollow at the inland end of the beach. On its floor lies a stone disc \"wide as a threshing floor… black depths that dropped away on every side\", carved in rings divided like cartwheel spokes, \"Men bowing. Waves. Things with too many legs.\" At its centre \"an eye, carved wide open\". Lit by \"pale light that seemed to emanate from nowhere\"; a pulsing trickle of scarlet water runs from it to the sea. (Ch VI)"
   },
   {
    "id": "trio_graves",
