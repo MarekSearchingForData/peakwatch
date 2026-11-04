@@ -227,8 +227,17 @@ for y in range(int(mcy - mr) - 1, int(mcy + mr) + 2):
         d2 = (x + 0.5 - mcx) ** 2 + (y + 0.5 - mcy) ** 2
         if d2 < (mr - 0.8) ** 2: cells[y][x] = 'p'
         elif d2 < (mr + 0.4) ** 2: cells[y][x] = 'w'
-building(int(mcx) - 4, int(mcy) - 4, 8, 6, 'mill', 10, story='vex_mill')
-for k in range(3): building(int(mcx) - 3 + k * 3, int(mcy) + 3, 2, 2, 'dye_vat', 3, label=f'dye_vat_{k}')
+MX0, MY0, MX1, MY1 = int(mcx - mr) - 1, int(mcy - mr) - 1, int(mcx + mr) + 1, int(mcy + mr) + 1
+if os.path.exists(os.path.join(ROOT, 'map', 'assets', 'mill_annex.png')):
+    # finished art (mill, water wheel, dye vats, linen racks, workers, its own palisade): clear the ground
+    for y in range(MY0, MY1 + 1):
+        for x in range(MX0, MX1 + 1):
+            if inb(x, y) and cells[y][x] != '~': cells[y][x] = 'g'
+    sprites.append({'id': 'mill_annex', 'src': 'assets/mill_annex.png', 'x0': MX0, 'y0': MY0, 'x1': MX1, 'y1': MY1})
+    anchor('vex_mill', mcx - 1, mcy - 2); anchor('vex', mcx + 3, mcy + 4)
+else:
+    building(int(mcx) - 4, int(mcy) - 4, 8, 6, 'mill', 10, story='vex_mill')
+    for k in range(3): building(int(mcx) - 3 + k * 3, int(mcy) + 3, 2, 2, 'dye_vat', 3, label=f'dye_vat_{k}')
 slots.append({'id': 'mill_annex', 'kind': 'walls', 'x': int(mcx - mr), 'y': int(mcy - mr), 'w': int(2 * mr), 'd': int(2 * mr)})
 anchor('flax_farms', *to_grid((760, 700)))
 
