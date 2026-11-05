@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HEMA Studio</title>
+<style>
+:root{
+  --bg:#15171b; --panel:#1d2026; --panel2:#23272e; --line:#323741; --ink:#e9eaec; --mute:#9aa1ab;
+  --a:#7fb0e6; --b:#e4b07f; --accent:#e5484d; --attack:#c2474c; --cover:#3f73cc; --both:#8a5bc4; --idle:#4d535d;
+  --ok:#3fb27f; --warn:#e3a53b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{overflow:hidden}
+#app{display:grid;grid-template-rows:auto 1fr auto;height:100vh}
+button,select,input{font:inherit;color:var(--ink)}
+button{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 9px;cursor:pointer;white-space:nowrap}
+button:hover{border-color:#4b525e}
+button.on{border-color:var(--a);background:#26303d}
+button.rec{background:#5b1d20;border-color:#a3343a;font-weight:600}
+button.rec.dirty{animation:pulse 1s infinite}
+@keyframes pulse{50%{background:#8c2a30}}
+button:disabled{opacity:.45;cursor:default}
+select,input[type=text],input[type=number]{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
+input[type=number]{width:70px}
+input[type=range]{accent-color:var(--a);width:100%}
+label{color:var(--mute)}
+#top{display:flex;gap:6px;align-items:center;padding:6px 8px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+#top .grow{flex:1}
+#top .sep{width:1px;height:20px;background:var(--line);margin:0 2px}
+#saved{color:var(--mute);font-size:12px;min-width:60px;text-align:right}
+#main{display:grid;grid-template-columns:1fr 310px;min-height:0}
+#stage{position:relative;min-height:0}
+#gl{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
+#hud{position:absolute;left:10px;top:8px;pointer-events:none;font-variant-numeric:tabular-nums}
+#hud .t{font-size:19px;font-weight:600}
+#hud .sub{color:var(--mute)}
+#verdict{position:absolute;left:10px;bottom:8px;max-width:44%;background:rgba(21,23,27,.82);border:1px solid var(--line);border-radius:8px;padding:6px 9px;pointer-events:none}
+#verdict b{font-size:14px}
+#cams{position:absolute;right:8px;top:8px;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+#help{position:absolute;right:8px;bottom:8px;max-width:50%;color:var(--mute);font-size:11px;text-align:right;pointer-events:none;background:rgba(21,23,27,.6);padding:4px 6px;border-radius:6px}
+#side{background:var(--panel);border-left:1px solid var(--line);overflow:auto;padding:8px 10px 20px}
+.sec{border-bottom:1px solid var(--line);padding:8px 0 10px}
+.sec h3{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);font-weight:600}
+.row{display:flex;gap:6px;align-items:center;margin:4px 0;flex-wrap:wrap}
+.row > label{min-width:62px}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chips button{padding:3px 7px;font-size:12px}
+.pill{display:inline-block;padding:1px 7px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:12px}
+.flag{font-size:12px;margin:3px 0;padding:4px 6px;border-radius:6px;background:var(--panel2)}
+.flag.bad{border-left:3px solid var(--accent)} .flag.warn{border-left:3px solid var(--warn)} .flag.ok{border-left:3px solid var(--ok)} .flag.info{color:var(--mute)}
+#events div{font-size:12px;padding:2px 0;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#events .hit{color:#ff8d90} #events .displace{color:#9fc1ff} #events .bind{color:#f5c542}
+.muted{color:var(--mute);font-size:12px}
+#bottom{background:var(--panel);border-top:1px solid var(--line)}
+#transport{display:flex;gap:6px;align-items:center;padding:5px 8px;flex-wrap:wrap}
+#tl{display:block;width:100%;height:150px;touch-action:none}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;border-radius:0}
+.fa{color:var(--a)} .fb{color:var(--b)}
+#err{position:absolute;inset:0;display:none;align-items:center;justify-content:center;color:#ffb4b4;padding:30px;text-align:center}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="top">
+    <select id="exSel" title="Exchange"></select>
+    <button id="exNew" title="New exchange">New</button>
+    <button id="exDup">Duplicate</button>
+    <button id="exRen">Rename</button>
+    <button id="exDel">Delete</button>
+    <span class="sep"></span>
+    <label>A <select id="wA"></select></label>
+    <label>B <select id="wB"></select></label>
+    <label title="Pelvis-to-pelvis distance at the start">Distance <input id="dist" type="number" step="0.05" min="1" max="6"> m</label>
+    <label title="Length of one beat at medium pace">Beat <input id="beat" type="number" step="10" min="100" max="2000"> ms</label>
+    <span class="grow"></span>
+    <button id="undo" title="Undo (Ctrl+Z)">Undo</button>
+    <div class="seg"><button id="mEdit" class="on">Edit</button><button id="mFight">Fight</button></div>
+    <span id="saved"></span>
+  </div>
+
+  <div id="main">
+    <div id="stage">
+      <canvas id="gl"></canvas>
+      <div id="hud"><div class="t" id="tt">0 ms</div><div class="sub" id="sub"></div></div>
+      <div id="cams">
+        <button data-cam="side" class="on">Side</button><button data-cam="top">Top</button>
+        <button data-cam="a">A's eyes</button><button data-cam="b">B's eyes</button>
+        <button id="hbx" title="Show hitboxes">Hitboxes</button>
+      </div>
+      <div id="verdict"></div>
+      <div id="help">Drag the coloured handles to pose · drag empty space to orbit · right-drag to pan · scroll to zoom</div>
+      <div id="err"></div>
+    </div>
+    <div id="side">
+      <div class="sec">
+        <h3>Pose</h3>
+        <div class="row"><label>Editing</label>
+          <div class="seg"><button id="fA" class="on">A</button><button id="fB">B</button></div>
+          <span class="muted" id="fWeapon"></span></div>
+        <div class="row"><label>Guards</label></div>
+        <div class="chips" id="guards"></div>
+        <div class="row"><label>Turn</label><input type="range" id="yaw" min="-90" max="90" step="1"></div>
+        <div class="row"><label>Lean</label><input type="range" id="lean" min="-20" max="45" step="1"></div>
+        <div class="row"><label>Crouch</label><input type="range" id="crouch" min="0" max="0.3" step="0.005"></div>
+        <div class="row"><label><input type="checkbox" id="leftOn"> second hand on the hilt</label></div>
+        <div class="row">
+          <button id="rec" class="rec" title="Record this pose at the playhead (R)">● Record pose</button>
+          <button id="delKey" disabled>Delete key</button>
+        </div>
+        <div class="muted" id="recInfo"></div>
+      </div>
+      <div class="sec" id="actSec">
+        <h3>Action</h3>
+        <div id="actNone" class="muted">Click a bar on the timeline to edit an action. To make one, click a key diamond and press <i>Make action</i>: it spans from the previous key to that key. Shift-click two keys to span several.</div>
+        <div class="row"><button id="mkAct" disabled>Make action</button></div>
+        <div id="actBox" style="display:none">
+          <div class="row"><label>Name</label><input type="text" id="aName" style="flex:1"></div>
+          <div class="row"><label>Strength</label><input type="range" id="aStr" min="0" max="1" step="0.01" style="flex:1"><span class="pill" id="aStrL"></span></div>
+          <div class="row"><label>Pace</label><input type="range" id="aPace" min="0.4" max="2.5" step="0.01" style="flex:1"><span class="pill" id="aPaceL"></span></div>
+          <div class="row">
+            <label><input type="checkbox" id="aAtk"> attacks</label>
+            <label><input type="checkbox" id="aCov"> covers</label>
+            <label title="Follow-through of the previous action: dies with it if that action is displaced"><input type="checkbox" id="aCont"> continuation</label>
+          </div>
+          <div class="row"><label>Check vs</label><select id="aMeas" style="flex:1"></select></div>
+          <div id="aFlags"></div>
+          <div class="row"><button id="aSave">Save as move</button><button id="aDel">Delete action</button></div>
+        </div>
+      </div>
+      <div class="sec">
+        <h3>Moves library</h3>
+        <div class="row"><select id="mvSel" style="flex:1"></select></div>
+        <div class="row"><button id="mvIns">Insert at playhead</button><button id="mvDel">Delete move</button></div>
+        <div class="muted" id="mvInfo"></div>
+      </div>
+      <div class="sec">
+        <h3>Exchange result</h3>
+        <div id="events"></div>
+        <div class="muted" id="exNotes" style="margin-top:6px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="bottom">
+    <div id="transport">
+      <button id="play">Play</button>
+      <button id="back" title="To start">|&lt;</button>
+      <button id="stepB" title="Back 1/8 beat (←)">&lt;</button>
+      <button id="stepF" title="Forward 1/8 beat (→)">&gt;</button>
+      <select id="spd"><option value="1">1×</option><option value="0.5">0.5×</option><option value="0.25" selected>0.25×</option><option value="0.1">0.1×</option></select>
+      <label><input type="checkbox" id="loop" checked> loop</label>
+      <label><input type="checkbox" id="snap" checked> snap ⅛ beat</label>
+      <span class="muted">Bars: drag the <b>end</b> to change pace, drag the <b>top</b> for strength. Drag diamonds to retime keys.</span>
+    </div>
+    <canvas id="tl"></canvas>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="engine.js"></script>
+<script src="studio.js"></script>
+</body>
+</html>

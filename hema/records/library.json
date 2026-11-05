@@ -1,0 +1,3588 @@
+{
+ "version": 1,
+ "exchanges": [
+  {
+   "id": "seed-mutual",
+   "name": "Mutual Zornhau: longsword vs messer",
+   "notes": "Both fencers cut on the same tempo with the same speed. The longsword's extra ~15 cm lands on the head first; the best the messer gets is an afterblow to the hands. This is fighting the messer like a longsword.",
+   "beat_ms": 360.0,
+   "distance": 3.6,
+   "fencers": [
+    {
+     "weapon": "longsword",
+     "label": "A"
+    },
+    {
+     "weapon": "messer",
+     "label": "B"
+    }
+   ],
+   "tracks": [
+    {
+     "keys": [
+      {
+       "id": "k1",
+       "at": 0.0,
+       "pose": {
+        "hip": [
+         0.0,
+         0.9,
+         0.0
+        ],
+        "yaw": -30,
+        "lean": 0.0,
+        "lfoot": [
+         0.3,
+         -0.13
+        ],
+        "rfoot": [
+         -0.3,
+         0.15
+        ],
+        "grip": [
+         0.05,
+         1.3,
+         0.24
+        ],
+        "blade": [
+         -0.2985,
+         0.9511,
+         0.08
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k2",
+       "at": 1.0556,
+       "pose": {
+        "hip": [
+         0.35,
+         0.9,
+         0.0
+        ],
+        "yaw": -30,
+        "lean": 0.0,
+        "lfoot": [
+         0.6499999999999999,
+         -0.13
+        ],
+        "rfoot": [
+         0.04999999999999999,
+         0.15
+        ],
+        "grip": [
+         0.4,
+         1.3,
+         0.24
+        ],
+        "blade": [
+         -0.2985,
+         0.9511,
+         0.08
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k3",
+       "at": 1.5056,
+       "pose": {
+        "hip": [
+         0.65,
+         0.9,
+         0.02
+        ],
+        "yaw": -10,
+        "lean": 0.0,
+        "lfoot": [
+         0.6499999999999999,
+         -0.13
+        ],
+        "rfoot": [
+         0.55,
+         0.14
+        ],
+        "grip": [
+         0.8,
+         1.62,
+         0.24
+        ],
+        "blade": [
+         0.2676,
+         0.9511,
+         0.1545
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k4",
+       "at": 2.0556,
+       "pose": {
+        "hip": [
+         1.0,
+         0.86,
+         0.0
+        ],
+        "yaw": 20,
+        "lean": 10,
+        "lfoot": [
+         0.6799999999999999,
+         -0.15
+        ],
+        "rfoot": [
+         1.3,
+         0.13
+        ],
+        "grip": [
+         1.5,
+         1.36,
+         0.06
+        ],
+        "blade": [
+         0.9897,
+         0.1392,
+         0.0346
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k5",
+       "at": 2.6667,
+       "pose": {
+        "hip": [
+         1.05,
+         0.85,
+         0.0
+        ],
+        "yaw": 30,
+        "lean": 12,
+        "lfoot": [
+         0.6799999999999999,
+         -0.15
+        ],
+        "rfoot": [
+         1.3,
+         0.13
+        ],
+        "grip": [
+         1.35,
+         1.0,
+         -0.18
+        ],
+        "blade": [
+         0.7094,
+         -0.5,
+         -0.4967
+        ],
+        "left_on": true
+       }
+      }
+     ]
+    },
+    {
+     "keys": [
+      {
+       "id": "k6",
+       "at": 0.0,
+       "pose": {
+        "hip": [
+         0.0,
+         0.9,
+         0.0
+        ],
+        "yaw": -35,
+        "lean": 0.0,
+        "lfoot": [
+         0.3,
+         -0.13
+        ],
+        "rfoot": [
+         -0.3,
+         0.15
+        ],
+        "grip": [
+         0.02,
+         1.32,
+         0.25
+        ],
+        "blade": [
+         -0.8529,
+         0.5,
+         0.1504
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k7",
+       "at": 1.0556,
+       "pose": {
+        "hip": [
+         0.35,
+         0.9,
+         0.0
+        ],
+        "yaw": -35,
+        "lean": 0.0,
+        "lfoot": [
+         0.6499999999999999,
+         -0.13
+        ],
+        "rfoot": [
+         0.04999999999999999,
+         0.15
+        ],
+        "grip": [
+         0.37,
+         1.32,
+         0.25
+        ],
+        "blade": [
+         -0.8529,
+         0.5,
+         0.1504
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k8",
+       "at": 1.5056,
+       "pose": {
+        "hip": [
+         0.65,
+         0.9,
+         0.02
+        ],
+        "yaw": -12,
+        "lean": 0.0,
+        "lfoot": [
+         0.6499999999999999,
+         -0.13
+        ],
+        "rfoot": [
+         0.55,
+         0.14
+        ],
+        "grip": [
+         0.75,
+         1.62,
+         0.26
+        ],
+        "blade": [
+         0.262,
+         0.9397,
+         0.2198
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k9",
+       "at": 2.0556,
+       "pose": {
+        "hip": [
+         1.03,
+         0.86,
+         0.0
+        ],
+        "yaw": 22,
+        "lean": 12,
+        "lfoot": [
+         0.71,
+         -0.15
+        ],
+        "rfoot": [
+         1.33,
+         0.13
+        ],
+        "grip": [
+         1.5,
+         1.4,
+         0.05
+        ],
+        "blade": [
+         0.9939,
+         0.1045,
+         0.0347
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k10",
+       "at": 2.6111,
+       "pose": {
+        "hip": [
+         1.07,
+         0.85,
+         0.0
+        ],
+        "yaw": 30,
+        "lean": 12,
+        "lfoot": [
+         0.71,
+         -0.15
+        ],
+        "rfoot": [
+         1.33,
+         0.13
+        ],
+        "grip": [
+         1.35,
+         1.0,
+         -0.18
+        ],
+        "blade": [
+         0.7094,
+         -0.5,
+         -0.4967
+        ],
+        "left_on": true
+       }
+      }
+     ]
+    }
+   ],
+   "actions": [
+    {
+     "id": "a1",
+     "from": "k1",
+     "to": "k2",
+     "name": "step into distance",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": false,
+     "measure": "ls.approach",
+     "fencer": 0
+    },
+    {
+     "id": "a2",
+     "from": "k2",
+     "to": "k4",
+     "name": "Oberhau",
+     "strength": 0.75,
+     "pace": 1.0,
+     "attack": true,
+     "cover": true,
+     "cont": false,
+     "measure": "ls.oberhau",
+     "fencer": 0
+    },
+    {
+     "id": "a3",
+     "from": "k4",
+     "to": "k5",
+     "name": "follow-through",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": true,
+     "measure": "ls.follow",
+     "fencer": 0
+    },
+    {
+     "id": "a4",
+     "from": "k6",
+     "to": "k7",
+     "name": "step into distance",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": false,
+     "measure": "messer.approach",
+     "fencer": 1
+    },
+    {
+     "id": "a5",
+     "from": "k7",
+     "to": "k9",
+     "name": "Zornhau",
+     "strength": 0.75,
+     "pace": 1.0,
+     "attack": true,
+     "cover": true,
+     "cont": false,
+     "measure": "messer.zornhau",
+     "fencer": 1
+    },
+    {
+     "id": "a6",
+     "from": "k9",
+     "to": "k10",
+     "name": "follow-through",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": true,
+     "measure": "messer.follow",
+     "fencer": 1
+    }
+   ]
+  },
+  {
+   "id": "seed-zwerch",
+   "name": "Zwerch against his Oberhau",
+   "notes": "Spring out with the Zwerch the instant he cuts (Indes): his blade lands on your cross while your short edge takes his head. One action that covers and hits. Add even 50 ms of reaction and it fails -- you have to read the cut, not answer it.",
+   "beat_ms": 360.0,
+   "distance": 2.6,
+   "fencers": [
+    {
+     "weapon": "longsword",
+     "label": "A"
+    },
+    {
+     "weapon": "messer",
+     "label": "B"
+    }
+   ],
+   "tracks": [
+    {
+     "keys": [
+      {
+       "id": "k1",
+       "at": 0.0,
+       "pose": {
+        "hip": [
+         0.0,
+         0.9,
+         0.0
+        ],
+        "yaw": -30,
+        "lean": 0.0,
+        "lfoot": [
+         0.3,
+         -0.13
+        ],
+        "rfoot": [
+         -0.3,
+         0.15
+        ],
+        "grip": [
+         0.05,
+         1.3,
+         0.24
+        ],
+        "blade": [
+         -0.2985,
+         0.9511,
+         0.08
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k2",
+       "at": 1.0556,
+       "pose": {
+        "hip": [
+         0.35,
+         0.9,
+         0.0
+        ],
+        "yaw": -30,
+        "lean": 0.0,
+        "lfoot": [
+         0.6499999999999999,
+         -0.13
+        ],
+        "rfoot": [
+         0.04999999999999999,
+         0.15
+        ],
+        "grip": [
+         0.4,
+         1.3,
+         0.24
+        ],
+        "blade": [
+         -0.2985,
+         0.9511,
+         0.08
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k3",
+       "at": 1.5056,
+       "pose": {
+        "hip": [
+         0.65,
+         0.9,
+         0.02
+        ],
+        "yaw": -10,
+        "lean": 0.0,
+        "lfoot": [
+         0.6499999999999999,
+         -0.13
+        ],
+        "rfoot": [
+         0.55,
+         0.14
+        ],
+        "grip": [
+         0.8,
+         1.62,
+         0.24
+        ],
+        "blade": [
+         0.2676,
+         0.9511,
+         0.1545
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k4",
+       "at": 2.0556,
+       "pose": {
+        "hip": [
+         1.0,
+         0.86,
+         0.0
+        ],
+        "yaw": 20,
+        "lean": 10,
+        "lfoot": [
+         0.6799999999999999,
+         -0.15
+        ],
+        "rfoot": [
+         1.3,
+         0.13
+        ],
+        "grip": [
+         1.5,
+         1.36,
+         0.06
+        ],
+        "blade": [
+         0.9897,
+         0.1392,
+         0.0346
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k5",
+       "at": 2.6667,
+       "pose": {
+        "hip": [
+         1.05,
+         0.85,
+         0.0
+        ],
+        "yaw": 30,
+        "lean": 12,
+        "lfoot": [
+         0.6799999999999999,
+         -0.15
+        ],
+        "rfoot": [
+         1.3,
+         0.13
+        ],
+        "grip": [
+         1.35,
+         1.0,
+         -0.18
+        ],
+        "blade": [
+         0.7094,
+         -0.5,
+         -0.4967
+        ],
+        "left_on": true
+       }
+      }
+     ]
+    },
+    {
+     "keys": [
+      {
+       "id": "k6",
+       "at": 0.0,
+       "pose": {
+        "hip": [
+         0.0,
+         0.9,
+         0.0
+        ],
+        "yaw": -35,
+        "lean": 0.0,
+        "lfoot": [
+         0.3,
+         -0.13
+        ],
+        "rfoot": [
+         -0.3,
+         0.15
+        ],
+        "grip": [
+         0.02,
+         1.32,
+         0.25
+        ],
+        "blade": [
+         -0.8529,
+         0.5,
+         0.1504
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k7",
+       "at": 1.0556,
+       "pose": {
+        "hip": [
+         0.0,
+         0.9,
+         0.0
+        ],
+        "yaw": -35,
+        "lean": 0.0,
+        "lfoot": [
+         0.3,
+         -0.13
+        ],
+        "rfoot": [
+         -0.3,
+         0.15
+        ],
+        "grip": [
+         0.02,
+         1.32,
+         0.25
+        ],
+        "blade": [
+         -0.8529,
+         0.5,
+         0.1504
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k8",
+       "at": 1.4806,
+       "pose": {
+        "hip": [
+         0.2,
+         0.89,
+         0.09
+        ],
+        "yaw": -5,
+        "lean": 0.0,
+        "lfoot": [
+         0.3,
+         -0.08
+        ],
+        "rfoot": [
+         0.18,
+         0.25
+        ],
+        "grip": [
+         0.18,
+         1.82,
+         -0.02
+        ],
+        "blade": [
+         -0.0819,
+         0.342,
+         0.9361
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k9",
+       "at": 2.0,
+       "pose": {
+        "hip": [
+         0.45,
+         0.87,
+         0.15
+        ],
+        "yaw": 15,
+        "lean": 10,
+        "lfoot": [
+         0.13,
+         0.0
+        ],
+        "rfoot": [
+         0.75,
+         0.28
+        ],
+        "grip": [
+         0.87,
+         1.74,
+         -0.12
+        ],
+        "blade": [
+         0.9835,
+         -0.1736,
+         0.0515
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k10",
+       "at": 2.5556,
+       "pose": {
+        "hip": [
+         0.48,
+         0.87,
+         0.15
+        ],
+        "yaw": 25,
+        "lean": 10,
+        "lfoot": [
+         0.13,
+         0.0
+        ],
+        "rfoot": [
+         0.75,
+         0.28
+        ],
+        "grip": [
+         0.65,
+         1.45,
+         -0.2
+        ],
+        "blade": [
+         0.554,
+         -0.2588,
+         -0.7912
+        ],
+        "left_on": true
+       }
+      }
+     ]
+    }
+   ],
+   "actions": [
+    {
+     "id": "a1",
+     "from": "k1",
+     "to": "k2",
+     "name": "step into distance",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": false,
+     "measure": "ls.approach",
+     "fencer": 0
+    },
+    {
+     "id": "a2",
+     "from": "k2",
+     "to": "k4",
+     "name": "Oberhau",
+     "strength": 0.75,
+     "pace": 1.0,
+     "attack": true,
+     "cover": true,
+     "cont": false,
+     "measure": "ls.oberhau",
+     "fencer": 0
+    },
+    {
+     "id": "a3",
+     "from": "k4",
+     "to": "k5",
+     "name": "follow-through",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": true,
+     "measure": "ls.follow",
+     "fencer": 0
+    },
+    {
+     "id": "a4",
+     "from": "k7",
+     "to": "k9",
+     "name": "Zwerch (step out right)",
+     "strength": 0.6,
+     "pace": 1.0,
+     "attack": true,
+     "cover": true,
+     "cont": false,
+     "measure": "messer.zwerch",
+     "fencer": 1
+    },
+    {
+     "id": "a5",
+     "from": "k9",
+     "to": "k10",
+     "name": "follow-through",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": true,
+     "measure": "messer.follow",
+     "fencer": 1
+    }
+   ]
+  },
+  {
+   "id": "seed-nachreisen",
+   "name": "Nachreisen on a wind-up",
+   "notes": "He winds up from Pflug (two actions). You go on his wind-up and cut the hands. A one-action answer to a two-action attack.",
+   "beat_ms": 360.0,
+   "distance": 2.4,
+   "fencers": [
+    {
+     "weapon": "longsword",
+     "label": "A"
+    },
+    {
+     "weapon": "messer",
+     "label": "B"
+    }
+   ],
+   "tracks": [
+    {
+     "keys": [
+      {
+       "id": "k1",
+       "at": 0.0,
+       "pose": {
+        "hip": [
+         0.0,
+         0.9,
+         0.0
+        ],
+        "yaw": -20,
+        "lean": 0.0,
+        "lfoot": [
+         0.3,
+         -0.13
+        ],
+        "rfoot": [
+         -0.3,
+         0.15
+        ],
+        "grip": [
+         0.3,
+         1.0,
+         0.14
+        ],
+        "blade": [
+         0.8781,
+         0.4695,
+         -0.0923
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k2",
+       "at": 1.0556,
+       "pose": {
+        "hip": [
+         0.35,
+         0.9,
+         0.0
+        ],
+        "yaw": -20,
+        "lean": 0.0,
+        "lfoot": [
+         0.6499999999999999,
+         -0.13
+        ],
+        "rfoot": [
+         0.04999999999999999,
+         0.15
+        ],
+        "grip": [
+         0.65,
+         1.0,
+         0.14
+        ],
+        "blade": [
+         0.8781,
+         0.4695,
+         -0.0923
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k3",
+       "at": 1.7778,
+       "pose": {
+        "hip": [
+         0.35,
+         0.9,
+         0.0
+        ],
+        "yaw": -30,
+        "lean": 0.0,
+        "lfoot": [
+         0.6499999999999999,
+         -0.13
+        ],
+        "rfoot": [
+         0.04999999999999999,
+         0.15
+        ],
+        "grip": [
+         0.4,
+         1.3,
+         0.24
+        ],
+        "blade": [
+         -0.2985,
+         0.9511,
+         0.08
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k4",
+       "at": 2.2278,
+       "pose": {
+        "hip": [
+         0.65,
+         0.9,
+         0.02
+        ],
+        "yaw": -10,
+        "lean": 0.0,
+        "lfoot": [
+         0.6499999999999999,
+         -0.13
+        ],
+        "rfoot": [
+         0.55,
+         0.14
+        ],
+        "grip": [
+         0.8,
+         1.62,
+         0.24
+        ],
+        "blade": [
+         0.2676,
+         0.9511,
+         0.1545
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k5",
+       "at": 2.7778,
+       "pose": {
+        "hip": [
+         1.0,
+         0.86,
+         0.0
+        ],
+        "yaw": 20,
+        "lean": 10,
+        "lfoot": [
+         0.6799999999999999,
+         -0.15
+        ],
+        "rfoot": [
+         1.3,
+         0.13
+        ],
+        "grip": [
+         1.5,
+         1.36,
+         0.06
+        ],
+        "blade": [
+         0.9897,
+         0.1392,
+         0.0346
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k6",
+       "at": 3.3889,
+       "pose": {
+        "hip": [
+         1.05,
+         0.85,
+         0.0
+        ],
+        "yaw": 30,
+        "lean": 12,
+        "lfoot": [
+         0.6799999999999999,
+         -0.15
+        ],
+        "rfoot": [
+         1.3,
+         0.13
+        ],
+        "grip": [
+         1.35,
+         1.0,
+         -0.18
+        ],
+        "blade": [
+         0.7094,
+         -0.5,
+         -0.4967
+        ],
+        "left_on": true
+       }
+      }
+     ]
+    },
+    {
+     "keys": [
+      {
+       "id": "k7",
+       "at": 0.0,
+       "pose": {
+        "hip": [
+         0.0,
+         0.9,
+         0.0
+        ],
+        "yaw": -20,
+        "lean": 0.0,
+        "lfoot": [
+         0.3,
+         -0.13
+        ],
+        "rfoot": [
+         -0.3,
+         0.15
+        ],
+        "grip": [
+         0.3,
+         1.0,
+         0.14
+        ],
+        "blade": [
+         0.9013,
+         0.4226,
+         -0.0947
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k8",
+       "at": 1.3889,
+       "pose": {
+        "hip": [
+         0.0,
+         0.9,
+         0.0
+        ],
+        "yaw": -20,
+        "lean": 0.0,
+        "lfoot": [
+         0.3,
+         -0.13
+        ],
+        "rfoot": [
+         -0.3,
+         0.15
+        ],
+        "grip": [
+         0.3,
+         1.0,
+         0.14
+        ],
+        "blade": [
+         0.9013,
+         0.4226,
+         -0.0947
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k9",
+       "at": 2.2222,
+       "pose": {
+        "hip": [
+         0.82,
+         0.86,
+         0.0
+        ],
+        "yaw": 22,
+        "lean": 14,
+        "lfoot": [
+         0.49999999999999994,
+         -0.15
+        ],
+        "rfoot": [
+         1.1199999999999999,
+         0.13
+        ],
+        "grip": [
+         1.32,
+         1.42,
+         -0.04
+        ],
+        "blade": [
+         0.9142,
+         -0.309,
+         -0.2621
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k10",
+       "at": 2.7778,
+       "pose": {
+        "hip": [
+         0.55,
+         0.88,
+         0.0
+        ],
+        "yaw": 5,
+        "lean": 5,
+        "lfoot": [
+         0.23000000000000004,
+         -0.15
+        ],
+        "rfoot": [
+         0.8500000000000001,
+         0.13
+        ],
+        "grip": [
+         0.75,
+         1.2,
+         0.1
+        ],
+        "blade": [
+         0.9752,
+         0.1736,
+         -0.1371
+        ],
+        "left_on": true
+       }
+      }
+     ]
+    }
+   ],
+   "actions": [
+    {
+     "id": "a1",
+     "from": "k1",
+     "to": "k2",
+     "name": "step into distance",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": false,
+     "measure": "ls.approach",
+     "fencer": 0
+    },
+    {
+     "id": "a2",
+     "from": "k2",
+     "to": "k3",
+     "name": "wind up to Vom Tag",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": false,
+     "measure": "ls.windup",
+     "fencer": 0
+    },
+    {
+     "id": "a3",
+     "from": "k3",
+     "to": "k5",
+     "name": "Oberhau",
+     "strength": 0.75,
+     "pace": 1.0,
+     "attack": true,
+     "cover": true,
+     "cont": false,
+     "measure": "ls.oberhau",
+     "fencer": 0
+    },
+    {
+     "id": "a4",
+     "from": "k5",
+     "to": "k6",
+     "name": "follow-through",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": true,
+     "measure": "ls.follow",
+     "fencer": 0
+    },
+    {
+     "id": "a5",
+     "from": "k8",
+     "to": "k9",
+     "name": "chase the hands",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": false,
+     "measure": "messer.nachreisen",
+     "fencer": 1
+    },
+    {
+     "id": "a6",
+     "from": "k9",
+     "to": "k10",
+     "name": "get out / recover",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": true,
+     "measure": "messer.follow",
+     "fencer": 1
+    }
+   ]
+  },
+  {
+   "id": "seed-einlauf",
+   "name": "Hanging cover + Einlaufen",
+   "notes": "Cover his Oberhau with your strong, then run in where his longer blade can't follow. Cover must be up before his blade arrives.",
+   "beat_ms": 360.0,
+   "distance": 2.4,
+   "fencers": [
+    {
+     "weapon": "longsword",
+     "label": "A"
+    },
+    {
+     "weapon": "messer",
+     "label": "B"
+    }
+   ],
+   "tracks": [
+    {
+     "keys": [
+      {
+       "id": "k1",
+       "at": 0.0,
+       "pose": {
+        "hip": [
+         0.0,
+         0.9,
+         0.0
+        ],
+        "yaw": -30,
+        "lean": 0.0,
+        "lfoot": [
+         0.3,
+         -0.13
+        ],
+        "rfoot": [
+         -0.3,
+         0.15
+        ],
+        "grip": [
+         0.05,
+         1.3,
+         0.24
+        ],
+        "blade": [
+         -0.2985,
+         0.9511,
+         0.08
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k2",
+       "at": 1.0556,
+       "pose": {
+        "hip": [
+         0.35,
+         0.9,
+         0.0
+        ],
+        "yaw": -30,
+        "lean": 0.0,
+        "lfoot": [
+         0.6499999999999999,
+         -0.13
+        ],
+        "rfoot": [
+         0.04999999999999999,
+         0.15
+        ],
+        "grip": [
+         0.4,
+         1.3,
+         0.24
+        ],
+        "blade": [
+         -0.2985,
+         0.9511,
+         0.08
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k3",
+       "at": 1.5056,
+       "pose": {
+        "hip": [
+         0.65,
+         0.9,
+         0.02
+        ],
+        "yaw": -10,
+        "lean": 0.0,
+        "lfoot": [
+         0.6499999999999999,
+         -0.13
+        ],
+        "rfoot": [
+         0.55,
+         0.14
+        ],
+        "grip": [
+         0.8,
+         1.62,
+         0.24
+        ],
+        "blade": [
+         0.2676,
+         0.9511,
+         0.1545
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k4",
+       "at": 2.0556,
+       "pose": {
+        "hip": [
+         1.0,
+         0.86,
+         0.0
+        ],
+        "yaw": 20,
+        "lean": 10,
+        "lfoot": [
+         0.6799999999999999,
+         -0.15
+        ],
+        "rfoot": [
+         1.3,
+         0.13
+        ],
+        "grip": [
+         1.5,
+         1.36,
+         0.06
+        ],
+        "blade": [
+         0.9897,
+         0.1392,
+         0.0346
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k5",
+       "at": 2.6667,
+       "pose": {
+        "hip": [
+         1.05,
+         0.85,
+         0.0
+        ],
+        "yaw": 30,
+        "lean": 12,
+        "lfoot": [
+         0.6799999999999999,
+         -0.15
+        ],
+        "rfoot": [
+         1.3,
+         0.13
+        ],
+        "grip": [
+         1.35,
+         1.0,
+         -0.18
+        ],
+        "blade": [
+         0.7094,
+         -0.5,
+         -0.4967
+        ],
+        "left_on": true
+       }
+      }
+     ]
+    },
+    {
+     "keys": [
+      {
+       "id": "k6",
+       "at": 0.0,
+       "pose": {
+        "hip": [
+         0.0,
+         0.9,
+         0.0
+        ],
+        "yaw": -25,
+        "lean": 0.0,
+        "lfoot": [
+         0.3,
+         -0.13
+        ],
+        "rfoot": [
+         -0.3,
+         0.15
+        ],
+        "grip": [
+         0.25,
+         1.55,
+         0.22
+        ],
+        "blade": [
+         0.9633,
+         0.1736,
+         -0.2048
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k7",
+       "at": 1.2222,
+       "pose": {
+        "hip": [
+         0.0,
+         0.9,
+         0.0
+        ],
+        "yaw": -25,
+        "lean": 0.0,
+        "lfoot": [
+         0.3,
+         -0.13
+        ],
+        "rfoot": [
+         -0.3,
+         0.15
+        ],
+        "grip": [
+         0.25,
+         1.55,
+         0.22
+        ],
+        "blade": [
+         0.9633,
+         0.1736,
+         -0.2048
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k8",
+       "at": 1.8889,
+       "pose": {
+        "hip": [
+         0.12,
+         0.89,
+         0.0
+        ],
+        "yaw": -10,
+        "lean": 4,
+        "lfoot": [
+         0.42,
+         -0.13
+        ],
+        "rfoot": [
+         -0.18,
+         0.15
+        ],
+        "grip": [
+         0.35,
+         1.7,
+         -0.02
+        ],
+        "blade": [
+         0.4698,
+         0.5736,
+         -0.671
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k9",
+       "at": 2.2444,
+       "pose": {
+        "hip": [
+         0.45,
+         0.88,
+         0.1
+        ],
+        "yaw": 5,
+        "lean": 8,
+        "lfoot": [
+         0.42,
+         -0.1
+        ],
+        "rfoot": [
+         0.4,
+         0.25
+        ],
+        "grip": [
+         0.7,
+         1.75,
+         0.1
+        ],
+        "blade": [
+         0.8529,
+         0.5,
+         -0.1504
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k10",
+       "at": 2.7778,
+       "pose": {
+        "hip": [
+         0.8,
+         0.86,
+         0.1
+        ],
+        "yaw": 20,
+        "lean": 12,
+        "lfoot": [
+         0.48000000000000004,
+         -0.04999999999999999
+        ],
+        "rfoot": [
+         1.1,
+         0.23
+        ],
+        "grip": [
+         1.05,
+         1.55,
+         0.05
+        ],
+        "blade": [
+         0.9047,
+         -0.4067,
+         -0.1271
+        ],
+        "left_on": true
+       }
+      }
+     ]
+    }
+   ],
+   "actions": [
+    {
+     "id": "a1",
+     "from": "k1",
+     "to": "k2",
+     "name": "step into distance",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": false,
+     "measure": "ls.approach",
+     "fencer": 0
+    },
+    {
+     "id": "a2",
+     "from": "k2",
+     "to": "k4",
+     "name": "Oberhau",
+     "strength": 0.75,
+     "pace": 1.0,
+     "attack": true,
+     "cover": true,
+     "cont": false,
+     "measure": "ls.oberhau",
+     "fencer": 0
+    },
+    {
+     "id": "a3",
+     "from": "k4",
+     "to": "k5",
+     "name": "follow-through",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": true,
+     "measure": "ls.follow",
+     "fencer": 0
+    },
+    {
+     "id": "a4",
+     "from": "k7",
+     "to": "k8",
+     "name": "hanging cover",
+     "strength": 0.7,
+     "pace": 1.0,
+     "attack": false,
+     "cover": true,
+     "cont": false,
+     "measure": "messer.cover",
+     "fencer": 1
+    },
+    {
+     "id": "a5",
+     "from": "k8",
+     "to": "k10",
+     "name": "run in + short cut",
+     "strength": 0.6,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": false,
+     "measure": "messer.einlauf",
+     "fencer": 1
+    }
+   ]
+  },
+  {
+   "id": "seed-thrust",
+   "name": "Messer Zornhau vs longsword thrust",
+   "notes": "Both go at once. His point travels the shortest line and has more reach, so it lands first. The Zornhau only breaks a thrust when your strong meets his weak -- try the speed sliders to find out how much faster you would need to be.",
+   "beat_ms": 360.0,
+   "distance": 3.0,
+   "fencers": [
+    {
+     "weapon": "longsword",
+     "label": "A"
+    },
+    {
+     "weapon": "messer",
+     "label": "B"
+    }
+   ],
+   "tracks": [
+    {
+     "keys": [
+      {
+       "id": "k1",
+       "at": 0.0,
+       "pose": {
+        "hip": [
+         0.0,
+         0.9,
+         0.0
+        ],
+        "yaw": -20,
+        "lean": 0.0,
+        "lfoot": [
+         0.3,
+         -0.13
+        ],
+        "rfoot": [
+         -0.3,
+         0.15
+        ],
+        "grip": [
+         0.3,
+         1.0,
+         0.14
+        ],
+        "blade": [
+         0.8781,
+         0.4695,
+         -0.0923
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k2",
+       "at": 1.0556,
+       "pose": {
+        "hip": [
+         0.35,
+         0.9,
+         0.0
+        ],
+        "yaw": -20,
+        "lean": 0.0,
+        "lfoot": [
+         0.6499999999999999,
+         -0.13
+        ],
+        "rfoot": [
+         0.04999999999999999,
+         0.15
+        ],
+        "grip": [
+         0.65,
+         1.0,
+         0.14
+        ],
+        "blade": [
+         0.8781,
+         0.4695,
+         -0.0923
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k3",
+       "at": 1.8889,
+       "pose": {
+        "hip": [
+         0.97,
+         0.85,
+         0.0
+        ],
+        "yaw": 15,
+        "lean": 14,
+        "lfoot": [
+         0.6499999999999999,
+         -0.15
+        ],
+        "rfoot": [
+         1.27,
+         0.13
+        ],
+        "grip": [
+         1.45,
+         1.3,
+         0.02
+        ],
+        "blade": [
+         0.9939,
+         0.1045,
+         -0.0347
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k4",
+       "at": 2.5,
+       "pose": {
+        "hip": [
+         0.85,
+         0.88,
+         0.0
+        ],
+        "yaw": 0,
+        "lean": 5,
+        "lfoot": [
+         0.5800000000000001,
+         -0.15
+        ],
+        "rfoot": [
+         1.2,
+         0.13
+        ],
+        "grip": [
+         1.15,
+         1.05,
+         0.12
+        ],
+        "blade": [
+         0.9013,
+         0.4226,
+         -0.0947
+        ],
+        "left_on": true
+       }
+      }
+     ]
+    },
+    {
+     "keys": [
+      {
+       "id": "k5",
+       "at": 0.0,
+       "pose": {
+        "hip": [
+         0.0,
+         0.9,
+         0.0
+        ],
+        "yaw": -35,
+        "lean": 0.0,
+        "lfoot": [
+         0.3,
+         -0.13
+        ],
+        "rfoot": [
+         -0.3,
+         0.15
+        ],
+        "grip": [
+         0.02,
+         1.32,
+         0.25
+        ],
+        "blade": [
+         -0.8529,
+         0.5,
+         0.1504
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k6",
+       "at": 1.0556,
+       "pose": {
+        "hip": [
+         0.35,
+         0.9,
+         0.0
+        ],
+        "yaw": -35,
+        "lean": 0.0,
+        "lfoot": [
+         0.6499999999999999,
+         -0.13
+        ],
+        "rfoot": [
+         0.04999999999999999,
+         0.15
+        ],
+        "grip": [
+         0.37,
+         1.32,
+         0.25
+        ],
+        "blade": [
+         -0.8529,
+         0.5,
+         0.1504
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k7",
+       "at": 1.5056,
+       "pose": {
+        "hip": [
+         0.65,
+         0.9,
+         0.02
+        ],
+        "yaw": -12,
+        "lean": 0.0,
+        "lfoot": [
+         0.6499999999999999,
+         -0.13
+        ],
+        "rfoot": [
+         0.55,
+         0.14
+        ],
+        "grip": [
+         0.75,
+         1.62,
+         0.26
+        ],
+        "blade": [
+         0.262,
+         0.9397,
+         0.2198
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k8",
+       "at": 2.0556,
+       "pose": {
+        "hip": [
+         1.03,
+         0.86,
+         0.0
+        ],
+        "yaw": 22,
+        "lean": 12,
+        "lfoot": [
+         0.71,
+         -0.15
+        ],
+        "rfoot": [
+         1.33,
+         0.13
+        ],
+        "grip": [
+         1.5,
+         1.4,
+         0.05
+        ],
+        "blade": [
+         0.9939,
+         0.1045,
+         0.0347
+        ],
+        "left_on": true
+       }
+      },
+      {
+       "id": "k9",
+       "at": 2.6111,
+       "pose": {
+        "hip": [
+         1.07,
+         0.85,
+         0.0
+        ],
+        "yaw": 30,
+        "lean": 12,
+        "lfoot": [
+         0.71,
+         -0.15
+        ],
+        "rfoot": [
+         1.33,
+         0.13
+        ],
+        "grip": [
+         1.35,
+         1.0,
+         -0.18
+        ],
+        "blade": [
+         0.7094,
+         -0.5,
+         -0.4967
+        ],
+        "left_on": true
+       }
+      }
+     ]
+    }
+   ],
+   "actions": [
+    {
+     "id": "a1",
+     "from": "k1",
+     "to": "k2",
+     "name": "step into distance",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": false,
+     "measure": "ls.approach",
+     "fencer": 0
+    },
+    {
+     "id": "a2",
+     "from": "k2",
+     "to": "k3",
+     "name": "thrust",
+     "strength": 0.45,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": false,
+     "measure": "ls.thrust",
+     "fencer": 0
+    },
+    {
+     "id": "a3",
+     "from": "k3",
+     "to": "k4",
+     "name": "recover to Pflug",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": true,
+     "measure": "ls.follow",
+     "fencer": 0
+    },
+    {
+     "id": "a4",
+     "from": "k5",
+     "to": "k6",
+     "name": "step into distance",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": false,
+     "measure": "messer.approach",
+     "fencer": 1
+    },
+    {
+     "id": "a5",
+     "from": "k6",
+     "to": "k8",
+     "name": "Zornhau",
+     "strength": 0.75,
+     "pace": 1.0,
+     "attack": true,
+     "cover": true,
+     "cont": false,
+     "measure": "messer.zornhau",
+     "fencer": 1
+    },
+    {
+     "id": "a6",
+     "from": "k8",
+     "to": "k9",
+     "name": "follow-through",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": true,
+     "measure": "messer.follow",
+     "fencer": 1
+    }
+   ]
+  }
+ ],
+ "moves": [
+  {
+   "id": "seed-ls_zornhau",
+   "name": "Zornhau (Oberhau) from Vom Tag",
+   "weapon": "longsword",
+   "source": "Lichtenauer Zettel (Zornhau); Ringeck / D\u00f6bringer glosses; Meyer 1570 longsword cuts.",
+   "summary": "The reference cut: a diagonal Oberhau from the right with a passing step, ending in Alber/Wechsel. One action. Its measured time is the default beat.",
+   "keys": [
+    {
+     "id": "k1",
+     "at": 0.0,
+     "pose": {
+      "hip": [
+       0.0,
+       0.9,
+       0.0
+      ],
+      "yaw": -30,
+      "lean": 0.0,
+      "lfoot": [
+       0.3,
+       -0.13
+      ],
+      "rfoot": [
+       -0.3,
+       0.15
+      ],
+      "grip": [
+       0.05,
+       1.3,
+       0.24
+      ],
+      "blade": [
+       -0.2985,
+       0.9511,
+       0.08
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k2",
+     "at": 1.0556,
+     "pose": {
+      "hip": [
+       0.35,
+       0.9,
+       0.0
+      ],
+      "yaw": -30,
+      "lean": 0.0,
+      "lfoot": [
+       0.6499999999999999,
+       -0.13
+      ],
+      "rfoot": [
+       0.04999999999999999,
+       0.15
+      ],
+      "grip": [
+       0.4,
+       1.3,
+       0.24
+      ],
+      "blade": [
+       -0.2985,
+       0.9511,
+       0.08
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k3",
+     "at": 1.5056,
+     "pose": {
+      "hip": [
+       0.65,
+       0.9,
+       0.02
+      ],
+      "yaw": -10,
+      "lean": 0.0,
+      "lfoot": [
+       0.6499999999999999,
+       -0.13
+      ],
+      "rfoot": [
+       0.55,
+       0.14
+      ],
+      "grip": [
+       0.8,
+       1.62,
+       0.24
+      ],
+      "blade": [
+       0.2676,
+       0.9511,
+       0.1545
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k4",
+     "at": 2.0556,
+     "pose": {
+      "hip": [
+       1.0,
+       0.86,
+       0.0
+      ],
+      "yaw": 20,
+      "lean": 10,
+      "lfoot": [
+       0.6799999999999999,
+       -0.15
+      ],
+      "rfoot": [
+       1.3,
+       0.13
+      ],
+      "grip": [
+       1.5,
+       1.36,
+       0.06
+      ],
+      "blade": [
+       0.9897,
+       0.1392,
+       0.0346
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k5",
+     "at": 2.6667,
+     "pose": {
+      "hip": [
+       1.05,
+       0.85,
+       0.0
+      ],
+      "yaw": 30,
+      "lean": 12,
+      "lfoot": [
+       0.6799999999999999,
+       -0.15
+      ],
+      "rfoot": [
+       1.3,
+       0.13
+      ],
+      "grip": [
+       1.35,
+       1.0,
+       -0.18
+      ],
+      "blade": [
+       0.7094,
+       -0.5,
+       -0.4967
+      ],
+      "left_on": true
+     }
+    }
+   ],
+   "actions": [
+    {
+     "id": "a1",
+     "from": "k1",
+     "to": "k2",
+     "name": "step into distance",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": false,
+     "measure": "ls.approach"
+    },
+    {
+     "id": "a2",
+     "from": "k2",
+     "to": "k4",
+     "name": "Oberhau",
+     "strength": 0.75,
+     "pace": 1.0,
+     "attack": true,
+     "cover": true,
+     "cont": false,
+     "measure": "ls.oberhau"
+    },
+    {
+     "id": "a3",
+     "from": "k4",
+     "to": "k5",
+     "name": "follow-through",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": true,
+     "measure": "ls.follow"
+    }
+   ]
+  },
+  {
+   "id": "seed-ls_zwerch",
+   "name": "Zwerchhau from Vom Tag",
+   "weapon": "longsword",
+   "source": "Lichtenauer: 'Zwerch benimmt, was vom Tag herkommt'; Ringeck gloss on the Zwerchhau.",
+   "summary": "Horizontal cut with the hilt high over the head: the hilt and strong cover the head while the short edge strikes the left ear.",
+   "keys": [
+    {
+     "id": "k1",
+     "at": 0.0,
+     "pose": {
+      "hip": [
+       0.0,
+       0.9,
+       0.0
+      ],
+      "yaw": -30,
+      "lean": 0.0,
+      "lfoot": [
+       0.3,
+       -0.13
+      ],
+      "rfoot": [
+       -0.3,
+       0.15
+      ],
+      "grip": [
+       0.05,
+       1.3,
+       0.24
+      ],
+      "blade": [
+       -0.2985,
+       0.9511,
+       0.08
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k2",
+     "at": 1.0556,
+     "pose": {
+      "hip": [
+       0.35,
+       0.9,
+       0.0
+      ],
+      "yaw": -30,
+      "lean": 0.0,
+      "lfoot": [
+       0.6499999999999999,
+       -0.13
+      ],
+      "rfoot": [
+       0.04999999999999999,
+       0.15
+      ],
+      "grip": [
+       0.4,
+       1.3,
+       0.24
+      ],
+      "blade": [
+       -0.2985,
+       0.9511,
+       0.08
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k3",
+     "at": 1.5972,
+     "pose": {
+      "hip": [
+       0.65,
+       0.89,
+       0.08
+      ],
+      "yaw": 0,
+      "lean": 0.0,
+      "lfoot": [
+       0.6499999999999999,
+       -0.1
+      ],
+      "rfoot": [
+       0.55,
+       0.25
+      ],
+      "grip": [
+       0.65,
+       1.8,
+       0.25
+      ],
+      "blade": [
+       -0.3214,
+       0.342,
+       0.883
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k4",
+     "at": 2.1389,
+     "pose": {
+      "hip": [
+       0.95,
+       0.87,
+       0.15
+      ],
+      "yaw": 15,
+      "lean": 6,
+      "lfoot": [
+       0.6299999999999999,
+       0.0
+      ],
+      "rfoot": [
+       1.25,
+       0.28
+      ],
+      "grip": [
+       1.3,
+       1.74,
+       0.18
+      ],
+      "blade": [
+       0.9448,
+       -0.2079,
+       -0.2532
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k5",
+     "at": 2.75,
+     "pose": {
+      "hip": [
+       0.97,
+       0.87,
+       0.15
+      ],
+      "yaw": 25,
+      "lean": 6,
+      "lfoot": [
+       0.6299999999999999,
+       0.0
+      ],
+      "rfoot": [
+       1.25,
+       0.28
+      ],
+      "grip": [
+       1.2,
+       1.55,
+       -0.15
+      ],
+      "blade": [
+       0.554,
+       -0.2588,
+       -0.7912
+      ],
+      "left_on": true
+     }
+    }
+   ],
+   "actions": [
+    {
+     "id": "a1",
+     "from": "k1",
+     "to": "k2",
+     "name": "step into distance",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": false,
+     "measure": "ls.approach"
+    },
+    {
+     "id": "a2",
+     "from": "k2",
+     "to": "k4",
+     "name": "Zwerchhau",
+     "strength": 0.6,
+     "pace": 1.0,
+     "attack": true,
+     "cover": true,
+     "cont": false,
+     "measure": "ls.zwerch"
+    },
+    {
+     "id": "a3",
+     "from": "k4",
+     "to": "k5",
+     "name": "follow-through",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": true,
+     "measure": "ls.follow"
+    }
+   ]
+  },
+  {
+   "id": "seed-ls_thrust",
+   "name": "Thrust from Pflug",
+   "weapon": "longsword",
+   "source": "Lichtenauer: Pflug as a thrusting guard; Meyer 1570 Langort.",
+   "summary": "Point-first attack with a passing step. Fast and long, but the point is the weak of the blade -- it can be cut aside from above.",
+   "keys": [
+    {
+     "id": "k1",
+     "at": 0.0,
+     "pose": {
+      "hip": [
+       0.0,
+       0.9,
+       0.0
+      ],
+      "yaw": -20,
+      "lean": 0.0,
+      "lfoot": [
+       0.3,
+       -0.13
+      ],
+      "rfoot": [
+       -0.3,
+       0.15
+      ],
+      "grip": [
+       0.3,
+       1.0,
+       0.14
+      ],
+      "blade": [
+       0.8781,
+       0.4695,
+       -0.0923
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k2",
+     "at": 1.0556,
+     "pose": {
+      "hip": [
+       0.35,
+       0.9,
+       0.0
+      ],
+      "yaw": -20,
+      "lean": 0.0,
+      "lfoot": [
+       0.6499999999999999,
+       -0.13
+      ],
+      "rfoot": [
+       0.04999999999999999,
+       0.15
+      ],
+      "grip": [
+       0.65,
+       1.0,
+       0.14
+      ],
+      "blade": [
+       0.8781,
+       0.4695,
+       -0.0923
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k3",
+     "at": 1.8889,
+     "pose": {
+      "hip": [
+       0.97,
+       0.85,
+       0.0
+      ],
+      "yaw": 15,
+      "lean": 14,
+      "lfoot": [
+       0.6499999999999999,
+       -0.15
+      ],
+      "rfoot": [
+       1.27,
+       0.13
+      ],
+      "grip": [
+       1.45,
+       1.3,
+       0.02
+      ],
+      "blade": [
+       0.9939,
+       0.1045,
+       -0.0347
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k4",
+     "at": 2.5,
+     "pose": {
+      "hip": [
+       0.85,
+       0.88,
+       0.0
+      ],
+      "yaw": 0,
+      "lean": 5,
+      "lfoot": [
+       0.5800000000000001,
+       -0.15
+      ],
+      "rfoot": [
+       1.2,
+       0.13
+      ],
+      "grip": [
+       1.15,
+       1.05,
+       0.12
+      ],
+      "blade": [
+       0.9013,
+       0.4226,
+       -0.0947
+      ],
+      "left_on": true
+     }
+    }
+   ],
+   "actions": [
+    {
+     "id": "a1",
+     "from": "k1",
+     "to": "k2",
+     "name": "step into distance",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": false,
+     "measure": "ls.approach"
+    },
+    {
+     "id": "a2",
+     "from": "k2",
+     "to": "k3",
+     "name": "thrust",
+     "strength": 0.45,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": false,
+     "measure": "ls.thrust"
+    },
+    {
+     "id": "a3",
+     "from": "k3",
+     "to": "k4",
+     "name": "recover to Pflug",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": true,
+     "measure": "ls.follow"
+    }
+   ]
+  },
+  {
+   "id": "seed-ls_windup",
+   "name": "Wind-up Oberhau (Pflug -> Vom Tag -> cut)",
+   "weapon": "longsword",
+   "source": "Teaching counter-example: the 'two-tempo' cut that Nachreisen is built to punish (Ringeck gloss on Nachreisen).",
+   "summary": "Same Oberhau, but started from a low guard so it needs a separate wind-up first. Two actions -- watch what that costs.",
+   "keys": [
+    {
+     "id": "k1",
+     "at": 0.0,
+     "pose": {
+      "hip": [
+       0.0,
+       0.9,
+       0.0
+      ],
+      "yaw": -20,
+      "lean": 0.0,
+      "lfoot": [
+       0.3,
+       -0.13
+      ],
+      "rfoot": [
+       -0.3,
+       0.15
+      ],
+      "grip": [
+       0.3,
+       1.0,
+       0.14
+      ],
+      "blade": [
+       0.8781,
+       0.4695,
+       -0.0923
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k2",
+     "at": 1.0556,
+     "pose": {
+      "hip": [
+       0.35,
+       0.9,
+       0.0
+      ],
+      "yaw": -20,
+      "lean": 0.0,
+      "lfoot": [
+       0.6499999999999999,
+       -0.13
+      ],
+      "rfoot": [
+       0.04999999999999999,
+       0.15
+      ],
+      "grip": [
+       0.65,
+       1.0,
+       0.14
+      ],
+      "blade": [
+       0.8781,
+       0.4695,
+       -0.0923
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k3",
+     "at": 1.7778,
+     "pose": {
+      "hip": [
+       0.35,
+       0.9,
+       0.0
+      ],
+      "yaw": -30,
+      "lean": 0.0,
+      "lfoot": [
+       0.6499999999999999,
+       -0.13
+      ],
+      "rfoot": [
+       0.04999999999999999,
+       0.15
+      ],
+      "grip": [
+       0.4,
+       1.3,
+       0.24
+      ],
+      "blade": [
+       -0.2985,
+       0.9511,
+       0.08
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k4",
+     "at": 2.2278,
+     "pose": {
+      "hip": [
+       0.65,
+       0.9,
+       0.02
+      ],
+      "yaw": -10,
+      "lean": 0.0,
+      "lfoot": [
+       0.6499999999999999,
+       -0.13
+      ],
+      "rfoot": [
+       0.55,
+       0.14
+      ],
+      "grip": [
+       0.8,
+       1.62,
+       0.24
+      ],
+      "blade": [
+       0.2676,
+       0.9511,
+       0.1545
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k5",
+     "at": 2.7778,
+     "pose": {
+      "hip": [
+       1.0,
+       0.86,
+       0.0
+      ],
+      "yaw": 20,
+      "lean": 10,
+      "lfoot": [
+       0.6799999999999999,
+       -0.15
+      ],
+      "rfoot": [
+       1.3,
+       0.13
+      ],
+      "grip": [
+       1.5,
+       1.36,
+       0.06
+      ],
+      "blade": [
+       0.9897,
+       0.1392,
+       0.0346
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k6",
+     "at": 3.3889,
+     "pose": {
+      "hip": [
+       1.05,
+       0.85,
+       0.0
+      ],
+      "yaw": 30,
+      "lean": 12,
+      "lfoot": [
+       0.6799999999999999,
+       -0.15
+      ],
+      "rfoot": [
+       1.3,
+       0.13
+      ],
+      "grip": [
+       1.35,
+       1.0,
+       -0.18
+      ],
+      "blade": [
+       0.7094,
+       -0.5,
+       -0.4967
+      ],
+      "left_on": true
+     }
+    }
+   ],
+   "actions": [
+    {
+     "id": "a1",
+     "from": "k1",
+     "to": "k2",
+     "name": "step into distance",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": false,
+     "measure": "ls.approach"
+    },
+    {
+     "id": "a2",
+     "from": "k2",
+     "to": "k3",
+     "name": "wind up to Vom Tag",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": false,
+     "measure": "ls.windup"
+    },
+    {
+     "id": "a3",
+     "from": "k3",
+     "to": "k5",
+     "name": "Oberhau",
+     "strength": 0.75,
+     "pace": 1.0,
+     "attack": true,
+     "cover": true,
+     "cont": false,
+     "measure": "ls.oberhau"
+    },
+    {
+     "id": "a4",
+     "from": "k5",
+     "to": "k6",
+     "name": "follow-through",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": true,
+     "measure": "ls.follow"
+    }
+   ]
+  },
+  {
+   "id": "seed-m_zornhau",
+   "name": "Zornhau from Zornhut",
+   "weapon": "messer",
+   "source": "Leck\u00fcchner, Kunst des Messerfechtens (1478/1482): Zornhau; Meyer 1570 dussack: Zornhut / Zornhau.",
+   "summary": "Fighting the messer exactly like a longsword: same cut, same distance, ~15 cm less blade. Use it to see the reach gap.",
+   "keys": [
+    {
+     "id": "k1",
+     "at": 0.0,
+     "pose": {
+      "hip": [
+       0.0,
+       0.9,
+       0.0
+      ],
+      "yaw": -35,
+      "lean": 0.0,
+      "lfoot": [
+       0.3,
+       -0.13
+      ],
+      "rfoot": [
+       -0.3,
+       0.15
+      ],
+      "grip": [
+       0.02,
+       1.32,
+       0.25
+      ],
+      "blade": [
+       -0.8529,
+       0.5,
+       0.1504
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k2",
+     "at": 1.0556,
+     "pose": {
+      "hip": [
+       0.35,
+       0.9,
+       0.0
+      ],
+      "yaw": -35,
+      "lean": 0.0,
+      "lfoot": [
+       0.6499999999999999,
+       -0.13
+      ],
+      "rfoot": [
+       0.04999999999999999,
+       0.15
+      ],
+      "grip": [
+       0.37,
+       1.32,
+       0.25
+      ],
+      "blade": [
+       -0.8529,
+       0.5,
+       0.1504
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k3",
+     "at": 1.5056,
+     "pose": {
+      "hip": [
+       0.65,
+       0.9,
+       0.02
+      ],
+      "yaw": -12,
+      "lean": 0.0,
+      "lfoot": [
+       0.6499999999999999,
+       -0.13
+      ],
+      "rfoot": [
+       0.55,
+       0.14
+      ],
+      "grip": [
+       0.75,
+       1.62,
+       0.26
+      ],
+      "blade": [
+       0.262,
+       0.9397,
+       0.2198
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k4",
+     "at": 2.0556,
+     "pose": {
+      "hip": [
+       1.03,
+       0.86,
+       0.0
+      ],
+      "yaw": 22,
+      "lean": 12,
+      "lfoot": [
+       0.71,
+       -0.15
+      ],
+      "rfoot": [
+       1.33,
+       0.13
+      ],
+      "grip": [
+       1.5,
+       1.4,
+       0.05
+      ],
+      "blade": [
+       0.9939,
+       0.1045,
+       0.0347
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k5",
+     "at": 2.6111,
+     "pose": {
+      "hip": [
+       1.07,
+       0.85,
+       0.0
+      ],
+      "yaw": 30,
+      "lean": 12,
+      "lfoot": [
+       0.71,
+       -0.15
+      ],
+      "rfoot": [
+       1.33,
+       0.13
+      ],
+      "grip": [
+       1.35,
+       1.0,
+       -0.18
+      ],
+      "blade": [
+       0.7094,
+       -0.5,
+       -0.4967
+      ],
+      "left_on": true
+     }
+    }
+   ],
+   "actions": [
+    {
+     "id": "a1",
+     "from": "k1",
+     "to": "k2",
+     "name": "step into distance",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": false,
+     "measure": "messer.approach"
+    },
+    {
+     "id": "a2",
+     "from": "k2",
+     "to": "k4",
+     "name": "Zornhau",
+     "strength": 0.75,
+     "pace": 1.0,
+     "attack": true,
+     "cover": true,
+     "cont": false,
+     "measure": "messer.zornhau"
+    },
+    {
+     "id": "a3",
+     "from": "k4",
+     "to": "k5",
+     "name": "follow-through",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": true,
+     "measure": "messer.follow"
+    }
+   ]
+  },
+  {
+   "id": "seed-m_zwerch",
+   "name": "Zwerch against the Oberhau",
+   "weapon": "messer",
+   "source": "Leck\u00fcchner: Zwerchhau / Twerhau; same principle as Lichtenauer's Zwerch breaking Vom Tag.",
+   "summary": "Hilt high, strong over your own head, strike the ear with the short edge while stepping off the line. One action that covers and hits -- if you start it in time.",
+   "keys": [
+    {
+     "id": "k1",
+     "at": 0.0,
+     "pose": {
+      "hip": [
+       0.0,
+       0.9,
+       0.0
+      ],
+      "yaw": -35,
+      "lean": 0.0,
+      "lfoot": [
+       0.3,
+       -0.13
+      ],
+      "rfoot": [
+       -0.3,
+       0.15
+      ],
+      "grip": [
+       0.02,
+       1.32,
+       0.25
+      ],
+      "blade": [
+       -0.8529,
+       0.5,
+       0.1504
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k2",
+     "at": 0.425,
+     "pose": {
+      "hip": [
+       0.2,
+       0.89,
+       0.09
+      ],
+      "yaw": -5,
+      "lean": 0.0,
+      "lfoot": [
+       0.3,
+       -0.08
+      ],
+      "rfoot": [
+       0.18,
+       0.25
+      ],
+      "grip": [
+       0.18,
+       1.82,
+       -0.02
+      ],
+      "blade": [
+       -0.0819,
+       0.342,
+       0.9361
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k3",
+     "at": 0.9444,
+     "pose": {
+      "hip": [
+       0.45,
+       0.87,
+       0.15
+      ],
+      "yaw": 15,
+      "lean": 10,
+      "lfoot": [
+       0.13,
+       0.0
+      ],
+      "rfoot": [
+       0.75,
+       0.28
+      ],
+      "grip": [
+       0.87,
+       1.74,
+       -0.12
+      ],
+      "blade": [
+       0.9835,
+       -0.1736,
+       0.0515
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k4",
+     "at": 1.5,
+     "pose": {
+      "hip": [
+       0.48,
+       0.87,
+       0.15
+      ],
+      "yaw": 25,
+      "lean": 10,
+      "lfoot": [
+       0.13,
+       0.0
+      ],
+      "rfoot": [
+       0.75,
+       0.28
+      ],
+      "grip": [
+       0.65,
+       1.45,
+       -0.2
+      ],
+      "blade": [
+       0.554,
+       -0.2588,
+       -0.7912
+      ],
+      "left_on": true
+     }
+    }
+   ],
+   "actions": [
+    {
+     "id": "a1",
+     "from": "k1",
+     "to": "k3",
+     "name": "Zwerch (step out right)",
+     "strength": 0.6,
+     "pace": 1.0,
+     "attack": true,
+     "cover": true,
+     "cont": false,
+     "measure": "messer.zwerch"
+    },
+    {
+     "id": "a2",
+     "from": "k3",
+     "to": "k4",
+     "name": "follow-through",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": true,
+     "measure": "messer.follow"
+    }
+   ]
+  },
+  {
+   "id": "seed-m_nachreisen",
+   "name": "Nachreisen to the hands",
+   "weapon": "messer",
+   "source": "Lichtenauer: Nachreisen (traveling after); Meyer 1570 on cutting the hands as the nearest target with a short weapon.",
+   "summary": "When he lifts his sword to wind up, cut his forearms -- the nearest target. Your short blade only has to reach his hands, not his head.",
+   "keys": [
+    {
+     "id": "k1",
+     "at": 0.0,
+     "pose": {
+      "hip": [
+       0.0,
+       0.9,
+       0.0
+      ],
+      "yaw": -20,
+      "lean": 0.0,
+      "lfoot": [
+       0.3,
+       -0.13
+      ],
+      "rfoot": [
+       -0.3,
+       0.15
+      ],
+      "grip": [
+       0.3,
+       1.0,
+       0.14
+      ],
+      "blade": [
+       0.9013,
+       0.4226,
+       -0.0947
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k2",
+     "at": 0.8333,
+     "pose": {
+      "hip": [
+       0.82,
+       0.86,
+       0.0
+      ],
+      "yaw": 22,
+      "lean": 14,
+      "lfoot": [
+       0.49999999999999994,
+       -0.15
+      ],
+      "rfoot": [
+       1.1199999999999999,
+       0.13
+      ],
+      "grip": [
+       1.32,
+       1.42,
+       -0.04
+      ],
+      "blade": [
+       0.9142,
+       -0.309,
+       -0.2621
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k3",
+     "at": 1.3889,
+     "pose": {
+      "hip": [
+       0.55,
+       0.88,
+       0.0
+      ],
+      "yaw": 5,
+      "lean": 5,
+      "lfoot": [
+       0.23000000000000004,
+       -0.15
+      ],
+      "rfoot": [
+       0.8500000000000001,
+       0.13
+      ],
+      "grip": [
+       0.75,
+       1.2,
+       0.1
+      ],
+      "blade": [
+       0.9752,
+       0.1736,
+       -0.1371
+      ],
+      "left_on": true
+     }
+    }
+   ],
+   "actions": [
+    {
+     "id": "a1",
+     "from": "k1",
+     "to": "k2",
+     "name": "chase the hands",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": false,
+     "measure": "messer.nachreisen"
+    },
+    {
+     "id": "a2",
+     "from": "k2",
+     "to": "k3",
+     "name": "get out / recover",
+     "strength": 0.5,
+     "pace": 1.0,
+     "attack": false,
+     "cover": false,
+     "cont": true,
+     "measure": "messer.follow"
+    }
+   ]
+  },
+  {
+   "id": "seed-m_hengen_einlauf",
+   "name": "Hanging cover, then run in (Einlaufen)",
+   "weapon": "messer",
+   "source": "Leck\u00fcchner: Versetzen and Einlaufen; Meyer 1570 dussack: close in after the parry, where the longer weapon is a liability.",
+   "summary": "Take his Oberhau on your strong in a hanging cover, then step in past his point. Two actions -- it only works if the cover is already up when his blade arrives.",
+   "keys": [
+    {
+     "id": "k1",
+     "at": 0.0,
+     "pose": {
+      "hip": [
+       0.0,
+       0.9,
+       0.0
+      ],
+      "yaw": -25,
+      "lean": 0.0,
+      "lfoot": [
+       0.3,
+       -0.13
+      ],
+      "rfoot": [
+       -0.3,
+       0.15
+      ],
+      "grip": [
+       0.25,
+       1.55,
+       0.22
+      ],
+      "blade": [
+       0.9633,
+       0.1736,
+       -0.2048
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k2",
+     "at": 0.6667,
+     "pose": {
+      "hip": [
+       0.12,
+       0.89,
+       0.0
+      ],
+      "yaw": -10,
+      "lean": 4,
+      "lfoot": [
+       0.42,
+       -0.13
+      ],
+      "rfoot": [
+       -0.18,
+       0.15
+      ],
+      "grip": [
+       0.35,
+       1.7,
+       -0.02
+      ],
+      "blade": [
+       0.4698,
+       0.5736,
+       -0.671
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k3",
+     "at": 1.0222,
+     "pose": {
+      "hip": [
+       0.45,
+       0.88,
+       0.1
+      ],
+      "yaw": 5,
+      "lean": 8,
+      "lfoot": [
+       0.42,
+       -0.1
+      ],
+      "rfoot": [
+       0.4,
+       0.25
+      ],
+      "grip": [
+       0.7,
+       1.75,
+       0.1
+      ],
+      "blade": [
+       0.8529,
+       0.5,
+       -0.1504
+      ],
+      "left_on": true
+     }
+    },
+    {
+     "id": "k4",
+     "at": 1.5556,
+     "pose": {
+      "hip": [
+       0.8,
+       0.86,
+       0.1
+      ],
+      "yaw": 20,
+      "lean": 12,
+      "lfoot": [
+       0.48000000000000004,
+       -0.04999999999999999
+      ],
+      "rfoot": [
+       1.1,
+       0.23
+      ],
+      "grip": [
+       1.05,
+       1.55,
+       0.05
+      ],
+      "blade": [
+       0.9047,
+       -0.4067,
+       -0.1271
+      ],
+      "left_on": true
+     }
+    }
+   ],
+   "actions": [
+    {
+     "id": "a1",
+     "from": "k1",
+     "to": "k2",
+     "name": "hanging cover",
+     "strength": 0.7,
+     "pace": 1.0,
+     "attack": false,
+     "cover": true,
+     "cont": false,
+     "measure": "messer.cover"
+    },
+    {
+     "id": "a2",
+     "from": "k2",
+     "to": "k4",
+     "name": "run in + short cut",
+     "strength": 0.6,
+     "pace": 1.0,
+     "attack": true,
+     "cover": false,
+     "cont": false,
+     "measure": "messer.einlauf"
+    }
+   ]
+  }
+ ]
+}

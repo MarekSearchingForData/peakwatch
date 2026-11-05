@@ -341,3 +341,18 @@ SCENARIOS = [
              distance=3.0),
 ]
 SCENARIO_BY_KEY = {s.key: s for s in SCENARIOS}
+
+
+# ---------------------------------------------------------- guard presets
+OCHS = P((0.22, 1.58, 0.22), 12, -14, yaw=-25, **lf_fwd(0.0))
+ALBER = P((0.35, 0.85, 0.05), -35, -2, yaw=-15, **lf_fwd(0.0))
+LANGORT = P((0.62, 1.30, 0.02), 4, -2, yaw=10, lean=6, **lf_fwd(0.0))
+LUGINSLAND = P((0.10, 1.78, 0.18), 78, 170, yaw=-25, **lf_fwd(0.0))
+WECHSEL = P((0.12, 0.92, 0.26), -35, 150, yaw=-35, **lf_fwd(0.0))
+
+GUARDS = {
+    "longsword": {"Vom Tag": VOM_TAG, "Ochs": OCHS, "Pflug": PFLUG,
+                  "Alber": ALBER, "Langort": LANGORT},
+    "messer": {"Zornhut": ZORNHUT, "Stier": STIER, "Eber": EBER,
+               "Luginsland": LUGINSLAND, "Wechsel": WECHSEL},
+}

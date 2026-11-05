@@ -1,10 +1,8 @@
-"""Measured action durations -> phase timings and "beats".
+"""Optional measurements: how fast you really do an action.
 
-Every animated phase points at an action key (e.g. ``messer.zwerch``).
-Its duration is the median of the trials you recorded for that action, or
-a placeholder default until you have measured it. One action is the beat
-reference: its duration is "one tempo", and everything else is expressed
-as a multiple of it.
+The Studio's timing comes from what you record and how you set each
+action's pace. Measurements only act as a reality check: an action linked
+to a measured key is flagged when it is faster than you have ever done it.
 """
 from __future__ import annotations
 
@@ -88,6 +86,27 @@ def durations(store: dict) -> dict:
 
 def beat_ms(store: dict) -> float:
     return effective_ms(store, store["beat_reference"])
+
+
+def measured_map(store: dict) -> dict:
+    """{key: {median, label}} for actions that have trials (for the Studio)."""
+    out = {}
+    for k, a in store["actions"].items():
+        t = [x for x in a.get("trials_ms", []) if x and x > 0]
+        if t:
+            out[k] = {"median": float(statistics.median(t)), "label": a["label"]}
+    return out
+
+
+def add_custom_action(store: dict, label: str, weapon: str) -> str:
+    slug = "".join(c if c.isalnum() else "-" for c in label.lower()).strip("-")
+    key = f"custom.{slug or 'action'}"
+    n, base = 2, key
+    while key in store["actions"]:
+        key, n = f"{base}-{n}", n + 1
+    store["actions"][key] = {"label": label, "weapon": weapon,
+                             "default_ms": 400, "trials_ms": []}
+    return key
 
 
 def stats(trials: list) -> dict:

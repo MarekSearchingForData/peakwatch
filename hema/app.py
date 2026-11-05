@@ -1,4 +1,4 @@
-"""HEMA Tempo Lab -- Streamlit app.
+"""HEMA Studio -- Streamlit app.
 
     streamlit run hema/app.py
 """
@@ -10,34 +10,53 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 
-from hemaviz.kinematics import WEAPONS
-from hemaviz.sim import simulate
-from hemaviz.techniques import SCENARIOS, TECHNIQUES
-from hemaviz.timings import (STORE_PATH, beat_ms, durations, effective_ms,
-                             frames_to_ms, is_measured, load_store,
-                             merge_defaults, save_store, stats)
-from hemaviz.viewer import render_html
+from hemaviz.library import add_missing_seeds, load_library, save_library
+from hemaviz.seeds import seed_guards
+from hemaviz.studio import studio
+from hemaviz.timings import (add_custom_action, effective_ms, frames_to_ms,
+                             load_store, measured_map,
+                             save_store, stats)
 
 JOURNAL_PATH = Path(__file__).resolve().parent / "records" / "journal.json"
 
-st.set_page_config(page_title="HEMA Tempo Lab", page_icon="⚔️", layout="wide")
+st.set_page_config(page_title="HEMA Studio", page_icon="⚔️", layout="wide")
 
 
 # ------------------------------------------------------------------ state
-def store() -> dict:
+def library() -> dict:
+    if "library" not in st.session_state:
+        st.session_state.library = load_library()
+        st.session_state.lib_version = 1
+    return st.session_state.library
+
+
+def replace_library(lib: dict) -> None:
+    """Swap the whole library (restore/reset): the Studio reloads it."""
+    st.session_state.library = lib
+    st.session_state.lib_version = st.session_state.get("lib_version", 1) + 1
+    persist_library()
+
+
+def persist_library() -> None:
+    try:
+        save_library(st.session_state.library)
+    except OSError as e:
+        st.warning(f"Could not save the library ({e}). Use the download "
+                   "button in the sidebar to keep your work.")
+
+
+def timing_store() -> dict:
     if "store" not in st.session_state:
         st.session_state.store = load_store()
     return st.session_state.store
 
 
-def persist() -> None:
+def persist_store() -> None:
     try:
         save_store(st.session_state.store)
-    except OSError as e:  # read-only deploys (e.g. Streamlit Cloud)
-        st.warning(f"Could not save to {STORE_PATH.name}: {e}. "
-                   "Use the download button to keep your data.")
+    except OSError as e:
+        st.warning(f"Could not save timings: {e}")
 
 
 def journal() -> dict:
@@ -58,347 +77,235 @@ def persist_journal() -> None:
         st.warning(f"Could not save journal: {e}")
 
 
-@st.cache_data(show_spinner="Simulating the exchange…", max_entries=64)
-def run_sim(a, b, dur_items, cue, reaction, distance, spd_a, spd_b, window):
-    r = simulate(a, b, dict(dur_items), cue_phase=cue, reaction_ms=reaction,
-                 distance=distance, speed_a=spd_a, speed_b=spd_b,
-                 double_window_ms=window)
-    return r.to_json(), [None if h is None else h.__dict__ for h in r.first_hit]
-
-
-def viewer(res: dict, a: str, b: str, distance: float, height: int = 620):
-    ta, tb = TECHNIQUES[a], TECHNIQUES[b]
-    html = render_html(
-        res, weapons=[WEAPONS[ta.weapon].as_dict(), WEAPONS[tb.weapon].as_dict()],
-        labels=[ta.name, tb.name], beat_ms=beat_ms(store()), height=height,
-        b_origin=distance)
-    components.html(html, height=height + 8, scrolling=False)
-
-
-def fmt_beats(ms: float) -> str:
-    return f"{ms / beat_ms(store()):.2f}"
-
-
 # ------------------------------------------------------------------ pages
-def page_arena():
-    st.title("Arena")
-    st.caption("Two jointed fencers run techniques against each other on a "
-               "1 ms clock, with phase lengths taken from your measured "
-               "timings. Hits, binds and displacements are computed, not "
-               "scripted, so if you slow a counter down it starts to fail.")
-
-    names = {s.key: s.name for s in SCENARIOS}
-    pick = st.selectbox("Matchup", ["custom"] + list(names),
-                        format_func=lambda k: "Custom: pick any two"
-                        if k == "custom" else names[k], index=1)
-    scn = next((s for s in SCENARIOS if s.key == pick), None)
-
-    real = [k for k, t in TECHNIQUES.items()]
-    c1, c2 = st.columns(2)
-    with c1:
-        a = st.selectbox("A (attacks, starts at 0 ms)", real,
-                         index=real.index(scn.a if scn else "ls_zornhau"),
-                         format_func=lambda k: f"{TECHNIQUES[k].name} "
-                         f"[{WEAPONS[TECHNIQUES[k].weapon].name}]",
-                         disabled=scn is not None, key=f"a_{pick}")
-    with c2:
-        b = st.selectbox("B (responds)", real,
-                         index=real.index(scn.b if scn else "m_zwerch"),
-                         format_func=lambda k: f"{TECHNIQUES[k].name} "
-                         f"[{WEAPONS[TECHNIQUES[k].weapon].name}]",
-                         disabled=scn is not None, key=f"b_{pick}")
-    if scn:
-        st.info(scn.lesson)
-
-    ta = TECHNIQUES[a]
-    with st.expander("Tempo settings", expanded=scn is None):
-        c1, c2, c3 = st.columns(3)
-        phase_names = [f"{i + 1}. {p.name}" for i, p in enumerate(ta.phases)] \
-            or ["(dummy has no phases)"]
-        cue = c1.selectbox("B starts when A begins…", range(len(phase_names)),
-                           index=min(scn.cue_phase if scn else 0,
-                                     len(phase_names) - 1),
-                           format_func=lambda i: phase_names[i],
-                           key=f"cue_{pick}_{a}")
-        reaction = c1.slider("…plus reaction delay (ms)", 0, 400,
-                             int(scn.reaction_ms if scn else 150), 10,
-                             key=f"rx_{pick}",
-                             help="0 ms = B moves on the same instant (Indes). "
-                                  "Simple visual reaction is ~180–250 ms.")
-        distance = c2.slider("Start distance, pelvis to pelvis (m)", 1.6, 4.5,
-                             float(scn.distance if scn else 2.6), 0.05,
-                             key=f"d_{pick}")
-        window = c2.slider("Double-hit window (ms)", 0, 400, 150, 10,
-                           help="A second hit landing within this time of the "
-                                "first counts as a double/afterblow.")
-        spd_a = c3.slider("A speed (% of measured time)", 60, 160, 100, 5,
-                          key=f"sa_{pick}",
-                          help="Below 100 = faster than measured.") / 100
-        spd_b = c3.slider("B speed (% of measured time)", 60, 160, 100, 5,
-                          key=f"sb_{pick}") / 100
-
-    dur = durations(store())
-    res, first = run_sim(a, b, tuple(sorted(dur.items())), cue, float(reaction),
-                         float(distance), spd_a, spd_b, float(window))
-
-    verdict_col, info_col = st.columns([1, 2])
-    with verdict_col:
-        st.metric("Outcome", res["verdict"])
-    with info_col:
-        st.write(res["detail"])
-        tl = []
-        for i, h in enumerate(first):
-            if h:
-                tl.append(f"**{'AB'[i]}** first hit at {h['t'] * 1000:.0f} ms "
-                          f"= **{fmt_beats(h['t'] * 1000)} beats**")
-        if tl:
-            st.markdown(" · ".join(tl))
-
-    viewer(res, a, b, distance)
-    st.caption("Drag to orbit, scroll to zoom. Click the timeline to jump. "
-               "Bars: red = attacking, blue = covering, purple = both "
-               "(covers and can hit). Grid lines are beats.")
-
-    st.subheader("Tempo breakdown")
-    rows = []
-    for i, phases in enumerate(res["phases"]):
-        tech = TECHNIQUES[[a, b][i]]
-        for (name, t0, t1, action, kind), ph in zip(phases, tech.phases):
-            ms = (t1 - t0) * 1000
-            rows.append({
-                "fencer": "AB"[i], "phase": name, "kind": kind,
-                "starts (ms)": round(t0 * 1000), "ms": round(ms),
-                "beats": round(ms / beat_ms(store()), 2),
-                "new action?": "continuation" if ph.cont else "yes",
-                "timing source": "measured" if is_measured(store(), action)
-                else "placeholder",
-            })
-    if rows:
-        st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
-    st.caption(f"1 beat = your *{store()['actions'][store()['beat_reference']]['label']}* "
-               f"= {beat_ms(store()):.0f} ms. Change it in the Timing Lab.")
+def page_studio():
+    st.markdown("<style>.block-container{padding-top:3.6rem;padding-bottom:0}"
+                "</style>", unsafe_allow_html=True)
+    store = timing_store()
+    val = studio(library=library(), lib_version=st.session_state.lib_version,
+                 guards=seed_guards(), measured=measured_map(store),
+                 timing_labels={k: a["label"] for k, a in store["actions"].items()})
+    if val and val.get("nonce") != st.session_state.get("last_nonce"):
+        st.session_state.last_nonce = val["nonce"]
+        st.session_state.library = val["library"]
+        persist_library()
+    with st.expander("How to use the Studio", expanded=False):
+        st.markdown("""
+1. **Pick or make an exchange** (top bar). Each one has two fencers, A and B,
+   each with a weapon, a start distance and a beat length.
+2. **Pose**: choose A or B, start from a guard button, then drag the handles:
+   yellow = sword hand, orange = sword tip, cyan = pelvis, green = feet, ring =
+   move the whole fencer. Turn/Lean/Crouch sliders do the torso. Arms and legs
+   are inverse kinematics on the mannequin's bones, so they can't stretch.
+   Feet stay on the ground (the pelvis drops if it has to).
+3. **Record**: put the playhead on a beat (click the timeline, arrows step
+   ⅛ beat) and press **● Record pose** (or `R`). Repeat: guard on beat 0,
+   end of the cut on beat 1, and so on. Add in-between keys for curved paths.
+4. **Make an action**: click the key where a movement ends, then
+   **Make action**. Name it, say whether it attacks and/or covers.
+5. **Modulate it on the bar**: drag the **end** of the bar to make it
+   faster or slower (everything after it moves with it), drag its **top**
+   up or down for strength. Short and tall = a fast, strong cut.
+6. **Fight**: switch to *Fight*. Blades that meet are judged by strength and
+   leverage (closer to the hilt = stronger, crossguard strongest). The loser
+   is knocked off line and can't score with that action. Hits paint the body
+   part red. The result panel lists everything with times in beats.
+7. **Reuse**: *Save as move* stores an action (with its follow-through) in
+   the moves library; *Insert at playhead* drops it into any exchange,
+   for either fencer.
+""")
 
 
-def page_catalog():
-    st.title("Technique catalog")
-    jr = journal()
-    weapon = st.radio("Weapon", ["messer", "longsword"], horizontal=True,
-                      format_func=lambda w: WEAPONS[w].name)
-    techs = [t for t in TECHNIQUES.values()
-             if t.weapon == weapon and "dummy" not in t.tags]
-    key = st.selectbox("Technique", [t.key for t in techs],
-                       format_func=lambda k: TECHNIQUES[k].name)
-    t = TECHNIQUES[key]
+def page_library():
+    st.title("Library")
+    lib, jr = library(), journal()
+    st.caption("Everything recorded in the Studio. Open an exchange in the "
+               "Studio to play or edit it. Keep notes and a sparring log here.")
+    tab_ex, tab_mv = st.tabs([f"Exchanges ({len(lib['exchanges'])})",
+                              f"Moves ({len(lib['moves'])})"])
+    with tab_ex:
+        if not lib["exchanges"]:
+            st.info("No exchanges yet.")
+        else:
+            rows = [{"name": e["name"],
+                     "A": e["fencers"][0]["weapon"], "B": e["fencers"][1]["weapon"],
+                     "actions": len(e.get("actions", [])),
+                     "keys": sum(len(t["keys"]) for t in e["tracks"]),
+                     "beat (ms)": e["beat_ms"], "distance (m)": e["distance"]}
+                    for e in lib["exchanges"]]
+            st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+            ids = [e["id"] for e in lib["exchanges"]]
+            pick = st.selectbox("Notes and sparring log for", ids,
+                                format_func=lambda i: next(e["name"] for e in lib["exchanges"] if e["id"] == i))
+            ex = next(e for e in lib["exchanges"] if e["id"] == pick)
+            if ex.get("notes"):
+                st.info(ex["notes"])
+            acts = ex.get("actions", [])
+            if acts:
+                st.dataframe(pd.DataFrame([{
+                    "fencer": "AB"[a["fencer"]], "action": a["name"],
+                    "strength": round(a.get("strength", 0.5), 2),
+                    "pace ×": round(a.get("pace", 1.0), 2),
+                    "attacks": a.get("attack"), "covers": a.get("cover")} for a in acts]),
+                    hide_index=True, width="stretch")
+            journal_box(jr, pick)
+    with tab_mv:
+        if not lib["moves"]:
+            st.info("No moves yet. Use *Save as move* on an action in the Studio.")
+        for m in lib["moves"]:
+            with st.expander(f"{m['name']}  ·  {m['weapon']}"):
+                if m.get("summary"):
+                    st.write(m["summary"])
+                if m.get("source"):
+                    st.caption(f"Source: {m['source']}")
+                st.write(", ".join(f"**{a['name']}** ({'attack' if a.get('attack') else ''}"
+                                   f"{'+' if a.get('attack') and a.get('cover') else ''}"
+                                   f"{'cover' if a.get('cover') else ''})" for a in m["actions"]))
+                journal_box(jr, m["id"])
 
-    left, right = st.columns([3, 2])
-    with left:
-        dummy = "dummy_ls" if weapon == "messer" else "dummy_m"
-        dist = st.slider("Distance to the dummy (m)", 1.4, 3.6,
-                         2.4 if t.phases and t.phases[0].action.endswith("approach")
-                         else 2.0, 0.05, key=f"cd_{key}")
-        dur = durations(store())
-        res, _ = run_sim(key, dummy, tuple(sorted(dur.items())), 0, 0.0,
-                         float(dist), 1.0, 1.0, 150.0)
-        viewer(res, key, dummy, dist, height=520)
-        st.caption(f"{res['verdict']}: {res['detail']}")
-    with right:
-        st.markdown(f"**Guard:** {t.guard_name}  \n"
-                    f"**Tempi:** {t.action_count} "
-                    f"({t.blade_actions} blade, "
-                    f"{t.action_count - t.blade_actions} footwork/wind-up)  \n"
-                    f"**Tags:** {', '.join(t.tags)}")
-        st.write(t.summary)
-        st.caption(f"Source: {t.source}")
-        total = 0.0
-        rows = []
-        for p in t.phases:
-            ms = effective_ms(store(), p.action)
-            total += ms
-            rows.append({"phase": p.name, "ms": round(ms),
-                         "beats": round(ms / beat_ms(store()), 2),
-                         "attack": p.attack, "cover": p.cover,
-                         "measured": is_measured(store(), p.action)})
-        st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
-        st.caption(f"Total {total:.0f} ms = {fmt_beats(total)} beats")
 
-        entry = jr.setdefault(key, {"notes": "", "log": []})
-        notes = st.text_area("My notes", entry["notes"], height=110,
-                             key=f"notes_{key}",
-                             placeholder="What to feel for, common mistakes, "
-                                         "coach's cues…")
-        if notes != entry["notes"]:
-            entry["notes"] = notes
+def journal_box(jr: dict, key: str):
+    entry = jr.setdefault(key, {"notes": "", "log": []})
+    notes = st.text_area("My notes", entry["notes"], height=90, key=f"n_{key}",
+                         placeholder="What to feel for, common mistakes, coach's cues…")
+    if notes != entry["notes"]:
+        entry["notes"] = notes
+        persist_journal()
+    with st.form(f"log_{key}", clear_on_submit=True):
+        c1, c2, c3 = st.columns([1, 1, 2])
+        day = c1.date_input("Date", dt.date.today())
+        outcome = c2.selectbox("In sparring it…", ["worked", "double hit", "failed"])
+        what = c3.text_input("What happened")
+        if st.form_submit_button("Add to sparring log"):
+            entry["log"].append({"date": str(day), "result": outcome, "note": what})
             persist_journal()
-        with st.form(f"log_{key}", clear_on_submit=True):
-            st.markdown("**Sparring log**")
-            c1, c2 = st.columns(2)
-            day = c1.date_input("Date", dt.date.today())
-            outcome = c2.selectbox("Result", ["worked", "double hit",
-                                              "failed", "didn't try"])
-            vs = st.text_input("Against (opponent / weapon / their action)")
-            what = st.text_input("What happened")
-            if st.form_submit_button("Add to log"):
-                entry["log"].append({"date": str(day), "result": outcome,
-                                     "vs": vs, "note": what})
-                persist_journal()
-        if entry["log"]:
-            df = pd.DataFrame(entry["log"])
-            st.dataframe(df.iloc[::-1], hide_index=True, width="stretch")
-            ok = (df["result"] == "worked").sum()
-            tried = (df["result"] != "didn't try").sum()
-            if tried:
-                st.caption(f"Worked {ok}/{tried} times in sparring "
-                           f"({ok / tried:.0%}).")
+    if entry["log"]:
+        df = pd.DataFrame(entry["log"])
+        st.dataframe(df.iloc[::-1], hide_index=True, width="stretch")
+        ok = (df["result"] == "worked").sum()
+        st.caption(f"Worked {ok}/{len(df)} times ({ok / len(df):.0%}).")
 
 
 def page_timing():
-    st.title("Timing Lab")
-    s = store()
+    st.title("Reality check (optional)")
+    s = timing_store()
     st.markdown(
-        "Every animated phase uses the **median of your trials** for its "
-        "action, or a placeholder until you record one. Record each action "
-        "on video at 60, 120 or 240 fps. Count frames from the first "
-        "movement of the hands to the moment the blade arrives (or to the "
-        "end position for steps and covers). Phones in slow-motion mode "
-        "work well.")
-
+        "The Studio's timing comes from what you record and the pace you give "
+        "each bar. **You don't need to measure anything.** If you do film "
+        "yourself, actions linked to a measurement (*Check vs* in the Studio) "
+        "are flagged when they're faster than you've actually done them. "
+        "Count frames from the first movement of the hands to the arrival of "
+        "the blade, in slow-motion phone video.")
     keys = list(s["actions"])
-    lab = lambda k: f"{s['actions'][k]['label']}" + (
-        "  ✓" if is_measured(s, k) else "")
     c1, c2 = st.columns([2, 1])
-    key = c1.selectbox("Action", keys, format_func=lab)
+    key = c1.selectbox("Action", keys, format_func=lambda k: s["actions"][k]["label"]
+                       + ("  ✓" if s["actions"][k]["trials_ms"] else ""))
     act = s["actions"][key]
-
     with c1:
-        tab_v, tab_ms = st.tabs(["From video frames", "Type milliseconds"])
-        with tab_v:
-            v1, v2, v3 = st.columns(3)
-            fps = v1.selectbox("Video fps", [30, 60, 120, 240], index=2)
-            f0 = v2.number_input("First-movement frame", 0, 100000, 0)
-            f1 = v3.number_input("Arrival frame", 0, 100000, 0)
-            ms_v = frames_to_ms(int(f0), int(f1), fps) if f1 > f0 else 0.0
-            st.caption(f"= {ms_v:.0f} ms (±{1000 / fps:.0f} ms frame resolution)")
-            if st.button("Add trial", disabled=ms_v <= 0, key="add_v"):
-                act["trials_ms"].append(round(ms_v, 1))
-                persist()
-                st.rerun()
-        with tab_ms:
-            raw = st.text_input("Trials in ms, comma separated",
-                                placeholder="e.g. 342, 360, 351")
-            if st.button("Add trials", key="add_ms"):
-                try:
-                    vals = [float(x) for x in raw.replace(";", ",").split(",")
-                            if x.strip()]
-                    act["trials_ms"].extend(v for v in vals if 30 < v < 3000)
-                    persist()
-                    st.rerun()
-                except ValueError:
-                    st.error("Use numbers separated by commas.")
-
+        v1, v2, v3 = st.columns(3)
+        fps = v1.selectbox("Video fps", [30, 60, 120, 240], index=2)
+        f0 = v2.number_input("First-movement frame", 0, 100000, 0)
+        f1 = v3.number_input("Arrival frame", 0, 100000, 0)
+        ms_v = frames_to_ms(int(f0), int(f1), fps) if f1 > f0 else 0.0
+        st.caption(f"= {ms_v:.0f} ms (±{1000 / fps:.0f} ms)")
+        if st.button("Add trial", disabled=ms_v <= 0):
+            act["trials_ms"].append(round(ms_v, 1))
+            persist_store()
+            st.rerun()
     with c2:
         stt = stats(act["trials_ms"])
-        st.metric("Used in simulations", f"{effective_ms(s, key):.0f} ms")
-        st.markdown(f"**{effective_ms(s, key) / beat_ms(s):.2f} beats**")
         if stt["n"]:
-            st.caption(f"n={stt['n']} · median {stt['median']:.0f} · "
-                       f"sd {stt['sd']:.0f} · range {stt['min']:.0f}–{stt['max']:.0f} ms")
+            st.metric("Your median", f"{effective_ms(s, key):.0f} ms")
+            st.caption(f"n={stt['n']} · sd {stt['sd']:.0f} · range "
+                       f"{stt['min']:.0f}–{stt['max']:.0f} ms")
         else:
-            st.caption(f"Placeholder {act['default_ms']} ms. Not measured yet.")
-        new_default = st.number_input("Placeholder (ms)", 50, 3000,
-                                      int(act["default_ms"]), 10)
-        if new_default != act["default_ms"]:
-            act["default_ms"] = int(new_default)
-            persist()
-            st.rerun()
-
+            st.caption("Not measured yet.")
     if act["trials_ms"]:
-        df = pd.DataFrame({"trial": range(1, len(act["trials_ms"]) + 1),
-                           "ms": act["trials_ms"]})
-        edited = st.data_editor(df, hide_index=True, num_rows="dynamic",
-                                key=f"ed_{key}", width="stretch")
+        df = pd.DataFrame({"ms": act["trials_ms"]})
+        edited = st.data_editor(df, num_rows="dynamic", key=f"ed_{key}", width="stretch")
         new = [float(x) for x in edited["ms"].dropna().tolist() if x > 0]
         if new != act["trials_ms"]:
             act["trials_ms"] = new
-            persist()
+            persist_store()
             st.rerun()
-
-    st.divider()
-    st.subheader("Beat reference")
-    ref = st.selectbox("One beat equals…", keys, index=keys.index(s["beat_reference"]),
-                       format_func=lambda k: s["actions"][k]["label"])
-    if ref != s["beat_reference"]:
-        s["beat_reference"] = ref
-        persist()
-        st.rerun()
-    st.caption("A good reference is your fastest clean one-action cut: "
-               "\"one tempo\". Then a 2-beat technique against a 1-beat "
-               "attack loses unless it starts a beat earlier.")
-
-    rows = [{"action": v["label"], "weapon": v["weapon"],
-             "ms used": round(effective_ms(s, k)),
-             "beats": round(effective_ms(s, k) / beat_ms(s), 2),
-             "trials": len(v["trials_ms"]),
-             "source": "measured" if v["trials_ms"] else "placeholder"}
-            for k, v in s["actions"].items()]
-    st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
-
-    st.subheader("Backup")
-    c1, c2 = st.columns(2)
-    c1.download_button("Download timings.json", json.dumps(s, indent=2),
-                       "timings.json", "application/json")
-    up = c2.file_uploader("Restore from timings.json", type="json")
-    if up is not None and st.session_state.get("_restored") != up.file_id:
-        try:
-            st.session_state.store = merge_defaults(json.load(up))
-            st.session_state._restored = up.file_id
-            persist()
-            st.success("Restored.")
+    with st.form("custom", clear_on_submit=True):
+        st.markdown("**Measure something else**")
+        a, b = st.columns([3, 1])
+        label = a.text_input("Name", placeholder="e.g. Messer Krumphau from Zornhut")
+        weapon = b.selectbox("Weapon", ["messer", "longsword"])
+        if st.form_submit_button("Add action") and label.strip():
+            add_custom_action(s, label.strip(), weapon)
+            persist_store()
             st.rerun()
-        except (json.JSONDecodeError, KeyError, TypeError):
-            st.error("That file is not a timings export.")
+    measured = [{"action": v["label"], "trials": len(v["trials_ms"]),
+                 "median ms": round(effective_ms(s, k))}
+                for k, v in s["actions"].items() if v["trials_ms"]]
+    if measured:
+        st.dataframe(pd.DataFrame(measured), hide_index=True, width="stretch")
 
 
 def page_about():
     st.title("How it works")
     st.markdown("""
-**Model.** Each fencer is a jointed gray figure: head, torso, upper arms,
-forearms, hands, thighs and shins are capsule hitboxes. Elbows and knees are
-solved with inverse kinematics from where the hands and feet need to be.
-Techniques are written as guards plus timed phases with keyframes.
+**Figures.** Both fencers are the free *RiggedFigure* mannequin from the
+Khronos glTF sample models (© 2017 Cesium, CC-BY 4.0), with its own
+19-bone skeleton. You pose a few handles; elbows and knees come from
+inverse kinematics using the mannequin's real bone lengths, and the bones
+are rotated to match. The mesh deforms with them.
 
-**Clock.** The exchange runs at 1 ms resolution. A phase lasts exactly as
-long as your median measured time for that action, scaled by the speed
-sliders. B starts when A begins a chosen phase, plus a reaction delay.
+**Timeline.** Keys are recorded in beats. An action spans from one key to
+a later one. Its **pace** stretches or squeezes that span, and everything
+after it moves too. Its **strength** goes into the bind. Movements ease in
+and out across the whole action.
 
-**Contact rules.**
-* *Hit*: the cutting part of an attacking blade touches an opponent hitbox.
-  That part turns red.
-* *Bind*: blade or crossguard meets the other blade (yellow flash).
-* *Displacement (Stärke vs Schwäche)*: if a covering blade meets the other
-  blade nearer its own hilt than the other's contact point (crossguard =
-  strongest), the weaker blade is knocked off line and that action can't
-  score any more. Its follow-through is dead too.
-* *Double hit*: both land within the double-hit window.
+**Fight rules** (1 ms clock):
+* *Hit*: the cutting part of an attacking blade reaches a body part (head,
+  torso, upper arm, forearm, hand, thigh, shin). One hit per action.
+* *Bind*: blades or a crossguard meet. Each side's force = strength ×
+  leverage (contact nearer your hilt is stronger; crossguard strongest),
+  plus a bonus for an action marked as a cover. A blade that isn't doing an
+  action is weak.
+* *Displacement*: with clearly more force (×1.2), the other blade is knocked
+  off line. That action and its follow-through can't score. Roughly equal
+  forces lock the bind and nobody scores from it.
+* *Double hit*: both land within 150 ms.
 
-**What it is not.** The model has no mass, momentum or edge alignment, and
-no reaction to being hit. The techniques are simplified study models of
-the sources, not reconstructions. Use it to reason about **reach, line and
-tempo**, and check your conclusions against the sources and your coach.
+**Plausibility.** Each action shows its duration in beats, peak tip and
+hand speeds, and flags tip speeds above ~25–30 m/s, hands above ~10 m/s,
+very fast strong blows, and anything faster than your own measured time.
 
-**Adding techniques.** See `hema/hemaviz/techniques.py`. A technique is a
-guard and a list of `Phase(name, action_key, keys, attack, cover, cont)`.
-New action keys go in `hema/hemaviz/timings.py` so they show up in the
-Timing Lab.
+**Limits.** No mass, momentum, edge alignment or reaction to being hit,
+and the seed techniques are simplified study models of Lichtenauer,
+Lecküchner and Meyer. Use it to reason about reach, line and tempo.
 """)
 
 
-PAGES = {"Arena": page_arena, "Technique catalog": page_catalog,
-         "Timing Lab": page_timing, "How it works": page_about}
+PAGES = {"Studio": page_studio, "Library": page_library,
+         "Reality check": page_timing, "How it works": page_about}
 with st.sidebar:
-    st.markdown("### ⚔️ HEMA Tempo Lab")
+    st.markdown("### ⚔️ HEMA Studio")
     page = st.radio("Go to", list(PAGES), label_visibility="collapsed")
-    st.caption(f"Beat = {beat_ms(store()):.0f} ms "
-               f"({store()['actions'][store()['beat_reference']]['label']})")
-    measured = sum(1 for k in store()["actions"] if is_measured(store(), k))
-    st.caption(f"{measured}/{len(store()['actions'])} actions measured")
+    lib = library()
+    st.caption(f"{len(lib['exchanges'])} exchanges · {len(lib['moves'])} moves")
+    st.download_button("Download library", json.dumps(lib, indent=1),
+                       "hema_library.json", "application/json")
+    up = st.file_uploader("Restore library", type="json")
+    if up is not None and st.session_state.get("_restored") != up.file_id:
+        try:
+            new = json.load(up)
+            if "exchanges" not in new:
+                raise KeyError("exchanges")
+            new.setdefault("moves", [])
+            st.session_state._restored = up.file_id
+            replace_library(new)
+            st.success("Library restored.")
+        except (json.JSONDecodeError, KeyError, TypeError):
+            st.error("That file is not a library export.")
+    if st.button("Restore the seed examples",
+                 help="Adds back any built-in example you deleted. Your own work is kept."):
+        n = add_missing_seeds(lib)
+        replace_library(lib)
+        st.toast(f"Added {n} example(s)." if n else "All examples are already there.")
+    st.caption("Mannequin: RiggedFigure © 2017 Cesium, CC-BY 4.0 "
+               "(Khronos glTF Sample Assets).")
 PAGES[page]()

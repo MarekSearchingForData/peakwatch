@@ -1,67 +1,78 @@
-# HEMA Tempo Lab
+# HEMA Studio
 
-A Streamlit app for studying **Kriegsmesser vs longsword** exchanges: jointed
-3D fencers perform techniques, hitboxes turn red when struck, and every
-phase runs on **your own measured timings**, so you can see in beats who
-lands first and why.
+Choreograph and test **Kriegsmesser vs longsword** exchanges without
+writing code. Pose two rigged mannequins by dragging their hands, sword
+tips and feet, record a pose per beat, layer the opponent's action on a
+second track, then **modulate each action by dragging its bar**: the end
+for pace, the top for strength. Fight mode works out who gets displaced
+in the bind and who gets hit, and paints the hit body part red.
 
 ```
 pip install -r hema/requirements.txt
 streamlit run hema/app.py          # or double-click hema/run_hema.bat on Windows
-pytest hema/tests
+pytest hema/tests                  # engine tests need Node.js
 ```
 
-## Pages
+## Workflow
 
-* **Arena**: two techniques against each other. Pick a curated matchup
-  or any two techniques; set when B reacts, the distance, and each side's
-  speed. You get a 3D replay (slow-mo, scrub, orbit, A's/B's eyes views),
-  a beat-gridded timeline, the verdict, and a per-phase tempo table.
-* **Technique catalog**: each technique against a standing dummy, its
-  source, tempo count, your notes and a sparring log (worked / failed).
-* **Timing Lab**: record trials per action from video frames
-  (start/arrival frame and fps) or as milliseconds. The median is used
-  everywhere. Pick which action counts as one **beat**.
+1. **Exchange**: pick one of the examples or press *New*. Set each
+   fencer's weapon, the start distance and the beat length.
+2. **Pose**: choose A or B, start from a guard (Vom Tag, Ochs, Pflug,
+   Alber, Langort / Zornhut, Stier, Eber, Luginsland, Wechsel), then drag:
+   yellow = sword hand, orange = sword tip, cyan = pelvis, green = feet,
+   ring = whole fencer. Arms and legs are IK on the mannequin's own bones,
+   so they can't stretch, and the pelvis drops to keep the feet on the floor.
+3. **Record** (`R`) at the playhead: e.g. guard on beat 0, end of the cut
+   on beat 1. Add in-between keys for curved paths.
+4. **Make action** from the key where a movement ends; name it and tick
+   *attacks* / *covers* / *continuation* (follow-through).
+5. **Modulate on the bar**: drag the bar's end to change pace (slow /
+   medium / fast; everything after it moves with it). Drag its top to
+   change strength (weak / medium / strong).
+6. **Fight**: blade contact is judged by strength × leverage (nearer the
+   hilt is stronger, crossguard strongest, covers get a bonus). Clearly
+   stronger → the other blade is knocked off line and that action can't
+   score. Equal → locked bind. The result panel lists hits, binds and
+   displacements in ms and beats.
+7. **Reuse**: *Save as move* → *Insert at playhead* in any exchange, for
+   either fencer. Undo is `Ctrl+Z`.
 
-## Curated matchups
+**Library** page: all exchanges and moves, with notes and a sparring
+log (worked / double hit / failed). **Reality check** page (optional):
+film yourself and log frame counts. Actions linked to a measurement are
+flagged when they're faster than you've actually done them. Every action
+also gets automatic tip/hand-speed sanity checks.
 
-| Matchup | What it shows |
+## Examples included
+
+| Exchange | What it shows |
 |---|---|
-| Mutual Zornhau, longsword vs messer | Same speed, same habits: the longsword's ~15 cm extra reach takes the head; the messer gets an afterblow to the hands. |
-| Zwerch against his Oberhau | Spring out with the Zwerch *Indes*: his blade lands on your cross, your short edge takes his head. Add 50+ ms reaction and it fails. |
-| Nachreisen on a wind-up | A two-action attack (Pflug → Vom Tag → cut) loses to a one-action cut to the rising forearms. |
-| Hanging cover + Einlaufen | Cover with your strong, then run in where his longer blade can't follow. |
-| Messer Zornhau vs longsword thrust | The point is shorter-line and longer-reach. How much faster would you need to be? |
+| Mutual Zornhau, longsword vs messer | Same speed: the longsword's reach takes the head; the messer only gets an afterblow to the hands. |
+| Zwerch against his Oberhau | Started on his cut, the Zwerch catches it on the cross and hits the head. Make it slow (drag its bar) or weak and it fails. |
+| Nachreisen on a wind-up | A one-action cut to the rising hands beats a two-action attack. |
+| Hanging cover + Einlaufen | Cover on the strong, then run in where the longsword can't follow. |
+| Messer Zornhau vs longsword thrust | The point arrives first; how much faster would you need to be? |
 
-## How outcomes are decided (not scripted)
+*Restore the seed examples* in the sidebar brings back any you deleted.
 
-* 1 ms simulation clock; phase length = your median measured time × speed.
-* **Hit**: the cutting part of an attacking blade touches a hitbox capsule
-  (head, torso, upper arms, forearms, hands, thighs, shins). One hit per
-  action; the blade stops in the target.
-* **Bind / displacement (Stärke vs Schwäche)**: on blade contact, a
-  *covering* blade meeting the other nearer its own hilt (crossguard =
-  strongest) knocks the other off line. That action and its follow-through
-  can no longer score.
-* **Double hit**: second hit within the double-hit window (default 150 ms).
+## Files
 
-No mass, momentum, edge alignment or reaction to being hit. The
-techniques are simplified study models of Lichtenauer, Lecküchner and
-Meyer, not reconstructions. Check what you learn against the sources.
+* `hema/hemaviz/studio/`: the in-browser Studio: `engine.js` (IK,
+  timeline, fight rules; also runs in Node for tests), `studio.js` (three.js
+  UI), `index.html`, and the mannequin in `models/`.
+* `hema/hemaviz/techniques.py` + `seeds.py`: the example techniques
+  (Lichtenauer, Lecküchner, Meyer), written as poses and turned into
+  Studio data.
+* `hema/records/library.json`: your exchanges and moves (the Studio saves
+  here). `timings.json`: measurements. `journal.json`: notes and sparring
+  log. All plain JSON, so commit them to keep them. The sidebar has download
+  and restore for hosted deployments.
 
-## Your data
+## Credits and limits
 
-`hema/records/timings.json` (measurements) and `hema/records/journal.json`
-(notes, sparring log) are plain JSON in the repo. Commit them to keep them.
-The Timing Lab has download/restore buttons for hosted deployments where
-the disk is not persistent.
+Mannequin: **RiggedFigure** © 2017 Cesium, CC-BY 4.0, from the
+[Khronos glTF Sample Assets](https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/RiggedFigure)
+(unmodified; scaled and posed at runtime). three.js r128 is loaded from a CDN.
 
-## Adding a technique
-
-Write it in `hema/hemaviz/techniques.py` as a guard plus
-`Phase(name, action_key, keys=[(u, P(grip, elev, az, hip=…, yaw=…, …))],
-attack=…, cover=…, cont=…)`, in the fencer's own frame (x toward the
-opponent, z to the fencer's right). Add any new `action_key` to
-`DEFAULT_ACTIONS` in `hema/hemaviz/timings.py` so it appears in the Timing Lab.
-Register it in `TECHNIQUES` (and optionally as a `Scenario`), then add a
-test for the outcome you expect.
+No mass, momentum, edge alignment or reaction to being hit. The examples
+are simplified study models of the sources, not reconstructions.
