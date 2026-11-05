@@ -20,6 +20,7 @@ const S = {
 };
 const ex = () => S.lib.exchanges.find(e => e.id === S.exId) || S.lib.exchanges[0];
 const weaponOf = f => H.WEAPONS[ex().fencers[f].weapon] || H.WEAPONS.longsword;
+const bodyOf = f => H.bodyOf(ex().fencers[f].body);
 const origin = f => (f === 0 ? [0, 1] : [ex().distance, -1]);
 
 // ======================================================== streamlit bridge
@@ -98,7 +99,7 @@ function guardPose(weapon, name) {
 function newExchange(name) {
   return {
     id: uid('ex-'), name, notes: '', beat_ms: 360, distance: 2.6,
-    fencers: [{ weapon: 'longsword', label: 'A' }, { weapon: 'messer', label: 'B' }],
+    fencers: [{ weapon: 'longsword', body: 'male', label: 'A' }, { weapon: 'messer', body: 'male', label: 'B' }],
     tracks: [{ keys: [{ id: uid('k'), at: 0, pose: guardPose('longsword', 'Vom Tag') }] },
              { keys: [{ id: uid('k'), at: 0, pose: guardPose('messer', 'Zornhut') }] }],
     actions: [],
@@ -137,9 +138,13 @@ scene.add(new THREE.HemisphereLight(0xffffff, 0x30343b, 0.9));
 const sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.position.set(2, 6, 4); scene.add(sun);
 const grid = (() => {   // floor grid, 0.5 m squares, centre line along the fencing line
   const pts = [], cols = [], c1 = new THREE.Color(0x2a2e36), c2 = new THREE.Color(0x4a505a);
-  for (let i = -12; i <= 12; i++) {
-    const v = i * 0.5, c = i === 0 ? c2 : c1;
-    pts.push(-6, 0, v, 6, 0, v, v, 0, -6, v, 0, 6); for (let k = 0; k < 4; k++) cols.push(c.r, c.g, c.b);
+  for (let i = -6; i <= 6; i++) {            // lines along the fencing line, z = -3..3
+    const z = i * 0.5, c = i === 0 ? c2 : c1;
+    pts.push(-3.5, 0, z, 3.5, 0, z); cols.push(c.r, c.g, c.b, c.r, c.g, c.b);
+  }
+  for (let i = -7; i <= 7; i++) {            // cross lines every 0.5 m
+    const x = i * 0.5;
+    pts.push(x, 0, -3, x, 0, 3); cols.push(c1.r, c1.g, c1.b, c1.r, c1.g, c1.b);
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
@@ -196,69 +201,91 @@ function placeSword(g, sk) {
 }
 
 // ---- rigged figure
-const AIM = [   // bone, target joint, child bone used as the aim axis
-  ['torso_joint_2', 'chest', 'torso_joint_3'], ['torso_joint_3', 'neck', 'neck_joint_1'], ['neck_joint_1', 'neck2', 'neck_joint_2'],
-  ['arm_joint_L_1', 'el_l', 'arm_joint_L_2', 'sh_l'], ['arm_joint_L_2', 'wr_l', 'arm_joint_L_3'], ['arm_joint_L_3', 'hand_l', null],
-  ['arm_joint_R_1', 'el_r', 'arm_joint_R_2', 'sh_r'], ['arm_joint_R_2', 'wr_r', 'arm_joint_R_3'], ['arm_joint_R_3', 'hand_r', null],
-  ['leg_joint_L_1', 'kn_l', 'leg_joint_L_2', 'hp_l'], ['leg_joint_L_2', 'an_l', 'leg_joint_L_3'], ['leg_joint_L_3', 'toe_l', 'leg_joint_L_5'],
-  ['leg_joint_R_1', 'kn_r', 'leg_joint_R_2', 'hp_r'], ['leg_joint_R_2', 'an_r', 'leg_joint_R_3'], ['leg_joint_R_3', 'toe_r', 'leg_joint_R_5'],
+const AIM = [   // bone, target joint, child bone used as the aim axis, [joint the bone is moved to]
+  ['spine_01', 'sp2', 'spine_02'], ['spine_02', 'chest', 'spine_03'], ['spine_03', 'neck', 'neck_01'], ['neck_01', 'headJ', 'Head'],
+  ['clavicle_l', 'sh_l', 'upperarm_l'], ['upperarm_l', 'el_l', 'lowerarm_l', 'sh_l'], ['lowerarm_l', 'wr_l', 'hand_l'], ['hand_l', 'hand_l', 'middle_01_l'],
+  ['clavicle_r', 'sh_r', 'upperarm_r'], ['upperarm_r', 'el_r', 'lowerarm_r', 'sh_r'], ['lowerarm_r', 'wr_r', 'hand_r'], ['hand_r', 'hand_r', 'middle_01_r'],
+  ['thigh_l', 'kn_l', 'calf_l', 'hp_l'], ['calf_l', 'an_l', 'foot_l'], ['foot_l', 'toe_l', 'ball_l'],
+  ['thigh_r', 'kn_r', 'calf_r', 'hp_r'], ['calf_r', 'an_r', 'foot_r'], ['foot_r', 'toe_r', 'ball_r'],
 ];
-const COLORS = [0x9fb0c4, 0xc4ad96];
+const COLORS = [0xa3b1c2, 0xbdb3a8];   // cool / warm mannequin grey
 const loader = THREE.GLTFLoader ? new THREE.GLTFLoader() : null;
 let figures = [];
 
 function buildFigures() {
-  for (const f of figures) { scene.remove(f.root); scene.remove(f.sword); f.hb.forEach(h => scene.remove(h.g)); f.handles && Object.values(f.handles).forEach(h => scene.remove(h)); }
+  for (const f of figures) disposeFigure(f);
   figures = [0, 1].map(makeFigure);
 }
+function disposeFigure(fig) {
+  scene.remove(fig.root); scene.remove(fig.sword); fig.hb.forEach(h => scene.remove(h.g));
+  Object.values(fig.handles).forEach(h => scene.remove(h));
+}
+function rebuildFigure(f) { disposeFigure(figures[f]); figures[f] = makeFigure(f); }
 function makeFigure(f) {
-  const fig = { f, root: new THREE.Group(), bones: null, sword: makeSword(weaponOf(f)), weaponKey: weaponOf(f).key };
+  const fig = { f, root: new THREE.Group(), bones: null, sword: makeSword(weaponOf(f)), weaponKey: weaponOf(f).key, bodyKey: bodyOf(f).key };
   scene.add(fig.root);
   const hbMat = new THREE.MeshStandardMaterial({ color: COLORS[f], transparent: true, opacity: 0.35, roughness: 0.8, depthWrite: false });
   fig.hb = H.HITBOXES.map(([name, a, b, r]) => {
-    const m = hbMat.clone(); const g = capsule(r, m); g.visible = false; scene.add(g);
+    const m = hbMat.clone(); const g = capsule(r * bodyOf(f).hb, m); g.visible = false; scene.add(g);
     return { name, a, b, g, m };
   });
   makeHandles(fig);
   if (loader && !S.noModel) {
-    loader.load('models/RiggedFigure.glb', gltf => setupModel(fig, gltf), undefined, () => { S.noModel = true; showErr(''); });
+    loader.load(bodyOf(f).model, gltf => { if (figures[f] === fig || !figures.length || figures.indexOf(fig) >= 0) setupModel(fig, gltf); }, undefined, () => { S.noModel = true; showErr(''); });
   } else S.noModel = true;
   return fig;
 }
 function setupModel(fig, gltf) {
   const holder = fig.root;
   holder.add(gltf.scene);
-  holder.scale.setScalar(H.DIMS.scale);
   const bones = {};
   gltf.scene.traverse(o => {
     if (o.isBone) bones[o.name] = o;
     if (o.isMesh) {
-      o.material = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.65, metalness: 0.05, skinning: !!o.isSkinnedMesh });
+      const body = o.isSkinnedMesh && o.geometry.attributes.position.count > 2000;
+      o.material = new THREE.MeshStandardMaterial({ color: body ? 0xffffff : 0x3a3d44, vertexColors: body, roughness: 0.6, metalness: 0.04, skinning: !!o.isSkinnedMesh });
       o.frustumCulled = false;
-      if (o.isSkinnedMesh) setupPartColors(fig, o);
+      if (body) setupPartColors(fig, o);
     }
   });
+  curlFingers(gltf.scene, bones);
   for (const b of Object.values(bones)) b.userData.restQ = b.quaternion.clone();
-  // the stock figure has a very large box head and long box hands
-  bones.neck_joint_2.scale.setScalar(H.DIMS.headScale);
-  bones.arm_joint_L_3.scale.setScalar(H.DIMS.handScale);
-  bones.arm_joint_R_3.scale.setScalar(H.DIMS.handScale);
   for (const [name, , child] of AIM) {
     const b = bones[name];
-    if (child) b.userData.aim = bones[child].position.clone().normalize();
-    else b.userData.aim = b.position.clone().normalize().applyQuaternion(b.userData.restQ.clone().invert());
+    b.userData.aim = bones[child].position.clone().normalize();
   }
   fig.bones = bones;
+}
+// Close the open T-pose hands into a fist around the hilt.
+function curlFingers(sceneRoot, bones) {
+  sceneRoot.updateMatrixWorld(true);
+  const q = new THREE.Quaternion(), wq = new THREE.Quaternion(), Z = new THREE.Vector3(0, 0, 1);
+  const ANG = { '01': 60, '02': 75, '03': 55 };
+  for (const [name, b] of Object.entries(bones)) {
+    const m = name.match(/^(index|middle|ring|pinky|thumb)_(0[123])_([lr])$/);
+    if (!m) continue;
+    const thumb = m[1] === 'thumb', side = m[3] === 'l' ? -1 : 1;
+    const deg = thumb ? (m[2] === '01' ? 0 : 35) : ANG[m[2]];
+    if (!deg) continue;
+    b.parent.getWorldQuaternion(wq);
+    const axis = (thumb ? new THREE.Vector3(1, 0, 0) : Z.clone()).applyQuaternion(wq.clone().invert()).normalize();
+    q.setFromAxisAngle(axis, side * deg * Math.PI / 180);
+    b.quaternion.premultiply(q);
+    b.updateMatrixWorld(true);
+  }
 }
 
 // Each vertex belongs to the body part of the bone that moves it most, so a
 // hit paints that part of the mannequin red.
 function partOfBone(n) {
-  const side = n.includes('_L') ? 'L' : 'R';
-  if (n === 'neck_joint_2') return 'head';
-  if (n.startsWith('torso') || n === 'neck_joint_1') return 'torso';
-  if (n.startsWith('arm')) return { 1: 'upper arm ', 2: 'forearm ', 3: 'hand ' }[n.slice(-1)] + side;
-  if (n.startsWith('leg')) return (n.endsWith('_1') ? 'thigh ' : 'shin ') + side;
+  const side = /_l$/.test(n) ? 'L' : 'R';
+  if (n === 'Head' || /^(eye|jaw|head)/i.test(n)) return 'head';
+  if (/^(pelvis|spine|neck|clavicle|root)/.test(n)) return 'torso';
+  if (n.startsWith('upperarm')) return 'upper arm ' + side;
+  if (n.startsWith('lowerarm')) return 'forearm ' + side;
+  if (/^(hand|thumb|index|middle|ring|pinky)/.test(n)) return 'hand ' + side;
+  if (n.startsWith('thigh')) return 'thigh ' + side;
+  if (/^(calf|foot|ball)/.test(n)) return 'shin ' + side;
   return null;
 }
 function setupPartColors(fig, mesh) {
@@ -305,13 +332,13 @@ function poseFigure(fig, pose, sk) {
   fig.root.updateMatrixWorld(true);
   const B = fig.bones;
   if (B) {
-    const pel = B.torso_joint_1;
+    const pel = B.pelvis;
     pel.quaternion.setFromAxisAngle(UP, pose.yaw * 0.5 * Math.PI / 180).multiply(pel.userData.restQ);
     setBoneWorldPos(pel, sk.pelvis);
     for (const [name, joint, , rootJoint] of AIM) {
       const b = B[name];
       if (rootJoint) setBoneWorldPos(b, sk[rootJoint]);
-      aimBone(b, sk[joint], name === 'torso_joint_2' ? pose.yaw * 0.5 * Math.PI / 180 : 0);
+      aimBone(b, sk[joint], name === 'spine_01' ? pose.yaw * 0.5 * Math.PI / 180 : 0);
     }
   }
   placeSword(fig.sword, sk);
@@ -337,10 +364,11 @@ function updateScene() {
   if (!S.lib) return;
   const t = S.t, e = ex();
   for (const fig of figures) {
+    if (fig.bodyKey !== bodyOf(fig.f).key) { rebuildFigure(fig.f); continue; }
     if (fig.weaponKey !== weaponOf(fig.f).key) { scene.remove(fig.sword); fig.sword = makeSword(weaponOf(fig.f)); fig.weaponKey = weaponOf(fig.f).key; }
     const { pose, lift } = displayPose(fig.f, t);
     const [o, facing] = origin(fig.f);
-    const sk = H.skeletonWorld(H.skeleton(pose, weaponOf(fig.f), lift), o, facing);
+    const sk = H.skeletonWorld(H.skeleton(pose, weaponOf(fig.f), lift, bodyOf(fig.f)), o, facing);
     fig.sk = sk;
     poseFigure(fig, pose, sk);
     fig.root.visible = !S.noModel;
@@ -446,9 +474,9 @@ cv.addEventListener('pointermove', ev => {
   const w = ray.ray.intersectPlane(drag.plane, new THREE.Vector3());
   if (!w) return;
   const [o, facing] = origin(drag.f);
-  const L = H.toLocal([w.x, w.y, w.z], o, facing), P = S.work[drag.f], W = weaponOf(drag.f);
-  if (drag.k === 'grip') { P.grip = L; P.grip = H.skeleton(P, W).hand_r; }
-  else if (drag.k === 'tip') { const g = H.skeleton(P, W).guard; P.blade = V.norm(V.sub(L, g)); }
+  const L = H.toLocal([w.x, w.y, w.z], o, facing), P = S.work[drag.f], W = weaponOf(drag.f), BD = bodyOf(drag.f);
+  if (drag.k === 'grip') { P.grip = L; P.grip = H.skeleton(P, W, null, BD).hand_r; }
+  else if (drag.k === 'tip') { const g = H.skeleton(P, W, null, BD).guard; P.blade = V.norm(V.sub(L, g)); }
   else if (drag.k === 'pelvis') { P.hip[0] = L[0]; P.hip[2] = L[2]; }
   else if (drag.k === 'lfoot') P.lfoot = [L[0], L[2]];
   else if (drag.k === 'rfoot') P.rfoot = [L[0], L[2]];
@@ -471,7 +499,7 @@ function syncPoseUI() {
   if (!S.lib) return;
   const p = curPose();
   $('yaw').value = p.yaw; $('lean').value = p.lean;
-  $('crouch').value = Math.max(0, H.maxPelvisY(p) - p.hip[1]);
+  $('crouch').value = Math.max(0, H.maxPelvisY(p, bodyOf(S.fencer)) - p.hip[1]);
   $('leftOn').checked = !!p.left_on;
   const dirty = !!S.work[S.fencer];
   $('rec').classList.toggle('dirty', dirty);
@@ -483,7 +511,7 @@ function syncPoseUI() {
 }
 $('yaw').oninput = e => editPose(p => { p.yaw = +e.target.value; });
 $('lean').oninput = e => editPose(p => { p.lean = +e.target.value; });
-$('crouch').oninput = e => editPose(p => { p.hip[1] = H.maxPelvisY(p) - +e.target.value; });
+$('crouch').oninput = e => editPose(p => { p.hip[1] = H.maxPelvisY(p, bodyOf(S.fencer)) - +e.target.value; });
 $('leftOn').onchange = e => editPose(p => { p.left_on = e.target.checked; });
 function renderGuards() {
   const w = ex().fencers[S.fencer].weapon, box = $('guards'); box.innerHTML = '';
@@ -652,6 +680,10 @@ function syncTopUI() {
   const sel = $('exSel'); sel.innerHTML = '';
   for (const e of S.lib.exchanges) { const o = document.createElement('option'); o.value = e.id; o.textContent = e.name; sel.appendChild(o); }
   sel.value = ex().id;
+  for (const [id, f] of [['bA', 0], ['bB', 1]]) {
+    const s = $(id); if (!s.options.length) for (const b of Object.values(H.BODIES)) { const o = document.createElement('option'); o.value = b.key; o.textContent = b.name; s.appendChild(o); }
+    s.value = bodyOf(f).key;
+  }
   for (const [id, f] of [['wA', 0], ['wB', 1]]) {
     const s = $(id); if (!s.options.length) for (const w of Object.values(H.WEAPONS)) { const o = document.createElement('option'); o.value = w.key; o.textContent = w.name; s.appendChild(o); }
     s.value = ex().fencers[f].weapon;
@@ -670,6 +702,8 @@ $('exDel').onclick = () => {
   if (!confirm(`Delete “${ex().name}”?`)) return;
   const id = ex().id; mutate(() => { S.lib.exchanges = S.lib.exchanges.filter(e => e.id !== id); }); S.exId = S.lib.exchanges[0].id; refreshAll();
 };
+$('bA').onchange = e => mutate(() => { ex().fencers[0].body = e.target.value; });
+$('bB').onchange = e => mutate(() => { ex().fencers[1].body = e.target.value; });
 $('wA').onchange = e => mutate(() => { ex().fencers[0].weapon = e.target.value; renderGuards(); });
 $('wB').onchange = e => mutate(() => { ex().fencers[1].weapon = e.target.value; renderGuards(); });
 $('dist').onchange = e => mutate(() => { ex().distance = Math.min(6, Math.max(1, +e.target.value || 2.6)); });
@@ -713,7 +747,7 @@ function showErr(msg) { if (!msg) return; const e = $('err'); e.style.display = 
 
 // ============================================================= timeline
 const tl = $('tl'), tc = tl.getContext('2d');
-const ROW = [{ top: 24 }, { top: 86 }], BAR_MAX = 40, LEFT = 30;
+const ROW = [{ top: 24 }, { top: 86 }], LEFT = 30;
 const rowOf = f => ROW[f];
 function viewMs() {
   let end = 0; for (const f of [0, 1]) { const r = layoutOf(f).real; if (r.length) end = Math.max(end, r[r.length - 1]); }
@@ -721,8 +755,10 @@ function viewMs() {
 }
 const xOf = t => LEFT + (tl.clientWidth - LEFT - 10) * t / viewMs();
 const tOf = x => (x - LEFT) / (tl.clientWidth - LEFT - 10) * viewMs();
-const barBottom = f => rowOf(f).top + 44, keyY = f => rowOf(f).top + 52;
-const barH = s => 5 + s * BAR_MAX * 0.95;
+const laneMid = f => rowOf(f).top + 27, keyY = f => rowOf(f).top + 52;
+const BAR_MIN = 4, BAR_SPAN = 30;           // thickness = strength
+const barH = s => BAR_MIN + s * BAR_SPAN;
+const barBottom = f => laneMid(f) + BAR_SPAN / 2 + BAR_MIN / 2;   // lowest edge of the thickest bar
 const KIND_COL = a => (a.attack && a.cover ? '#8a5bc4' : a.attack ? '#c2474c' : a.cover ? '#3f73cc' : '#4d535d');
 
 function drawTimeline() {
@@ -742,17 +778,19 @@ function drawTimeline() {
     tc.fillText('AB'[f], 8, r.top + 22); tc.font = '11px system-ui';
     if (f === S.fencer) { tc.fillStyle = 'rgba(127,176,230,.06)'; tc.fillRect(LEFT, r.top - 2, w - LEFT, 58); }
     for (const a of L.acts) {
-      const x0 = xOf(a.t0), x1 = xOf(a.t1), bh = barH(a.strength == null ? 0.5 : a.strength), y0 = barBottom(f) - bh;
-      tc.fillStyle = KIND_COL(a); tc.globalAlpha = 0.9; tc.fillRect(x0, y0, Math.max(2, x1 - x0 - 1), bh); tc.globalAlpha = 1;
-      if (S.sel.action === a.id) { tc.strokeStyle = '#fff'; tc.lineWidth = 1.5; tc.strokeRect(x0 + 0.5, y0 + 0.5, x1 - x0 - 2, bh - 1); tc.lineWidth = 1; }
-      tc.fillStyle = 'rgba(255,255,255,.55)'; tc.fillRect(x1 - 4, y0, 3, bh);       // pace grip
-      tc.fillRect(x0, y0, Math.max(2, x1 - x0 - 1), 2);                             // strength grip
-      tc.save(); tc.beginPath(); tc.rect(x0, r.top - 4, x1 - x0 - 5, 50); tc.clip();
-      tc.fillStyle = '#fff'; tc.textAlign = 'left';
+      const x0 = xOf(a.t0), x1 = xOf(a.t1), str = a.strength == null ? 0.5 : a.strength;
+      const bh = barH(str), y0 = laneMid(f) - bh / 2, wdt = Math.max(2, x1 - x0 - 1);
+      tc.fillStyle = KIND_COL(a); tc.globalAlpha = 0.92; tc.fillRect(x0, y0, wdt, bh); tc.globalAlpha = 1;
+      tc.fillStyle = 'rgba(255,255,255,.6)';
+      tc.fillRect(x0, y0, wdt, 1.5); tc.fillRect(x0, y0 + bh - 1.5, wdt, 1.5);      // thickness grips
+      tc.fillRect(x1 - 4, laneMid(f) - 7, 3, 14);                                     // pace grip
+      if (S.sel.action === a.id) { tc.strokeStyle = '#fff'; tc.lineWidth = 1.5; tc.strokeRect(x0 + 0.5, y0 + 0.5, wdt - 1, bh - 1); tc.lineWidth = 1; }
+      tc.save(); tc.beginPath(); tc.rect(x0, r.top - 4, Math.max(0, x1 - x0 - 6), 60); tc.clip();
       const bad = (S.flags[a.id] || []).some(x => x.level === 'bad');
-      tc.fillText(`${bad ? '⚠ ' : ''}${a.name}`, x0 + 4, Math.min(y0 - 7, barBottom(f) - 8) < r.top ? barBottom(f) - 8 : y0 - 7);
-      tc.fillStyle = 'rgba(255,255,255,.75)';
-      tc.fillText(`${H.strengthLabel(a.strength)} · ${H.paceLabel(a.pace)}`, x0 + 4, barBottom(f) - 7 > y0 + 6 ? barBottom(f) - 7 : y0 + 6);
+      tc.textAlign = 'left'; tc.fillStyle = '#e9eaec';
+      tc.fillText(`${bad ? '⚠ ' : ''}${a.name}`, x0 + 3, r.top + 3);
+      tc.fillStyle = 'rgba(233,234,236,.7)';
+      tc.fillText(`${H.strengthLabel(str)} · ${H.paceLabel(a.pace)}`, x0 + 3, keyY(f) - 5 < laneMid(f) + bh / 2 + 4 ? r.top + 3 : keyY(f) - 8);
       tc.restore();
     }
     tc.strokeStyle = '#3a404a'; tc.beginPath(); tc.moveTo(LEFT, keyY(f)); tc.lineTo(w - 10, keyY(f)); tc.stroke();
@@ -776,10 +814,12 @@ function tlHit(x, y) {
     const L = layoutOf(f);
     for (let i = 0; i < L.keys.length; i++) if (Math.abs(x - xOf(L.real[i])) < 7 && Math.abs(y - keyY(f)) < 8) return { type: 'key', f, i, key: L.keys[i] };
     for (const a of L.acts) {
-      const x0 = xOf(a.t0), x1 = xOf(a.t1), y0 = barBottom(f) - barH(a.strength == null ? 0.5 : a.strength);
-      if (x >= x1 - 7 && x <= x1 + 4 && y >= y0 - 4 && y <= barBottom(f)) return { type: 'pace', f, a };
-      if (x >= x0 && x <= x1 && Math.abs(y - y0) < 5) return { type: 'strength', f, a };
-      if (x >= x0 && x <= x1 && y >= y0 && y <= barBottom(f)) return { type: 'bar', f, a };
+      const x0 = xOf(a.t0), x1 = xOf(a.t1), bh = barH(a.strength == null ? 0.5 : a.strength);
+      const top = laneMid(f) - bh / 2, bot = laneMid(f) + bh / 2;
+      const inX = x >= x0 && x <= x1;
+      if (x >= x1 - 7 && x <= x1 + 4 && y >= top - 4 && y <= bot + 4) return { type: 'pace', f, a };
+      if (inX && (Math.abs(y - top) < 5 || Math.abs(y - bot) < 5)) return { type: 'strength', f, a };
+      if (inX && y >= top && y <= bot) return { type: 'bar', f, a };
     }
   }
   const f = y < (ROW[1].top - 4) ? 0 : 1;
@@ -838,7 +878,7 @@ tl.addEventListener('pointermove', ev => {
     e.actions.find(z => z.id === a.id).pace = +Math.min(2.5, Math.max(0.4, want / base)).toFixed(3);
     S.needSim = true;
   } else if (tdrag.type === 'strength') {
-    const s = (barBottom(tdrag.f) - y - 5) / (BAR_MAX * 0.95);
+    const s = (Math.abs(y - laneMid(tdrag.f)) * 2 - BAR_MIN) / BAR_SPAN;   // fatter = stronger
     e.actions.find(z => z.id === tdrag.a.id).strength = +Math.min(1, Math.max(0, s)).toFixed(2);
     S.needSim = true;
   }

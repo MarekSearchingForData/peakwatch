@@ -71,8 +71,8 @@ label{color:var(--mute)}
     <button id="exRen">Rename</button>
     <button id="exDel">Delete</button>
     <span class="sep"></span>
-    <label>A <select id="wA"></select></label>
-    <label>B <select id="wB"></select></label>
+    <label class="fa">A</label><select id="wA" title="A's weapon"></select><select id="bA" title="A's body"></select>
+    <label class="fb">B</label><select id="wB" title="B's weapon"></select><select id="bB" title="B's body"></select>
     <label title="Pelvis-to-pelvis distance at the start">Distance <input id="dist" type="number" step="0.05" min="1" max="6"> m</label>
     <label title="Length of one beat at medium pace">Beat <input id="beat" type="number" step="10" min="100" max="2000"> ms</label>
     <span class="grow"></span>
@@ -153,7 +153,7 @@ label{color:var(--mute)}
       <select id="spd"><option value="1">1×</option><option value="0.5">0.5×</option><option value="0.25" selected>0.25×</option><option value="0.1">0.1×</option></select>
       <label><input type="checkbox" id="loop" checked> loop</label>
       <label><input type="checkbox" id="snap" checked> snap ⅛ beat</label>
-      <span class="muted">Bars: drag the <b>end</b> to change pace, drag the <b>top</b> for strength. Drag diamonds to retime keys.</span>
+      <span class="muted">Bars: <b>length</b> = pace (drag the end), <b>thickness</b> = strength (drag the top or bottom edge). Drag diamonds to retime keys.</span>
     </div>
     <canvas id="tl"></canvas>
   </div>

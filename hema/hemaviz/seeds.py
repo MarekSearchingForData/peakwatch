@@ -71,8 +71,8 @@ def seed_exchanges() -> list:
         out.append({
             "id": f"seed-{s.key}", "name": s.name, "notes": s.lesson,
             "beat_ms": SEED_BEAT_MS, "distance": s.distance,
-            "fencers": [{"weapon": ta.weapon, "label": "A"},
-                        {"weapon": tb.weapon, "label": "B"}],
+            "fencers": [{"weapon": ta.weapon, "body": "male", "label": "A"},
+                        {"weapon": tb.weapon, "body": "male", "label": "B"}],
             "tracks": [{"keys": ka}, {"keys": kb}],
             "actions": aa + ab,
         })

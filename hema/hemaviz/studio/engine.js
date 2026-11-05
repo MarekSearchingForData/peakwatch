@@ -6,8 +6,8 @@
  * Fencer-local frame: x = toward the opponent, y = up, z = fencer's right.
  * Metres, degrees, milliseconds.
  *
- * Body dimensions are the Khronos "RiggedFigure" bones scaled to a ~1.75 m
- * fencer, so the IK limbs are exactly the mesh's bones: nothing can stretch.
+ * Body dimensions are read off the Quaternius base characters' skeletons
+ * (CC0), so the IK limbs are exactly the mesh's bones: nothing can stretch.
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -15,15 +15,27 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  // RiggedFigure bone lengths (model units), scaled to a ~1.75 m fencer.
-  const RIG = {
-    hipDrop: 0.072, hipHalf: 0.068, thigh: 0.2663, shin: 0.2756, ankleY: 0.085,
-    spine1: 0.171, spine2: 0.218, neck1: 0.051, neck2: 0.067, headUp: 0.16,
-    shoulderHalf: 0.088, upper: 0.2445, fore: 0.1851, hand: 0.05,
+  // Bone lengths of the Quaternius "Universal Base Characters" (metres).
+  // hipUp: hip joints relative to the pelvis bone; sh*: shoulder joint
+  // relative to spine_03; cl*: clavicle root; hand: wrist -> middle of grip.
+  const BODIES = {
+    male: {
+      key: 'male', name: 'Male (1.81 m)', model: 'models/quaternius-male.glb',
+      hipUp: 0.022, hipHalf: 0.114, thigh: 0.429, shin: 0.459, ankleY: 0.086, toeFwd: 0.143, toeDrop: 0.071,
+      sp1: 0.128, sp2: 0.107, sp3: 0.133, neck: 0.213, headJ: 0.084, headUp: 0.10,
+      shUp: 0.144, shHalf: 0.212, shFwd: -0.07, clUp: 0.184, clHalf: 0.031,
+      upper: 0.251, fore: 0.243, hand: 0.085, hb: 1.0,
+    },
+    female: {
+      key: 'female', name: 'Female (1.77 m)', model: 'models/quaternius-female.glb',
+      hipUp: 0.012, hipHalf: 0.111, thigh: 0.409, shin: 0.465, ankleY: 0.071, toeFwd: 0.139, toeDrop: 0.056,
+      sp1: 0.127, sp2: 0.109, sp3: 0.127, neck: 0.194, headJ: 0.065, headUp: 0.10,
+      shUp: 0.127, shHalf: 0.152, shFwd: -0.052, clUp: 0.139, clHalf: 0.029,
+      upper: 0.240, fore: 0.249, hand: 0.08, hb: 0.88,
+    },
   };
-  const SCALE = 1.25;
-  const DIMS = { scale: SCALE, headScale: 0.62, handScale: 0.55 };
-  for (const k in RIG) DIMS[k] = RIG[k] * SCALE;
+  const DIMS = BODIES.male;
+  const bodyOf = k => BODIES[k] || BODIES.male;
 
   const WEAPONS = {
     longsword: { key: 'longsword', name: 'Longsword', blade: 0.95, grip: 0.27, hand_sep: 0.15, guard_half: 0.13, nagel: false, width: 0.045 },
@@ -102,35 +114,37 @@
   }
 
   /** Pelvis height that keeps both feet on the ground (legs can't stretch). */
-  function maxPelvisY(pose) {
-    const D = DIMS, legMax = (D.thigh + D.shin) * 0.995;
+  function maxPelvisY(pose, body) {
+    const D = body || DIMS, legMax = (D.thigh + D.shin) * 0.995;
     let best = Infinity;
     for (const [foot, side] of [[pose.lfoot, -1], [pose.rfoot, 1]]) {
       const hj = add(pose.hip, rotY([0, 0, side * D.hipHalf], pose.yaw * 0.5));
       const h = Math.hypot(hj[0] - foot[0], hj[2] - foot[1]);
       const v = h < legMax ? Math.sqrt(legMax * legMax - h * h) : 0.05;
-      best = Math.min(best, D.ankleY + D.hipDrop + v);
+      best = Math.min(best, D.ankleY - D.hipUp + v);
     }
     return best;
   }
 
   /** Joint positions in the fencer's local frame. */
-  function skeleton(pose, weapon, lift) {
-    const D = DIMS; lift = lift || [0, 0];
-    const hip = [pose.hip[0], Math.min(pose.hip[1], maxPelvisY(pose)), pose.hip[2]];
+  function skeleton(pose, weapon, lift, body) {
+    const D = body || DIMS; lift = lift || [0, 0];
+    const hip = [pose.hip[0], Math.min(pose.hip[1], maxPelvisY(pose, D)), pose.hip[2]];
     const fwd = rotY([1, 0, 0], pose.yaw), right = rotY([0, 0, 1], pose.yaw);
     const hfwd = rotY([1, 0, 0], pose.yaw * 0.5);
     const L = rad(pose.lean);
     const up = add(mul([0, 1, 0], Math.cos(L)), mul(fwd, Math.sin(L)));
-    const spine2 = add(hip, mul(up, D.spine1));
-    const chest = add(spine2, mul(up, D.spine2));
-    const neck = add(chest, mul(up, D.neck1));
-    const neck2 = add(neck, mul(up, D.neck2));
-    const head = add(neck2, mul(up, D.headUp));
-    const sh_r = add(chest, mul(right, D.shoulderHalf));
-    const sh_l = add(chest, mul(right, -D.shoulderHalf));
-    const hp_r = add(hip, rotY([0, -D.hipDrop, D.hipHalf], pose.yaw * 0.5));
-    const hp_l = add(hip, rotY([0, -D.hipDrop, -D.hipHalf], pose.yaw * 0.5));
+    const sp1 = add(hip, mul(up, D.sp1));
+    const sp2 = add(sp1, mul(up, D.sp2));
+    const chest = add(sp2, mul(up, D.sp3));
+    const neck = add(chest, mul(up, D.neck));
+    const headJ = add(neck, mul(up, D.headJ));
+    const head = add(headJ, mul(up, D.headUp));
+    const shoulder = side => add(add(add(chest, mul(up, D.shUp)), mul(right, side * D.shHalf)), mul(fwd, D.shFwd));
+    const clav = side => add(add(chest, mul(up, D.clUp)), mul(right, side * D.clHalf));
+    const sh_r = shoulder(1), sh_l = shoulder(-1);
+    const hp_r = add(hip, rotY([0, D.hipUp, D.hipHalf], pose.yaw * 0.5));
+    const hp_l = add(hip, rotY([0, D.hipUp, -D.hipHalf], pose.yaw * 0.5));
 
     const d = norm(pose.blade);
     const reach = D.upper + D.fore + D.hand - 0.004;
@@ -143,7 +157,7 @@
         hand_l = sub(hand_r, mul(d, weapon.hand_sep));
       }
     } else {
-      hand_l = add(sh_l, add(mul(up, -0.42), add(mul(fwd, 0.10), mul(right, -0.10))));
+      hand_l = add(sh_l, add(mul(up, -0.5), add(mul(fwd, 0.10), mul(right, -0.08))));
     }
     const arm = (sh, hand, side) => {
       const pole = add(add(mul(up, -0.7), mul(right, 0.6 * side)), mul(fwd, -0.2));
@@ -158,24 +172,25 @@
     const an_r = [pose.rfoot[0], D.ankleY + lift[1], pose.rfoot[1]];
     const kn_l = twoBone(hp_l, an_l, D.thigh, D.shin, sub(hfwd, rotY([0, 0, 0.3], pose.yaw * 0.5)));
     const kn_r = twoBone(hp_r, an_r, D.thigh, D.shin, add(hfwd, rotY([0, 0, 0.3], pose.yaw * 0.5)));
-    const toe = an => add(an, [hfwd[0] * 0.10, -0.085, hfwd[2] * 0.10]);
+    const toe = an => add(an, [hfwd[0] * D.toeFwd, -D.toeDrop, hfwd[2] * D.toeFwd]);
 
     const guard = add(hand_r, mul(d, 0.055));
     return {
-      pelvis: hip, spine2, chest, neck, neck2, head, sh_l, sh_r, el_l, el_r, wr_l, wr_r,
+      pelvis: hip, sp1, sp2, chest, neck, headJ, head, cl_l: clav(-1), cl_r: clav(1),
+      sh_l, sh_r, el_l, el_r, wr_l, wr_r,
       hand_l, hand_r, hp_l, hp_r, kn_l, kn_r, an_l, an_r, toe_l: toe(an_l), toe_r: toe(an_r),
       guard, tip: add(guard, mul(d, weapon.blade)), pommel: sub(guard, mul(d, weapon.grip)),
       fwd, up, right, hfwd,
     };
   }
 
-  // Radii measured from the skinned RiggedFigure mesh at this scale.
+  // Radii measured from the skinned Quaternius male (the female uses body.hb).
   const HITBOXES = [
-    ['head', 'head', 'head', 0.12], ['torso', 'pelvis', 'neck', 0.15],
-    ['upper arm R', 'sh_r', 'el_r', 0.065], ['upper arm L', 'sh_l', 'el_l', 0.065],
-    ['forearm R', 'el_r', 'wr_r', 0.05], ['forearm L', 'el_l', 'wr_l', 0.05],
-    ['hand R', 'hand_r', 'hand_r', 0.06], ['hand L', 'hand_l', 'hand_l', 0.06],
-    ['thigh R', 'hp_r', 'kn_r', 0.10], ['thigh L', 'hp_l', 'kn_l', 0.10],
+    ['head', 'head', 'head', 0.11], ['torso', 'pelvis', 'neck', 0.16],
+    ['upper arm R', 'sh_r', 'el_r', 0.07], ['upper arm L', 'sh_l', 'el_l', 0.07],
+    ['forearm R', 'el_r', 'wr_r', 0.055], ['forearm L', 'el_l', 'wr_l', 0.055],
+    ['hand R', 'hand_r', 'hand_r', 0.065], ['hand L', 'hand_l', 'hand_l', 0.065],
+    ['thigh R', 'hp_r', 'kn_r', 0.095], ['thigh L', 'hp_l', 'kn_l', 0.095],
     ['shin R', 'kn_r', 'an_r', 0.06], ['shin L', 'kn_l', 'an_l', 0.06],
   ];
 
@@ -314,6 +329,7 @@
     opts = opts || {};
     const window = opts.doubleWindow == null ? 150 : opts.doubleWindow;
     const W = ex.fencers.map(f => WEAPONS[f.weapon] || WEAPONS.longsword);
+    const BD = ex.fencers.map(f => bodyOf(f.body));
     const Ls = [layout(ex, 0), layout(ex, 1)];
     const O = origins(ex);
     const ov = [[], []];
@@ -332,7 +348,7 @@
 
     for (let t = 0; t <= end; t += dt) {
       const P = [0, 1].map(f => poseAt(ex, Ls[f], t, ov[f], guards[f]));
-      const SK = [0, 1].map(f => skeletonWorld(skeleton(P[f].pose, W[f], P[f].lift), O[f][0], O[f][1]));
+      const SK = [0, 1].map(f => skeletonWorld(skeleton(P[f].pose, W[f], P[f].lift, BD[f]), O[f][0], O[f][1]));
       const A = [0, 1].map(f => actionAt(Ls[f], t));
       const root = [0, 1].map(f => A[f] && chainOf(Ls[f], A[f]));
       const isDead = f => root[f] && dead[f].has(root[f].id);
@@ -374,7 +390,7 @@
         for (const [name, ja, jb, r] of HITBOXES) {
           if (hitParts[j].has(name)) continue;
           const [d, s] = segSeg(from, tip, SK[j][ja], SK[j][jb]);
-          if (d < r + BLADE_HALF) {
+          if (d < r * BD[j].hb + BLADE_HALF) {
             hitParts[j].add(name); landed[i].add(root[i].id);
             const ev = { t, kind: 'hit', by: i, on: j, part: name, action: a.name,
               severity: strengthLabel(a.strength == null ? 0.5 : a.strength),
@@ -434,12 +450,12 @@
   function checkAction(ex, f, actId, measured) {
     const L = layout(ex, f), a = L.acts.find(x => x.id === actId);
     if (!a) return [];
-    const W = WEAPONS[ex.fencers[f].weapon] || WEAPONS.longsword;
+    const W = WEAPONS[ex.fencers[f].weapon] || WEAPONS.longsword, BD = bodyOf(ex.fencers[f].body);
     const out = [], dur = a.t1 - a.t0;
     let vHand = 0, vTip = 0, prev = null;
     for (let t = a.t0; t <= a.t1; t += 4) {
       const p = poseAt(ex, L, t, null);
-      const sk = skeleton(p.pose, W, p.lift);
+      const sk = skeleton(p.pose, W, p.lift, BD);
       if (prev) { vHand = Math.max(vHand, len(sub(sk.hand_r, prev.hand_r)) / 0.004); vTip = Math.max(vTip, len(sub(sk.tip, prev.tip)) / 0.004); }
       prev = sk;
     }
@@ -457,7 +473,7 @@
     return out;
   }
 
-  return { DIMS, WEAPONS, DEFAULT_POSE, HITBOXES, strengthLabel, paceLabel,
+  return { DIMS, BODIES, bodyOf, WEAPONS, DEFAULT_POSE, HITBOXES, strengthLabel, paceLabel,
     bladeDir, lerpPose, clonePose, skeleton, skeletonWorld, toWorld, toLocal, maxPelvisY,
     layout, realToBase, poseAt, actionAt, simulate, checkAction, segSeg, crossEnds, origins,
     vec: { add, sub, mul, dot, cross, len, norm, slerp, rotY } };

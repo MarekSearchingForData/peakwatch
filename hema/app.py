@@ -103,9 +103,11 @@ def page_studio():
    end of the cut on beat 1, and so on. Add in-between keys for curved paths.
 4. **Make an action**: click the key where a movement ends, then
    **Make action**. Name it, say whether it attacks and/or covers.
-5. **Modulate it on the bar**: drag the **end** of the bar to make it
-   faster or slower (everything after it moves with it), drag its **top**
-   up or down for strength. Short and tall = a fast, strong cut.
+5. **Modulate it on the bar**: the bar's **length** is its pace: drag the
+   end to make it faster or slower (everything after it moves with it). Its
+   **thickness** is its strength: make it
+   fatter or thinner (drag its top or bottom edge) for strength. Short and
+   fat = a fast, strong cut.
 6. **Fight**: switch to *Fight*. Blades that meet are judged by strength and
    leverage (closer to the hilt = stronger, crossguard strongest). The loser
    is knocked off line and can't score with that action. Hits paint the body
@@ -247,11 +249,11 @@ def page_timing():
 def page_about():
     st.title("How it works")
     st.markdown("""
-**Figures.** Both fencers are the free *RiggedFigure* mannequin from the
-Khronos glTF sample models (© 2017 Cesium, CC-BY 4.0), with its own
-19-bone skeleton. You pose a few handles; elbows and knees come from
-inverse kinematics using the mannequin's real bone lengths, and the bones
-are rotated to match. The mesh deforms with them.
+**Figures.** The fencers are Quaternius's *Universal Base Characters*
+(male and female, CC0 public domain) with their 65-bone humanoid skeleton.
+You pose a few handles; elbows and knees come from inverse kinematics using
+each character's real bone lengths, the bones are rotated to match and the
+fingers are closed around the hilt. Pick the body per fencer in the top bar.
 
 **Timeline.** Keys are recorded in beats. An action spans from one key to
 a later one. Its **pace** stretches or squeezes that span, and everything
@@ -306,6 +308,5 @@ with st.sidebar:
         n = add_missing_seeds(lib)
         replace_library(lib)
         st.toast(f"Added {n} example(s)." if n else "All examples are already there.")
-    st.caption("Mannequin: RiggedFigure © 2017 Cesium, CC-BY 4.0 "
-               "(Khronos glTF Sample Assets).")
+    st.caption("Fencers: Quaternius Universal Base Characters (CC0).")
 PAGES[page]()

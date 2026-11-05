@@ -210,11 +210,11 @@ M_ZORNHAU = Technique(
     tags=["oberhau", "one action", "longsword habits"],
 )
 
-_ZW_MID = P((0.18, 1.82, -0.02), 20, 95, hip=(0.20, 0.89, 0.09), yaw=-5,
+_ZW_MID = P((0.18, 1.82, -0.05), 20, 95, hip=(0.20, 0.89, 0.09), yaw=-5,
             lfoot=(0.30, -0.08), rfoot=(0.18, 0.25))
 # hilt high in front of the head (catch his blade on the cross), short edge
 # to his left ear, having sprung out to the right
-_ZW_HIT = P((0.87, 1.74, -0.12), -10, 3, hip=(0.45, 0.87, 0.15), yaw=15,
+_ZW_HIT = P((0.87, 1.74, -0.15), -10, 3, hip=(0.45, 0.87, 0.15), yaw=15,
             lean=10, **rf_fwd(0.45, 0.15))
 _ZW_FOLLOW = P((0.65, 1.45, -0.20), -15, -55, hip=(0.48, 0.87, 0.15), yaw=25,
                lean=10, **rf_fwd(0.45, 0.15))

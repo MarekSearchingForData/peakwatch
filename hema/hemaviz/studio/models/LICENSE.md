@@ -1,8 +1,12 @@
-# RiggedFigure.glb
+# Fencer models
 
-"RiggedFigure" © 2017, Cesium — from the Khronos glTF Sample Assets
-(https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/RiggedFigure).
+`quaternius-male.glb` and `quaternius-female.glb` are the "Superhero" male and
+female from **Quaternius — Universal Base Characters (Standard, free)**
+(https://quaternius.itch.io/universal-base-characters), dedicated to the public
+domain under **CC0 1.0 Universal**
+(https://creativecommons.org/publicdomain/zero/1.0/). Credit is not required
+but appreciated: thank you, Quaternius.
 
-Licensed under Creative Commons Attribution 4.0 International
-(https://creativecommons.org/licenses/by/4.0/legalcode). Used unmodified;
-the app scales it and poses its bones at runtime.
+These copies are the glTF conversions published with the BeefTV project
+(mesh, skin and 65-joint skeleton kept; source materials dropped). The Studio
+colours, scales and poses them at runtime.

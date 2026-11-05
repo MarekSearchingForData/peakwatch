@@ -1,10 +1,10 @@
 # HEMA Studio
 
 Choreograph and test **Kriegsmesser vs longsword** exchanges without
-writing code. Pose two rigged mannequins by dragging their hands, sword
+writing code. Pose two rigged human figures by dragging their hands, sword
 tips and feet, record a pose per beat, layer the opponent's action on a
-second track, then **modulate each action by dragging its bar**: the end
-for pace, the top for strength. Fight mode works out who gets displaced
+second track, then **modulate each action by dragging its bar**: its length is
+the pace, its thickness is the strength. Fight mode works out who gets displaced
 in the bind and who gets hit, and paints the hit body part red.
 
 ```
@@ -20,15 +20,17 @@ pytest hema/tests                  # engine tests need Node.js
 2. **Pose**: choose A or B, start from a guard (Vom Tag, Ochs, Pflug,
    Alber, Langort / Zornhut, Stier, Eber, Luginsland, Wechsel), then drag:
    yellow = sword hand, orange = sword tip, cyan = pelvis, green = feet,
-   ring = whole fencer. Arms and legs are IK on the mannequin's own bones,
+   ring = whole fencer. Choose a male or female body per fencer. Arms and
+   legs are IK on the character's own bones,
    so they can't stretch, and the pelvis drops to keep the feet on the floor.
 3. **Record** (`R`) at the playhead: e.g. guard on beat 0, end of the cut
    on beat 1. Add in-between keys for curved paths.
 4. **Make action** from the key where a movement ends; name it and tick
    *attacks* / *covers* / *continuation* (follow-through).
-5. **Modulate on the bar**: drag the bar's end to change pace (slow /
-   medium / fast; everything after it moves with it). Drag its top to
-   change strength (weak / medium / strong).
+5. **Modulate on the bar**: **length = pace**: drag the bar's end (slow /
+   medium / fast; everything after it moves with it). **Thickness =
+   strength**: drag its top or bottom edge to make it fatter (strong) or
+   thinner (weak).
 6. **Fight**: blade contact is judged by strength × leverage (nearer the
    hilt is stronger, crossguard strongest, covers get a bonus). Clearly
    stronger → the other blade is knocked off line and that action can't
@@ -59,7 +61,7 @@ also gets automatic tip/hand-speed sanity checks.
 
 * `hema/hemaviz/studio/`: the in-browser Studio: `engine.js` (IK,
   timeline, fight rules; also runs in Node for tests), `studio.js` (three.js
-  UI), `index.html`, and the mannequin in `models/`.
+  UI), `index.html`, and the two characters in `models/`.
 * `hema/hemaviz/techniques.py` + `seeds.py`: the example techniques
   (Lichtenauer, Lecküchner, Meyer), written as poses and turned into
   Studio data.
@@ -70,9 +72,11 @@ also gets automatic tip/hand-speed sanity checks.
 
 ## Credits and limits
 
-Mannequin: **RiggedFigure** © 2017 Cesium, CC-BY 4.0, from the
-[Khronos glTF Sample Assets](https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/RiggedFigure)
-(unmodified; scaled and posed at runtime). three.js r128 is loaded from a CDN.
+Fencers: **Quaternius, Universal Base Characters** (Superhero male and
+female), [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/),
+from https://quaternius.itch.io/universal-base-characters, via the glTF
+conversions published with the BeefTV project. See
+`hema/hemaviz/studio/models/LICENSE.md`. three.js r128 is loaded from a CDN.
 
 No mass, momentum, edge alignment or reaction to being hit. The examples
 are simplified study models of the sources, not reconstructions.
