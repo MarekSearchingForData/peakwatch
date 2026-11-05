@@ -1,0 +1,83 @@
+{
+  "beat_reference": "ls.oberhau",
+  "actions": {
+    "ls.approach": {
+      "label": "Longsword: step into distance (gathering step)",
+      "weapon": "longsword",
+      "default_ms": 380,
+      "trials_ms": []
+    },
+    "ls.oberhau": {
+      "label": "Longsword: Oberhau/Zornhau from Vom Tag, passing step",
+      "weapon": "longsword",
+      "default_ms": 360,
+      "trials_ms": []
+    },
+    "ls.zwerch": {
+      "label": "Longsword: Zwerchhau from Vom Tag",
+      "weapon": "longsword",
+      "default_ms": 390,
+      "trials_ms": []
+    },
+    "ls.windup": {
+      "label": "Longsword: lift from Pflug to Vom Tag (wind-up)",
+      "weapon": "longsword",
+      "default_ms": 260,
+      "trials_ms": []
+    },
+    "ls.thrust": {
+      "label": "Longsword: thrust from Pflug, passing step",
+      "weapon": "longsword",
+      "default_ms": 300,
+      "trials_ms": []
+    },
+    "ls.follow": {
+      "label": "Longsword: follow-through after the cut",
+      "weapon": "longsword",
+      "default_ms": 220,
+      "trials_ms": []
+    },
+    "messer.approach": {
+      "label": "Messer: step into distance",
+      "weapon": "messer",
+      "default_ms": 380,
+      "trials_ms": []
+    },
+    "messer.zornhau": {
+      "label": "Messer: Zornhau from Zornhut, passing step",
+      "weapon": "messer",
+      "default_ms": 360,
+      "trials_ms": []
+    },
+    "messer.zwerch": {
+      "label": "Messer: Zwerch with step out to the right",
+      "weapon": "messer",
+      "default_ms": 340,
+      "trials_ms": []
+    },
+    "messer.cover": {
+      "label": "Messer: hanging cover (Versetzen) from Stier",
+      "weapon": "messer",
+      "default_ms": 240,
+      "trials_ms": []
+    },
+    "messer.einlauf": {
+      "label": "Messer: run in (Einlaufen) + short cut to head",
+      "weapon": "messer",
+      "default_ms": 320,
+      "trials_ms": []
+    },
+    "messer.nachreisen": {
+      "label": "Messer: Nachreisen - cut to rising forearms",
+      "weapon": "messer",
+      "default_ms": 300,
+      "trials_ms": []
+    },
+    "messer.follow": {
+      "label": "Messer: follow-through / recover",
+      "weapon": "messer",
+      "default_ms": 200,
+      "trials_ms": []
+    }
+  }
+}
