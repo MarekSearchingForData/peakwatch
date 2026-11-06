@@ -592,11 +592,19 @@ function orientHand(b, F, K) {   // knuckles along the hilt, palm on the grip
 // ---- handles
 const HANDLE_DEF = { grip: 0xf5c542, tip: 0xf08a3c, pelvis: 0x5cc8d6, lfoot: 0x58c47c, rfoot: 0x58c47c };
 function makeHandles(fig) {
+  // Each handle is an invisible grab sphere with a hollow ring and a small
+  // dot drawn on top, turned toward the camera, so the hand or foot it
+  // controls stays visible inside the ring.
   fig.handles = {};
   for (const [k, c] of Object.entries(HANDLE_DEF)) {
-    const m = new THREE.Mesh(new THREE.SphereGeometry(k === 'tip' ? 0.04 : 0.05, 16, 12),
-      new THREE.MeshBasicMaterial({ color: c, depthTest: false, transparent: true, opacity: 0.9 }));
-    m.renderOrder = 10; m.userData = { handle: k, f: fig.f }; scene.add(m); fig.handles[k] = m;
+    const r = k === 'tip' ? 0.035 : 0.055;
+    const pick = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+    const vis = new THREE.MeshBasicMaterial({ color: c, depthTest: false, transparent: true, opacity: 0.95 });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.005, 8, 40), vis);
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.008, 10, 8), vis);
+    ring.renderOrder = dot.renderOrder = 10; ring.userData.faceCam = true;
+    pick.add(ring, dot);
+    pick.userData = { handle: k, f: fig.f }; scene.add(pick); fig.handles[k] = pick;
   }
   const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.018, 8, 48), new THREE.MeshBasicMaterial({ color: fig.f ? 0xe4b07f : 0x7fb0e6, depthTest: false, transparent: true, opacity: 0.85 }));
   ring.rotation.x = Math.PI / 2; ring.renderOrder = 9; ring.userData = { handle: 'ring', f: fig.f }; scene.add(ring); fig.handles.ring = ring;
@@ -634,7 +642,7 @@ function updateScene() {
     for (const [k, m] of Object.entries(fig.handles)) {
       m.visible = show;
       if (k === 'ring') m.position.set(sk.pelvis[0], 0.012, sk.pelvis[2]);
-      else m.position.set(...hp[k]);
+      else { m.position.set(...hp[k]); m.children.forEach(ch => { if (ch.userData.faceCam) ch.quaternion.copy(cam.quaternion); }); }
     }
   }
   spark.visible = false;
