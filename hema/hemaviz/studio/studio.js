@@ -265,8 +265,10 @@ function setupModel(fig, gltf) {
   }
   fig.bones = bones;
 }
-// Close the open T-pose hands around the hilt with the per-body solved grip
-// (fingers wrap a 3.2 cm handle; thumb swings over and rests on the index).
+// Close the open T-pose hands around the hilt: fingers use the per-body
+// flexion solved for a 3.2 cm handle; the thumb is placed by a small IK solve
+// (see placeThumb) so it wraps the back of the handle and lies across the
+// curled index finger, like a hammer grip.
 // Angles are for the left hand in the model's T-pose frame; the right hand is
 // its mirror image (rotation about the mirrored axis, opposite angle).
 function curlFingers(sceneRoot, bones, body) {
@@ -283,16 +285,45 @@ function curlFingers(sceneRoot, bones, body) {
     for (const f of ['index', 'middle', 'ring', 'pinky']) {
       G[f].forEach((deg, i) => rotWorld(bones[`${f}_0${i + 1}_${sd}`], axisQ(0, 0, 1, -m * deg)));
     }
-    const [a, b, c, f2, f3] = G.thumb;
-    const t1 = bones['thumb_01_' + sd], t2 = bones['thumb_02_' + sd], t3 = bones['thumb_03_' + sd];
-    rotWorld(t1, axisQ(0, 0, 1, m * a).multiply(axisQ(0, 1, 0, m * b)).multiply(axisQ(1, 0, 0, c)));
-    const p2 = new THREE.Vector3(), p3 = new THREE.Vector3();
-    t2.getWorldPosition(p2); t3.getWorldPosition(p3);
-    const n2 = new THREE.Vector3().subVectors(p3, p2).normalize().cross(new THREE.Vector3(0, -1, 0)).normalize();
-    // n2 lives in world space here; the scene root is unrotated, so world == model space
-    if (f2) rotWorld(t2, new THREE.Quaternion().setFromAxisAngle(n2, f2 * Math.PI / 180));
-    if (f3) rotWorld(t3, new THREE.Quaternion().setFromAxisAngle(n2, f3 * Math.PI / 180));
+    placeThumb(bones, sd, body);
   }
+}
+
+// Thumb IK in the model's T-pose frame. The handle axis follows from the
+// hand: it runs index -> pinky, D.hand along the fingers and D.palm toward
+// the palm (palms face down in the T-pose). Targets: the thumb's middle joint
+// against the back of the handle, its tip on the outside of the index
+// finger's middle segment. Two CCD passes reach them without stretching.
+function placeThumb(bones, sd, body) {
+  const W = n => { const v = new THREE.Vector3(); bones[`${n}_${sd}`].getWorldPosition(v); return v; };
+  const hand = W('hand'), F = W('middle_01').sub(hand); F.y = 0; F.normalize();
+  const palm = new THREE.Vector3(0, -1, 0);
+  const K = W('pinky_01').sub(W('index_01')); K.addScaledVector(F, -K.dot(F)).addScaledVector(palm, -K.dot(palm)).normalize();
+  const C = hand.clone().addScaledVector(F, body.hand).addScaledVector(palm, body.palm);   // a point on the axis
+  const onAxis = p => C.clone().addScaledVector(K, p.clone().sub(C).dot(K));
+  const outward = p => p.clone().sub(onAxis(p)).normalize();
+  const i2 = W('index_02'), i3 = W('index_03');
+  const seg = i2.clone().add(i3).multiplyScalar(0.5);
+  const tipT = seg.clone().addScaledVector(outward(seg), 0.016);
+  // middle joint: on the handle surface at the back (toward the wrist, -F),
+  // swung toward the palm side, halfway along the handle from base to tip
+  const base = W('thumb_01');
+  const mid = onAxis(base.clone().lerp(tipT, 0.55)).addScaledVector(F.clone().multiplyScalar(-1).add(palm.clone().multiplyScalar(0.9)).normalize(), 0.03);
+  const bonesT = [1, 2, 3].map(i => bones[`thumb_0${i}_${sd}`]);
+  const tipBone = bones[`thumb_04_leaf_${sd}`];
+  const wp = new THREE.Vector3(), we = new THREE.Vector3(), pq = new THREE.Quaternion(), q = new THREE.Quaternion();
+  const ccd = (chain, effector, target, iters) => {
+    for (let it = 0; it < iters; it++) for (const b of chain) {
+      b.getWorldPosition(wp); effector.getWorldPosition(we);
+      const from = we.sub(wp).normalize(), to = target.clone().sub(wp).normalize();
+      if (from.lengthSq() < 1e-9 || to.lengthSq() < 1e-9) continue;
+      q.setFromUnitVectors(from, to);
+      b.parent.getWorldQuaternion(pq);
+      b.quaternion.premultiply(pq.clone().invert().multiply(q).multiply(pq)); b.updateMatrixWorld(true);
+    }
+  };
+  ccd([bonesT[1], bonesT[0]], bonesT[2], mid, 12);        // middle joint to the back of the handle
+  ccd([bonesT[2], bonesT[1]], tipBone, tipT, 12);         // tip onto the index finger
 }
 
 // Each vertex belongs to the body part of the bone that moves it most, so a

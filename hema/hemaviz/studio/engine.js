@@ -25,9 +25,9 @@
       sp1: 0.128, sp2: 0.107, sp3: 0.133, neck: 0.213, headJ: 0.084, headUp: 0.10,
       shUp: 0.144, shHalf: 0.212, shFwd: -0.07, clUp: 0.184, clHalf: 0.031,
       upper: 0.251, fore: 0.243, hand: 0.105, palm: 0.033, hb: 1.0,
-      // Grip solved against a 3.2 cm handle: per-finger joint flexion (deg) and
-      // the thumb's swing (z, y, x deg in the T-pose frame) and flexion.
-      grip: { index: [65, 65, 65], middle: [65, 75, 75], ring: [55, 70, 75], pinky: [25, 65, 60], thumb: [-15, 15, -105, 0, 45] },
+      // Finger flexion (deg per joint) solved to wrap a 3.2 cm handle; the
+      // thumb is placed by IK in the Studio (placeThumb).
+      grip: { index: [65, 65, 65], middle: [65, 75, 75], ring: [55, 70, 75], pinky: [25, 65, 60] },
     },
     female: {
       key: 'female', name: 'Female (1.77 m)', model: 'models/quaternius-female.glb',
@@ -35,7 +35,7 @@
       sp1: 0.127, sp2: 0.109, sp3: 0.127, neck: 0.194, headJ: 0.065, headUp: 0.10,
       shUp: 0.127, shHalf: 0.152, shFwd: -0.052, clUp: 0.139, clHalf: 0.029,
       upper: 0.240, fore: 0.249, hand: 0.080, palm: 0.033, hb: 0.88,
-      grip: { index: [55, 60, 65], middle: [60, 65, 75], ring: [45, 65, 70], pinky: [20, 55, 60], thumb: [15, 0, 45, 15, 0] },
+      grip: { index: [55, 60, 65], middle: [60, 65, 75], ring: [45, 65, 70], pinky: [20, 55, 60] },
     },
   };
   const DIMS = BODIES.male;
