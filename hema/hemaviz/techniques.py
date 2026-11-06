@@ -71,11 +71,11 @@ def rf_fwd(hx, hz=0.0):
 # ------------------------------------------------------------------ guards
 # Longsword (Lichtenauer / Meyer names)
 VOM_TAG = P((0.05, 1.30, 0.24), 57, 165, yaw=-30, **lf_fwd(0.0))
-PFLUG = P((0.45, 1.00, 0.00), 28, -6, yaw=-20, **lf_fwd(0.0))
+PFLUG = P((0.36, 1.14, 0.11), 28, -6, yaw=-20, **lf_fwd(0.0))
 
 # Messer (Lecküchner / Meyer dussack names)
 ZORNHUT = P((-0.08, 1.32, 0.30), 30, 170, yaw=-35, **lf_fwd(0.0))
-STIER = P((0.15, 1.55, 0.22), 10, -12, yaw=-25, **lf_fwd(0.0))
+STIER = P((0.35, 1.50, 0.22), 10, -12, yaw=-25, **lf_fwd(0.0))
 EBER = P((0.40, 1.10, 0.14), 25, -6, yaw=-20, **lf_fwd(0.0))
 
 
@@ -326,7 +326,7 @@ SCENARIOS = [
              "lands on your cross while your short edge takes his head. One "
              "action that covers and hits. Add even 50 ms of reaction and it "
              "fails -- you have to read the cut, not answer it.",
-             distance=2.6),
+             distance=2.8),
     Scenario("nachreisen", "Nachreisen on a wind-up", "ls_windup",
              "m_nachreisen", 1, 120,
              "He winds up from Pflug (two actions). You go on his wind-up "
@@ -348,7 +348,7 @@ SCENARIO_BY_KEY = {s.key: s for s in SCENARIOS}
 
 
 # ---------------------------------------------------------- guard presets
-OCHS = P((0.17, 1.58, 0.22), 12, -14, roll=-30, yaw=-25, **lf_fwd(0.0))
+OCHS = P((0.35, 1.50, 0.22), 12, -14, yaw=-25, **lf_fwd(0.0))
 ALBER = P((0.35, 0.85, 0.07), -20, 28, yaw=-15, **lf_fwd(0.0))
 LANGORT = P((0.52, 1.25, 0.02), 4, -2, yaw=10, lean=6, **lf_fwd(0.0))
 LUGINSLAND = P((0.10, 1.73, 0.18), 78, 170, yaw=-25, **lf_fwd(0.0))

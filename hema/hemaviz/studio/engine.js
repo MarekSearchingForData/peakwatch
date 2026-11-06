@@ -347,8 +347,18 @@
       return best;
     };
     if (hint) hint.n = (hint.n || 0) + 1;
-    const R_ = solveHand(sh_r, hand_r, 1, edge, 35, 'r');
-    const L_ = solveHand(sh_l, hand_l, -1, pose.left_on ? edge : null, 55, 'l', [[R_.el, R_.wr], [sh_r, R_.el]]);   // left arm avoids the right
+    let R_ = solveHand(sh_r, hand_r, 1, edge, 35, 'r');
+    let L_ = solveHand(sh_l, hand_l, -1, pose.left_on ? edge : null, 55, 'l', [[R_.el, R_.wr], [sh_r, R_.el]]);   // left arm avoids the right
+    // The hands never let go: if a wrist could not reach where the grip needs
+    // it (hilt posed beyond arm's length), bring the whole sword back to it.
+    for (let it = 0; it < 3; it++) {
+      const shortR = sub(R_.wr, R_.gf.wrist), shortL = pose.left_on ? sub(L_.wr, L_.gf.wrist) : [0, 0, 0];
+      const pull = len(shortR) >= len(shortL) ? shortR : shortL;
+      if (len(pull) < 0.002) break;
+      hand_r = add(hand_r, pull); hand_l = add(hand_l, pose.left_on ? pull : [0, 0, 0]);
+      R_ = solveHand(sh_r, hand_r, 1, edge, 35, 'r');
+      L_ = solveHand(sh_l, hand_l, -1, pose.left_on ? edge : null, 55, 'l', [[R_.el, R_.wr], [sh_r, R_.el]]);
+    }
     const gr = R_.gf, gl = L_.gf, wr_r = R_.wr, wr_l = L_.wr, el_r = R_.el, el_l = L_.el;
 
     const an_l = [pose.lfoot[0], D.ankleY + lift[0], pose.lfoot[1]];

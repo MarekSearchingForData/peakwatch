@@ -24,7 +24,7 @@ DEFAULT_ACTIONS = {
     "ls.follow":     ("Longsword: follow-through after the cut", "longsword", 220),
     "messer.approach": ("Messer: step into distance", "messer", 380),
     "messer.zornhau":  ("Messer: Zornhau from Zornhut, passing step", "messer", 360),
-    "messer.zwerch":   ("Messer: Zwerch with step out to the right", "messer", 340),
+    "messer.zwerch":   ("Messer: Zwerch with step out to the right", "messer", 325),
     "messer.cover":    ("Messer: hanging cover (Versetzen) from Stier", "messer", 240),
     "messer.einlauf":  ("Messer: run in (Einlaufen) + short cut to head", "messer", 320),
     "messer.nachreisen": ("Messer: Nachreisen - cut to rising forearms", "messer", 300),
