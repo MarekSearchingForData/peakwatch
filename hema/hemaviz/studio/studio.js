@@ -357,6 +357,11 @@ function setupModel(fig, gltf) {
     const b = bones[name];
     b.userData.aim = bones[child].position.clone().normalize();
   }
+  for (const sd of ['l', 'r']) {   // elbow hinge: in the T-pose the forearm folds forward (+z)
+    const ua = bones['upperarm_' + sd], q0 = new THREE.Quaternion();
+    ua.getWorldQuaternion(q0);
+    ua.userData.flexLocal = new THREE.Vector3(0, 0, 1).applyQuaternion(q0.invert());
+  }
   for (const sd of ['l', 'r']) {   // hand frame in the hand bone's own space
     const h = bones['hand_' + sd];
     const F = bones['middle_01_' + sd].position.clone().normalize();
@@ -524,12 +529,54 @@ function poseFigure(fig, pose, sk) {
       const b = B[name];
       if (rootJoint) setBoneWorldPos(b, sk[rootJoint]);
       aimBone(b, sk[joint], name === 'spine_01' ? pose.yaw * 0.5 * Math.PI / 180 : 0);
+      if (name.startsWith('upperarm_')) hingeRoll(b, sk['sh_' + name.slice(-1)], sk['el_' + name.slice(-1)], sk['wr_' + name.slice(-1)]);
+      if (name.startsWith('lowerarm_')) { const sd = name.slice(-1); forearmTwist(b, B['hand_' + sd], sk['hF_' + sd], sk['hK_' + sd]); }
     }
     for (const sd of ['l', 'r']) orientHand(B['hand_' + sd], sk['hF_' + sd], sk['hK_' + sd]);
   }
   placeSword(fig.sword, sk);
 }
+// Rotate a bone about a world-space axis through itself.
+function rollWorld(b, axis, angle) {
+  if (!angle) return;
+  const pq = new THREE.Quaternion(); b.parent.getWorldQuaternion(pq);
+  const qw = new THREE.Quaternion().setFromAxisAngle(axis, angle);
+  b.quaternion.premultiply(pq.clone().invert().multiply(qw).multiply(pq)); b.updateMatrixWorld(true);
+}
+const signedAngle = (a, b, axis) => Math.atan2(new THREE.Vector3().crossVectors(a, b).dot(axis), a.dot(b));
+// Upper arm: turn it about its own length so the elbow folds in its hinge
+// plane (the shoulder takes the rotation instead of the elbow skin).
+function hingeRoll(ua, sh, el, wr) {
+  const axis = v3(el).sub(v3(sh)).normalize();
+  const want = v3(wr).sub(v3(el)); want.addScaledVector(axis, -want.dot(axis));
+  if (want.length() < 0.03) return;                               // arm nearly straight: hinge undefined
+  const q = new THREE.Quaternion(); ua.getWorldQuaternion(q);
+  const have = ua.userData.flexLocal.clone().applyQuaternion(q); have.addScaledVector(axis, -have.dot(axis));
+  if (have.length() < 1e-3) return;
+  rollWorld(ua, axis, signedAngle(have.normalize(), want.normalize(), axis));
+}
+// Forearm: take most of the hand's turn (pronation / supination happens along
+// the forearm), so the wrist isn't wrung like a towel.
+function forearmTwist(fa, hand, F, K) {
+  const target = handTargetQ(hand, F, K);
+  const pq = new THREE.Quaternion(); fa.getWorldQuaternion(pq);
+  const local = pq.clone().invert().multiply(target);               // hand in the forearm's frame
+  const qd = local.multiply(hand.userData.restQ.clone().invert());  // vs its rest pose
+  const a = hand.position.clone().normalize();                      // forearm axis, forearm frame
+  let tw = 2 * Math.atan2(qd.x * a.x + qd.y * a.y + qd.z * a.z, qd.w);
+  tw = Math.atan2(Math.sin(tw), Math.cos(tw));
+  const axisW = a.clone().applyQuaternion(pq).normalize();
+  rollWorld(fa, axisW, 0.6 * tw);
+}
 const mT = new THREE.Matrix4(), mR = new THREE.Matrix4(), qH = new THREE.Quaternion();
+function handTargetQ(b, F, K) {
+  const f = v3(F).normalize(), k = v3(K);
+  k.addScaledVector(f, -k.dot(f)).normalize();
+  const n = new THREE.Vector3().crossVectors(f, k);
+  mT.makeBasis(f, k, n);
+  mR.copy(b.userData.restFrame).transpose();
+  return new THREE.Quaternion().setFromRotationMatrix(mT.clone().multiply(mR));
+}
 function orientHand(b, F, K) {   // knuckles along the hilt, palm on the grip
   const f = v3(F).normalize(), k = v3(K);
   k.addScaledVector(f, -k.dot(f)).normalize();
@@ -566,7 +613,8 @@ function updateScene() {
     if (fig.weaponKey !== weaponOf(fig.f).key) { scene.remove(fig.sword); fig.sword = makeSword(weaponOf(fig.f)); fig.weaponKey = weaponOf(fig.f).key; }
     const { pose, lift } = displayPose(fig.f, t);
     const [o, facing] = origin(fig.f);
-    const sk = H.skeletonWorld(H.skeleton(pose, weaponOf(fig.f), lift, bodyOf(fig.f)), o, facing);
+    fig.armHint = fig.armHint || {};
+    const sk = H.skeletonWorld(H.skeleton(pose, weaponOf(fig.f), lift, bodyOf(fig.f), fig.armHint), o, facing);
     fig.sk = sk;
     poseFigure(fig, pose, sk);
     fig.root.visible = !S.noModel;

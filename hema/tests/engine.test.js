@@ -77,3 +77,24 @@ test('measured times flag actions faster than you have done them', () => {
   const flags = H.checkAction(ex, 0, a.id, { [a.measure]: { median: 500, label: 'Oberhau' } });
   assert.ok(flags.some(f => f.level === 'bad'));
 });
+
+test('arms stay anatomical: wrists in range, elbows outside the body', () => {
+  const V = H.vec, deg = x => x * 180 / Math.PI;
+  let frames = 0, wristOk = 0;
+  for (const ex of lib.exchanges) for (const f of [0, 1]) {
+    const L = H.layout(ex, f), W = H.WEAPONS[ex.fencers[f].weapon], B = H.bodyOf(ex.fencers[f].body), hint = {};
+    for (let t = 0; t <= L.real[L.real.length - 1]; t += 10) {
+      const p = H.poseAt(ex, L, t, null), sk = H.skeleton(p.pose, W, p.lift, B, hint);
+      for (const [sd, side] of [['r', 1], ['l', -1]]) {
+        const v = V.norm(V.sub(sk['wr_' + sd], sk['el_' + sd])), F = sk['hF_' + sd], K = sk['hK_' + sd], P = V.mul(V.cross(F, K), side);
+        const flex = deg(Math.atan2(V.dot(v, P), V.dot(v, F))), dev = deg(Math.atan2(V.dot(v, K), V.dot(v, F)));
+        frames++; if (Math.abs(flex) <= 75 && Math.abs(dev) <= 45) wristOk++;
+        const a = sk.pelvis, ab = V.sub(sk.chest, a);
+        let u = V.dot(V.sub(sk['el_' + sd], a), ab) / V.dot(ab, ab); u = Math.max(0, Math.min(1, u));
+        const dist = V.len(V.sub(sk['el_' + sd], V.add(a, V.mul(ab, u))));
+        assert.ok(dist > 0.13, `${ex.id} ${'AB'[f]} ${sd} elbow inside the torso at ${t} ms (${dist.toFixed(2)} m from its axis)`);
+      }
+    }
+  }
+  assert.ok(wristOk / frames > 0.9, `only ${(100 * wristOk / frames).toFixed(0)}% of frames have the wrists in range`);
+});

@@ -132,7 +132,7 @@
   }
 
   /** Joint positions in the fencer's local frame. */
-  function skeleton(pose, weapon, lift, body) {
+  function skeleton(pose, weapon, lift, body, hint) {
     const D = body || DIMS; lift = lift || [0, 0];
     const hip = [pose.hip[0], Math.min(pose.hip[1], maxPelvisY(pose, D)), pose.hip[2]];
     const fwd = rotY([1, 0, 0], pose.yaw), right = rotY([0, 0, 1], pose.yaw);
@@ -176,9 +176,14 @@
       const c = Math.cos(rad(deg)), s2 = Math.sin(rad(deg));
       return add(add(mul(v, c), mul(cross(axis, v), s2)), mul(axis, dot(axis, v) * (1 - c)));
     };
-    let edge = sub(hand_r, sh_r); edge = sub(edge, mul(d, dot(edge, d)));
+    let edge;
+    const pe = pose.edge ? sub(pose.edge, mul(d, dot(pose.edge, d))) : null;
+    if (pe && len(pe) > 0.15) edge = norm(pe);           // stored / interpolated edge
+    else {
+    edge = sub(hand_r, sh_r); edge = sub(edge, mul(d, dot(edge, d)));
     if (len(edge) < 1e-4) edge = sub(fwd, mul(d, dot(fwd, d)));
     edge = norm(rotAbout(norm(edge), d, pose.roll || 0));
+    }
     const gripFrame = (sh, hand, side, Fin) => {
       const K = mul(d, -1);
       let F = Fin;
@@ -187,13 +192,99 @@
       const wrist = sub(sub(hand, mul(F, D.hand)), mul(palm, D.palm));
       return { F, K, palm, wrist };
     };
-    const arm = (sh, wrist, side) => {
-      const pole = add(add(mul(up, -0.7), mul(right, 0.6 * side)), mul(fwd, -0.2));
-      return twoBone(sh, clampReach(sh, wrist, D.upper + D.fore - 0.002), D.upper, D.fore, pole);
+    // Elbow swivel: the elbow can sit anywhere on a circle around the
+    // shoulder-wrist line. Pick the spot that lets the forearm line up with
+    // the hand (wrist flexion within ~70 deg, sideways deviation within ~35)
+    // and keeps the elbow anatomically sensible (own side of the chest, not
+    // behind the back, not hiked above the shoulder).
+    const arm = (sh, wrist, side, gf, thHint, exact) => {
+      const L1 = D.upper, L2 = D.fore;
+      const w = clampReach(sh, wrist, L1 + L2 - 0.002), ax = norm(sub(w, sh));
+      let dd = len(sub(w, sh)); dd = Math.min(Math.max(dd, Math.abs(L1 - L2) + 1e-4), L1 + L2 - 1e-4);
+      const a = (L1 * L1 - L2 * L2 + dd * dd) / (2 * dd), h = Math.sqrt(Math.max(L1 * L1 - a * a, 0));
+      const c0 = add(sh, mul(ax, a));
+      let u = cross(ax, up); if (len(u) < 1e-3) u = cross(ax, fwd); u = norm(u); const v2 = cross(ax, u);
+      const heur = add(add(mul(up, -0.7), mul(right, 0.6 * side)), mul(fwd, -0.2));
+      const hp = norm(sub(heur, mul(ax, dot(heur, ax))));
+      // allocation-free inner loop (this runs ~50x per pose on the 1 ms clock)
+      const [c0x, c0y, c0z] = c0, [ux, uy, uz] = u, [vx, vy, vz] = v2, [wx, wy, wz] = w;
+      const [Fx, Fy, Fz] = gf.F, [Kx, Ky, Kz] = gf.K, [Px, Py, Pz] = gf.palm;
+      const [chx, chy, chz] = chest, rsx = right[0] * side, rsy = right[1] * side, rsz = right[2] * side;
+      const [fx_, fy_, fz_] = fwd, shy = sh[1], [hx, hy, hz] = hp;
+      const [tax, tay, taz] = hip, tbx = chest[0] - tax, tby = chest[1] - tay, tbz = chest[2] - taz;   // trunk: pelvis -> chest
+      const tll = tbx * tbx + tby * tby + tbz * tbz;
+      const TORSO_CLEAR = 0.17;                                         // elbow resting against the side
+      const cost = th => {
+        const ct = Math.cos(th), st = Math.sin(th);
+        const ox = ux * ct + vx * st, oy = uy * ct + vy * st, oz = uz * ct + vz * st;   // unit offset
+        const ex = c0x + ox * h, ey = c0y + oy * h, ez = c0z + oz * h;
+        let qx = wx - ex, qy = wy - ey, qz = wz - ez; const ql = Math.hypot(qx, qy, qz) || 1; qx /= ql; qy /= ql; qz /= ql;
+        const qF = qx * Fx + qy * Fy + qz * Fz;
+        const fx = Math.atan2(qx * Px + qy * Py + qz * Pz, qF) * 57.3, dv = Math.atan2(qx * Kx + qy * Ky + qz * Kz, qF) * 57.3;
+        let c = (fx / 70) ** 2 + (dv / 35) ** 2;
+        if (Math.abs(fx) > 70) c += ((Math.abs(fx) - 70) / 20) ** 2 * 4;
+        if (Math.abs(dv) > 35) c += ((Math.abs(dv) - 35) / 15) ** 2 * 4;
+        const rx = ex - chx, ry = ey - chy, rz = ez - chz;
+        const out = rx * rsx + ry * rsy + rz * rsz;
+        if (out < 0.0) c += (-out / 0.06) ** 2;                          // mild: elbows prefer their own side
+        let tu = ((ex - tax) * tbx + (ey - tay) * tby + (ez - taz) * tbz) / tll; tu = tu < 0 ? 0 : tu > 1 ? 1 : tu;
+        const td = Math.hypot(ex - tax - tbx * tu, ey - tay - tby * tu, ez - taz - tbz * tu);
+        if (td < TORSO_CLEAR) c += ((TORSO_CLEAR - td) / 0.03) ** 2 * 10; // elbow inside the body
+        const back = rx * fx_ + ry * fy_ + rz * fz_;
+        if (back < -0.12) c += ((-0.12 - back) / 0.08) ** 2 * 2;          // elbow behind the back
+        const hike = ey - shy;
+        if (hike > 0.12) c += ((hike - 0.12) / 0.1) ** 2;                 // elbow above the shoulder
+        c += 0.25 * (1 - (ox * hx + oy * hy + oz * hz));                  // tie-break: elbows down/out
+        return c;
+      };
+      let best = 0, bc = Infinity;
+      if (exact) { bc = cost(thHint); best = thHint; return { el: add(c0, add(mul(u, h * Math.cos(best)), mul(v2, h * Math.sin(best)))), cost: bc, wrist: w, th: best }; }
+      if (thHint == null) for (let i = 0; i < 24; i++) { const th = i * Math.PI / 12, c = cost(th); if (c < bc) { bc = c; best = th; } }
+      else best = thHint;
+      for (let i = -3; i <= 3; i++) { const th = best + i * Math.PI / 48, c = cost(th); if (c < bc) { bc = c; best = th; } }
+      return { el: add(c0, add(mul(u, h * Math.cos(best)), mul(v2, h * Math.sin(best)))), cost: bc, wrist: w, th: best };
     };
-    const gr = gripFrame(sh_r, hand_r, 1, edge), gl = gripFrame(sh_l, hand_l, -1, pose.left_on ? edge : null);
-    const wr_r = clampReach(sh_r, gr.wrist, D.upper + D.fore - 0.002), wr_l = clampReach(sh_l, gl.wrist, D.upper + D.fore - 0.002);
-    const el_r = arm(sh_r, wr_r, 1), el_l = arm(sh_l, wr_l, -1);
+    // Each hand may also roll around the handle (the edge stays put): the
+    // front hand prefers its knuckles on the edge, the rear hand is freer.
+    // hint (optional, per call site) carries the last solution so a run of
+    // nearby poses -- the simulation clock, the playhead -- searches locally:
+    // faster, and elbows don't flip between frames.
+    const solveHand = (sh, hand, side, Fedge, rollCost, slot) => {
+      const prev = hint && hint[slot] && hint.n % 25 !== 0 ? hint[slot] : null;
+      const tryPsi = (psi, th, exact) => {
+        const gf = gripFrame(sh, hand, side, Fedge ? norm(rotAbout(Fedge, d, psi)) : null);
+        const r = arm(sh, gf.wrist, side, gf, th, exact);
+        // keep the wrist out of the trunk too (rear hand against the hip in Pflug)
+        const tb = sub(chest, hip), tu = Math.max(0, Math.min(1, dot(sub(r.wrist, hip), tb) / dot(tb, tb)));
+        const wd = len(sub(r.wrist, add(hip, mul(tb, tu))));
+        const wPen = wd < 0.16 ? ((0.16 - wd) / 0.03) ** 2 * 10 : 0;
+        return { gf, el: r.el, wr: r.wrist, th: r.th, psi, cost: r.cost + wPen + (psi / rollCost) ** 2 };
+      };
+      let best;
+      if (prev && hint.reuse && hint.n % 4 !== 0) best = tryPsi(prev.psi, prev.th, true);   // between solves on the sim clock
+      else if (!Fedge) best = tryPsi(0, prev ? prev.th : null);
+      else if (prev) {
+        best = tryPsi(prev.psi, prev.th);
+        for (const dp of [-5, 5]) { const r = tryPsi(prev.psi + dp, prev.th); if (Math.abs(r.psi) <= 70 && r.cost < best.cost) best = r; }
+      } else {
+        for (let psi = -60; psi <= 60; psi += 15) { const r = tryPsi(psi, null); if (!best || r.cost < best.cost) best = r; }
+        for (const dp of [-7, -4, 4, 7]) { const r = tryPsi(best.psi + dp, null); if (Math.abs(r.psi) <= 70 && r.cost < best.cost) best = r; }
+      }
+      if (prev && best.cost > 1.0 && !(hint.reuse && hint.n % 4 !== 0)) {   // stuck? try the full search too
+        let g = null;
+        if (!Fedge) g = tryPsi(0, null);
+        else {
+          for (let psi = -60; psi <= 60; psi += 15) { const r = tryPsi(psi, null); if (!g || r.cost < g.cost) g = r; }
+          for (const dp of [-7, -4, 4, 7]) { const r = tryPsi(g.psi + dp, null); if (Math.abs(r.psi) <= 70 && r.cost < g.cost) g = r; }
+        }
+        if (g.cost < best.cost) best = g;
+      }
+      if (hint) hint[slot] = { psi: best.psi, th: best.th };
+      return best;
+    };
+    if (hint) hint.n = (hint.n || 0) + 1;
+    const R_ = solveHand(sh_r, hand_r, 1, edge, 35, 'r'), L_ = solveHand(sh_l, hand_l, -1, pose.left_on ? edge : null, 55, 'l');
+    const gr = R_.gf, gl = L_.gf, wr_r = R_.wr, wr_l = L_.wr, el_r = R_.el, el_l = L_.el;
 
     const an_l = [pose.lfoot[0], D.ankleY + lift[0], pose.lfoot[1]];
     const an_r = [pose.rfoot[0], D.ankleY + lift[1], pose.rfoot[1]];
@@ -201,6 +292,9 @@
     const kn_r = twoBone(hp_r, an_r, D.thigh, D.shin, add(hfwd, rotY([0, 0, 0.3], pose.yaw * 0.5)));
     const toe = an => add(an, [hfwd[0] * D.toeFwd, -D.toeDrop, hfwd[2] * D.toeFwd]);
 
+    // wrist angles actually used (deg): flexion toward the palm, sideways deviation
+    const wristAng = (wr, el, gf) => { const v = norm(sub(wr, el)), fF = dot(v, gf.F);
+      return [Math.atan2(dot(v, gf.palm), fF) * 57.3, Math.atan2(dot(v, gf.K), fF) * 57.3]; };
     const guard = add(hand_r, mul(d, 0.055));
     return {
       pelvis: hip, sp1, sp2, chest, neck, headJ, head, cl_l: clav(-1), cl_r: clav(1),
@@ -208,7 +302,7 @@
       hand_l, hand_r, hp_l, hp_r, kn_l, kn_r, an_l, an_r, toe_l: toe(an_l), toe_r: toe(an_r),
       guard, tip: add(guard, mul(d, weapon.blade)), pommel: sub(guard, mul(d, weapon.grip)),
       fwd, up, right, hfwd,
-      hF_r: gr.F, hK_r: gr.K, hF_l: gl.F, hK_l: gl.K, edge,
+      hF_r: gr.F, hK_r: gr.K, hF_l: gl.F, hK_l: gl.K, edge, armCost: [R_.cost, L_.cost], wristDeg: [wristAng(wr_r, el_r, gr), wristAng(wr_l, el_l, gl)],
     };
   }
 
@@ -233,7 +327,7 @@
     const out = {};
     for (const k in sk) {
       const v = sk[k];
-      out[k] = DIR_KEYS.has(k) ? (facing === 1 ? v.slice() : [-v[0], v[1], -v[2]]) : toWorld(v, origin, facing);
+      out[k] = k === 'armCost' || k === 'wristDeg' ? v : DIR_KEYS.has(k) ? (facing === 1 ? v.slice() : [-v[0], v[1], -v[2]]) : toWorld(v, origin, facing);
     }
     return out;
   }
@@ -288,7 +382,7 @@
       }
     });
     for (const a of acts) { a.t0 = real[a.i0]; a.t1 = real[a.i1]; }
-    return { keys, real, segAct, acts, idx };
+    return { keys, real, segAct, acts, idx, f };
   }
   function realToBase(L, t, beat) {
     const { keys, real, segAct } = L;
@@ -303,9 +397,29 @@
     return keys[n].at + (t - real[n]) / beat;
   }
 
+  // Edges between keys: each key's edge is fixed (stored, or derived once
+  // from its own pose), and in between the edge turns smoothly from one to
+  // the next. Deriving it every frame from the arm would flip it whenever
+  // the blade points along the arm.
+  const edgeCache = new WeakMap();
+  function edgeOf(pose, weapon, body) {
+    if (pose.edge) return pose.edge;
+    let e = edgeCache.get(pose);
+    if (!e) { e = skeleton(Object.assign({}, pose, { edge: null }), weapon, null, body).edge; edgeCache.set(pose, e); }
+    return e;
+  }
+  function blendEdge(p0, p1, u, out, weapon, body) {
+    const e0 = edgeOf(p0, weapon, body), e1 = edgeOf(p1, weapon, body);
+    const e = slerp(e0, e1, u), d = norm(out.blade);
+    const pe = sub(e, mul(d, dot(e, d)));
+    out.edge = len(pe) > 1e-3 ? norm(pe) : e;
+    return out;
+  }
+
   /** Pose of fencer f at time t (ms). `ov` = displacement overrides. */
   function poseAt(ex, L, t, ov, guardPose) {
     const { keys, real, segAct } = L;
+    const fc = ex.fencers[L.f == null ? 0 : L.f] || {}, Wp = WEAPONS[fc.weapon] || WEAPONS.longsword, Bp = bodyOf(fc.body);
     if (!keys.length) return { pose: guardPose || DEFAULT_POSE, lift: [0, 0] };
     const kp = i => {
       let p = keys[i].pose;
@@ -315,7 +429,7 @@
     if (ov) for (const o of ov) {
       if (t >= o.tc && t <= real[o.endIdx]) {
         const u = smooth((t - o.tc) / Math.max(real[o.endIdx] - o.tc, 1));
-        return { pose: lerpPose(o.poseTc, o.endPose, u), lift: [0, 0] };
+        return { pose: blendEdge(o.poseTc, o.endPose, u, lerpPose(o.poseTc, o.endPose, u), Wp, Bp), lift: [0, 0] };
       }
     }
     if (t <= real[0]) return { pose: kp(0), lift: [0, 0] };
@@ -333,7 +447,7 @@
     }
     u = Math.min(Math.max(u, 0), 1);
     const p0 = kp(j - 1), p1 = kp(j);
-    return { pose: lerpPose(p0, p1, u), lift: [footLift(p0.lfoot, p1.lfoot, u), footLift(p0.rfoot, p1.rfoot, u)] };
+    return { pose: blendEdge(p0, p1, u, lerpPose(p0, p1, u), Wp, Bp), lift: [footLift(p0.lfoot, p1.lfoot, u), footLift(p0.rfoot, p1.rfoot, u)] };
   }
 
   function actionAt(L, t) {
@@ -371,6 +485,7 @@
     Ls.forEach(L => { if (L.real.length) end = Math.max(end, L.real[L.real.length - 1]); });
     end = Math.min(end + 400, 12000);
     let lastContact = -1e9;
+    const hints = [{ reuse: true }, { reuse: true }];
     const dt = opts.dt || 1;
 
     // a continuation inherits "dead"/"landed" from the action it follows
@@ -378,7 +493,7 @@
 
     for (let t = 0; t <= end; t += dt) {
       const P = [0, 1].map(f => poseAt(ex, Ls[f], t, ov[f], guards[f]));
-      const SK = [0, 1].map(f => skeletonWorld(skeleton(P[f].pose, W[f], P[f].lift, BD[f]), O[f][0], O[f][1]));
+      const SK = [0, 1].map(f => skeletonWorld(skeleton(P[f].pose, W[f], P[f].lift, BD[f], hints[f]), O[f][0], O[f][1]));
       const A = [0, 1].map(f => actionAt(Ls[f], t));
       const root = [0, 1].map(f => A[f] && chainOf(Ls[f], A[f]));
       const isDead = f => root[f] && dead[f].has(root[f].id);
@@ -441,6 +556,7 @@
           endPose.blade = norm(add(add(cur.blade, mul(nl, 1.1)), [0, -0.35, 0]));
           endPose.grip = add(cur.grip, mul(nl, 0.10));
         } else { endPose.blade = cur.blade.slice(); endPose.grip = cur.grip.slice(); }
+        if (cur.edge) endPose.edge = cur.edge.slice();   // a knocked-aside blade keeps its edge orientation
         ov[f].push({ tc, poseTc: clonePose(cur), endIdx: a.i1, endPose });
         dead[f].add(chainOf(L, a).id);
       }
@@ -482,10 +598,12 @@
     if (!a) return [];
     const W = WEAPONS[ex.fencers[f].weapon] || WEAPONS.longsword, BD = bodyOf(ex.fencers[f].body);
     const out = [], dur = a.t1 - a.t0;
-    let vHand = 0, vTip = 0, prev = null;
+    let vHand = 0, vTip = 0, prev = null, strained = 0, n = 0;
+    const hint = { reuse: true };
     for (let t = a.t0; t <= a.t1; t += 4) {
       const p = poseAt(ex, L, t, null);
-      const sk = skeleton(p.pose, W, p.lift, BD);
+      const sk = skeleton(p.pose, W, p.lift, BD, hint);
+      n++; if (sk.wristDeg.some(([fl, dv]) => Math.abs(fl) > 80 || Math.abs(dv) > 50)) strained++;
       if (prev) { vHand = Math.max(vHand, len(sub(sk.hand_r, prev.hand_r)) / 0.004); vTip = Math.max(vTip, len(sub(sk.tip, prev.tip)) / 0.004); }
       prev = sk;
     }
@@ -493,6 +611,7 @@
     if (vTip > 30) out.push({ level: 'bad', text: `Tip speed ${vTip.toFixed(0)} m/s. Fast cuts measure about 15–25 m/s at the tip.` });
     else if (vTip > 24) out.push({ level: 'warn', text: `Tip speed ${vTip.toFixed(0)} m/s, at the very top of what people manage.` });
     if (vHand > 11) out.push({ level: 'bad', text: `Hands move at ${vHand.toFixed(1)} m/s. Above ~10 m/s isn't humanly plausible.` });
+    if (strained / Math.max(n, 1) > 0.2) out.push({ level: 'warn', text: `The wrists have to bend past what a wrist can do (over 80° or 50° sideways) for ${Math.round(100 * strained / n)}% of this action. Turn the Edge or move the hands.` });
     if (s > 0.66 && dur < 220 && a.attack) out.push({ level: 'warn', text: `A strong blow in ${dur.toFixed(0)} ms: strong cuts need body mechanics and rarely take under ~250 ms.` });
     if (a.measure && measured && measured[a.measure]) {
       const m = measured[a.measure];

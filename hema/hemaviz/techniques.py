@@ -171,7 +171,9 @@ LS_WINDUP = Technique(
     phases=[
         _ls_approach(PFLUG),
         Phase("wind up to Vom Tag", "ls.windup",
-              [(1.0, _stance(VOM_TAG, 0.35))]),
+              # lift forward and up, away from the belly, then back to the shoulder
+              [(0.5, P((0.80, 1.30, 0.16), 62, 15, yaw=-25, **lf_fwd(0.35))),
+               (1.0, _stance(VOM_TAG, 0.35))]),
     ] + _ls_oberhau_phases(0.35),
     source="Teaching counter-example: the 'two-tempo' cut that Nachreisen "
            "is built to punish (Ringeck gloss on Nachreisen).",
@@ -216,7 +218,7 @@ _ZW_MID = P((0.18, 1.82, -0.05), 20, 95, hip=(0.20, 0.89, 0.09), yaw=-5,
 # to his left ear, having sprung out to the right
 _ZW_HIT = P((0.87, 1.74, -0.15), -10, 3, hip=(0.45, 0.87, 0.15), yaw=15,
             lean=10, **rf_fwd(0.45, 0.15), roll=119)
-_ZW_FOLLOW = P((0.65, 1.45, -0.20), -15, -55, hip=(0.48, 0.87, 0.15), yaw=25,
+_ZW_FOLLOW = P((0.85, 1.45, -0.16), -15, -55, hip=(0.48, 0.87, 0.15), yaw=25,
                lean=10, **rf_fwd(0.45, 0.15), roll=119)
 
 M_ZWERCH = Technique(
