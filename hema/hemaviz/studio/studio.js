@@ -203,8 +203,8 @@ function placeSword(g, sk) {
 // ---- rigged figure
 const AIM = [   // bone, target joint, child bone used as the aim axis, [joint the bone is moved to]
   ['spine_01', 'sp2', 'spine_02'], ['spine_02', 'chest', 'spine_03'], ['spine_03', 'neck', 'neck_01'], ['neck_01', 'headJ', 'Head'],
-  ['clavicle_l', 'sh_l', 'upperarm_l'], ['upperarm_l', 'el_l', 'lowerarm_l', 'sh_l'], ['lowerarm_l', 'wr_l', 'hand_l'], ['hand_l', 'hand_l', 'middle_01_l'],
-  ['clavicle_r', 'sh_r', 'upperarm_r'], ['upperarm_r', 'el_r', 'lowerarm_r', 'sh_r'], ['lowerarm_r', 'wr_r', 'hand_r'], ['hand_r', 'hand_r', 'middle_01_r'],
+  ['clavicle_l', 'sh_l', 'upperarm_l'], ['upperarm_l', 'el_l', 'lowerarm_l', 'sh_l'], ['lowerarm_l', 'wr_l', 'hand_l'],
+  ['clavicle_r', 'sh_r', 'upperarm_r'], ['upperarm_r', 'el_r', 'lowerarm_r', 'sh_r'], ['lowerarm_r', 'wr_r', 'hand_r'],
   ['thigh_l', 'kn_l', 'calf_l', 'hp_l'], ['calf_l', 'an_l', 'foot_l'], ['foot_l', 'toe_l', 'ball_l'],
   ['thigh_r', 'kn_r', 'calf_r', 'hp_r'], ['calf_r', 'an_r', 'foot_r'], ['foot_r', 'toe_r', 'ball_r'],
 ];
@@ -248,30 +248,50 @@ function setupModel(fig, gltf) {
       if (body) setupPartColors(fig, o);
     }
   });
-  curlFingers(gltf.scene, bones);
+  holder.rotation.set(0, 0, 0); holder.position.set(0, 0, 0);   // curl in the model's own (T-pose) frame
+  curlFingers(gltf.scene, bones, bodyOf(fig.f));
   for (const b of Object.values(bones)) b.userData.restQ = b.quaternion.clone();
   for (const [name, , child] of AIM) {
     const b = bones[name];
     b.userData.aim = bones[child].position.clone().normalize();
   }
+  for (const sd of ['l', 'r']) {   // hand frame in the hand bone's own space
+    const h = bones['hand_' + sd];
+    const F = bones['middle_01_' + sd].position.clone().normalize();
+    const K = bones['pinky_01_' + sd].position.clone().sub(bones['index_01_' + sd].position);
+    K.addScaledVector(F, -K.dot(F)).normalize();
+    const N = new THREE.Vector3().crossVectors(F, K);
+    h.userData.restFrame = new THREE.Matrix4().makeBasis(F, K, N);
+  }
   fig.bones = bones;
 }
-// Close the open T-pose hands into a fist around the hilt.
-function curlFingers(sceneRoot, bones) {
+// Close the open T-pose hands around the hilt with the per-body solved grip
+// (fingers wrap a 3.2 cm handle; thumb swings over and rests on the index).
+// Angles are for the left hand in the model's T-pose frame; the right hand is
+// its mirror image (rotation about the mirrored axis, opposite angle).
+function curlFingers(sceneRoot, bones, body) {
   sceneRoot.updateMatrixWorld(true);
-  const q = new THREE.Quaternion(), wq = new THREE.Quaternion(), Z = new THREE.Vector3(0, 0, 1);
-  const ANG = { '01': 60, '02': 75, '03': 55 };
-  for (const [name, b] of Object.entries(bones)) {
-    const m = name.match(/^(index|middle|ring|pinky|thumb)_(0[123])_([lr])$/);
-    if (!m) continue;
-    const thumb = m[1] === 'thumb', side = m[3] === 'l' ? -1 : 1;
-    const deg = thumb ? (m[2] === '01' ? 0 : 35) : ANG[m[2]];
-    if (!deg) continue;
-    b.parent.getWorldQuaternion(wq);
-    const axis = (thumb ? new THREE.Vector3(1, 0, 0) : Z.clone()).applyQuaternion(wq.clone().invert()).normalize();
-    q.setFromAxisAngle(axis, side * deg * Math.PI / 180);
-    b.quaternion.premultiply(q);
-    b.updateMatrixWorld(true);
+  const G = body.grip, wq = new THREE.Quaternion(), pq = new THREE.Quaternion(), q = new THREE.Quaternion();
+  const rotWorld = (b, qWorld) => {        // apply a model-space rotation to a bone
+    b.parent.getWorldQuaternion(pq);
+    const delta = pq.clone().invert().multiply(qWorld).multiply(pq);
+    b.quaternion.premultiply(delta); b.updateMatrixWorld(true);
+  };
+  const axisQ = (x, y, z, deg) => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(x, y, z).normalize(), deg * Math.PI / 180);
+  for (const sd of ['l', 'r']) {
+    const m = sd === 'l' ? 1 : -1;          // mirror sign
+    for (const f of ['index', 'middle', 'ring', 'pinky']) {
+      G[f].forEach((deg, i) => rotWorld(bones[`${f}_0${i + 1}_${sd}`], axisQ(0, 0, 1, -m * deg)));
+    }
+    const [a, b, c, f2, f3] = G.thumb;
+    const t1 = bones['thumb_01_' + sd], t2 = bones['thumb_02_' + sd], t3 = bones['thumb_03_' + sd];
+    rotWorld(t1, axisQ(0, 0, 1, m * a).multiply(axisQ(0, 1, 0, m * b)).multiply(axisQ(1, 0, 0, c)));
+    const p2 = new THREE.Vector3(), p3 = new THREE.Vector3();
+    t2.getWorldPosition(p2); t3.getWorldPosition(p3);
+    const n2 = new THREE.Vector3().subVectors(p3, p2).normalize().cross(new THREE.Vector3(0, -1, 0)).normalize();
+    // n2 lives in world space here; the scene root is unrotated, so world == model space
+    if (f2) rotWorld(t2, new THREE.Quaternion().setFromAxisAngle(n2, f2 * Math.PI / 180));
+    if (f3) rotWorld(t3, new THREE.Quaternion().setFromAxisAngle(n2, f3 * Math.PI / 180));
   }
 }
 
@@ -340,8 +360,21 @@ function poseFigure(fig, pose, sk) {
       if (rootJoint) setBoneWorldPos(b, sk[rootJoint]);
       aimBone(b, sk[joint], name === 'spine_01' ? pose.yaw * 0.5 * Math.PI / 180 : 0);
     }
+    for (const sd of ['l', 'r']) orientHand(B['hand_' + sd], sk['hF_' + sd], sk['hK_' + sd]);
   }
   placeSword(fig.sword, sk);
+}
+const mT = new THREE.Matrix4(), mR = new THREE.Matrix4(), qH = new THREE.Quaternion();
+function orientHand(b, F, K) {   // knuckles along the hilt, palm on the grip
+  const f = v3(F).normalize(), k = v3(K);
+  k.addScaledVector(f, -k.dot(f)).normalize();
+  const n = new THREE.Vector3().crossVectors(f, k);
+  mT.makeBasis(f, k, n);
+  mR.copy(b.userData.restFrame).transpose();
+  qH.setFromRotationMatrix(mT.multiply(mR));
+  b.parent.getWorldQuaternion(qA);
+  b.quaternion.copy(qA.invert().multiply(qH));
+  b.updateMatrixWorld(true);
 }
 
 // ---- handles

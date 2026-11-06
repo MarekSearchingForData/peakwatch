@@ -24,14 +24,18 @@
       hipUp: 0.022, hipHalf: 0.114, thigh: 0.429, shin: 0.459, ankleY: 0.086, toeFwd: 0.143, toeDrop: 0.071,
       sp1: 0.128, sp2: 0.107, sp3: 0.133, neck: 0.213, headJ: 0.084, headUp: 0.10,
       shUp: 0.144, shHalf: 0.212, shFwd: -0.07, clUp: 0.184, clHalf: 0.031,
-      upper: 0.251, fore: 0.243, hand: 0.085, hb: 1.0,
+      upper: 0.251, fore: 0.243, hand: 0.105, palm: 0.033, hb: 1.0,
+      // Grip solved against a 3.2 cm handle: per-finger joint flexion (deg) and
+      // the thumb's swing (z, y, x deg in the T-pose frame) and flexion.
+      grip: { index: [65, 65, 65], middle: [65, 75, 75], ring: [55, 70, 75], pinky: [25, 65, 60], thumb: [-15, 15, -105, 0, 45] },
     },
     female: {
       key: 'female', name: 'Female (1.77 m)', model: 'models/quaternius-female.glb',
       hipUp: 0.012, hipHalf: 0.111, thigh: 0.409, shin: 0.465, ankleY: 0.071, toeFwd: 0.139, toeDrop: 0.056,
       sp1: 0.127, sp2: 0.109, sp3: 0.127, neck: 0.194, headJ: 0.065, headUp: 0.10,
       shUp: 0.127, shHalf: 0.152, shFwd: -0.052, clUp: 0.139, clHalf: 0.029,
-      upper: 0.240, fore: 0.249, hand: 0.08, hb: 0.88,
+      upper: 0.240, fore: 0.249, hand: 0.080, palm: 0.033, hb: 0.88,
+      grip: { index: [55, 60, 65], middle: [60, 65, 75], ring: [45, 65, 70], pinky: [20, 55, 60], thumb: [15, 0, 45, 15, 0] },
     },
   };
   const DIMS = BODIES.male;
@@ -159,14 +163,27 @@
     } else {
       hand_l = add(sh_l, add(mul(up, -0.5), add(mul(fwd, 0.10), mul(right, -0.08))));
     }
-    const arm = (sh, hand, side) => {
-      const pole = add(add(mul(up, -0.7), mul(right, 0.6 * side)), mul(fwd, -0.2));
-      const el = twoBone(sh, hand, D.upper, D.fore + D.hand, pole);
-      const wr = add(el, mul(sub(hand, el), D.fore / (D.fore + D.hand)));
-      return [el, wr];
+    // Grip frame per hand: knuckle line (index -> pinky) runs toward the
+    // pommel, fingers point along the arm's reach (square to the hilt), and
+    // the palm side follows from which hand it is (mirror images). The wrist
+    // is placed so the hilt axis sits where the solved finger curl wraps it:
+    // D.hand along the fingers and D.palm toward the palm.
+    const gripFrame = (sh, hand, side) => {
+      const K = mul(d, -1);
+      let F = sub(hand, sh); F = sub(F, mul(d, dot(F, d)));
+      if (len(F) < 1e-4) F = sub(fwd, mul(d, dot(fwd, d)));
+      F = norm(F);
+      const palm = mul(cross(F, K), side);          // side: +1 right, -1 left
+      const wrist = sub(sub(hand, mul(F, D.hand)), mul(palm, D.palm));
+      return { F, K, palm, wrist };
     };
-    const [el_r, wr_r] = arm(sh_r, hand_r, 1);
-    const [el_l, wr_l] = arm(sh_l, hand_l, -1);
+    const arm = (sh, wrist, side) => {
+      const pole = add(add(mul(up, -0.7), mul(right, 0.6 * side)), mul(fwd, -0.2));
+      return twoBone(sh, clampReach(sh, wrist, D.upper + D.fore - 0.002), D.upper, D.fore, pole);
+    };
+    const gr = gripFrame(sh_r, hand_r, 1), gl = gripFrame(sh_l, hand_l, -1);
+    const wr_r = clampReach(sh_r, gr.wrist, D.upper + D.fore - 0.002), wr_l = clampReach(sh_l, gl.wrist, D.upper + D.fore - 0.002);
+    const el_r = arm(sh_r, wr_r, 1), el_l = arm(sh_l, wr_l, -1);
 
     const an_l = [pose.lfoot[0], D.ankleY + lift[0], pose.lfoot[1]];
     const an_r = [pose.rfoot[0], D.ankleY + lift[1], pose.rfoot[1]];
@@ -181,6 +198,7 @@
       hand_l, hand_r, hp_l, hp_r, kn_l, kn_r, an_l, an_r, toe_l: toe(an_l), toe_r: toe(an_r),
       guard, tip: add(guard, mul(d, weapon.blade)), pommel: sub(guard, mul(d, weapon.grip)),
       fwd, up, right, hfwd,
+      hF_r: gr.F, hK_r: gr.K, hF_l: gl.F, hK_l: gl.K,
     };
   }
 
@@ -200,7 +218,7 @@
   function toLocal(v, origin, facing) {
     return facing === 1 ? [v[0] - origin, v[1], v[2]] : [origin - v[0], v[1], -v[2]];
   }
-  const DIR_KEYS = new Set(['fwd', 'up', 'right', 'hfwd']);
+  const DIR_KEYS = new Set(['fwd', 'up', 'right', 'hfwd', 'hF_r', 'hK_r', 'hF_l', 'hK_l']);
   function skeletonWorld(sk, origin, facing) {
     const out = {};
     for (const k in sk) {
