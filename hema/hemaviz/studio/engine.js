@@ -149,6 +149,7 @@
     const shoulder = side => add(add(add(chest, mul(up, D.shUp)), mul(right, side * D.shHalf)), mul(fwd, D.shFwd));
     const clav = side => add(add(chest, mul(up, D.clUp)), mul(right, side * D.clHalf));
     const sh_r = shoulder(1), sh_l = shoulder(-1);
+    const bodyObs = bodyObstacles({ pelvis: hip, chest, headJ, head, up, right }, D);
     const hp_r = add(hip, rotY([0, D.hipUp, D.hipHalf], pose.yaw * 0.5));
     const hp_l = add(hip, rotY([0, D.hipUp, -D.hipHalf], pose.yaw * 0.5));
 
@@ -242,6 +243,17 @@
       const tll = tbx * tbx + tby * tby + tbz * tbz;
       const TORSO_CLEAR = 0.17;                                         // elbow resting against the side
       const [hdx, hdy, hdz] = head, HEAD_CLEAR = 0.165;                  // head radius + arm
+      const OB = bodyObs.map(([, a, b, r]) => { const bx = b[0] - a[0], by = b[1] - a[1], bz = b[2] - a[2]; return [a[0], a[1], a[2], bx, by, bz, (bx * bx + by * by + bz * bz) || 1e-12, r]; });
+      const obsPen = (x, y, z, rArm, withChest) => {
+        let pen = 0;
+        for (let i = 0; i < OB.length; i++) {
+          if (i === 1 && !withChest) continue;
+          const o = OB[i]; let q = ((x - o[0]) * o[3] + (y - o[1]) * o[4] + (z - o[2]) * o[5]) / o[6]; q = q < 0 ? 0 : q > 1 ? 1 : q;
+          const dd = Math.hypot(x - o[0] - o[3] * q, y - o[1] - o[4] * q, z - o[2] - o[5] * q), cl = o[7] + rArm + 0.01;
+          if (dd < cl) pen += ((cl - dd) / 0.03) ** 2 * 10;
+        }
+        return pen;
+      };
       const [shx0, shy0, shz0] = sh;
       // the other arm (forearm and upper arm) as obstacles, flattened to scalars
       const avs = (avoid || []).map(([a, b]) => { const bx = b[0] - a[0], by = b[1] - a[1], bz = b[2] - a[2]; return [a[0], a[1], a[2], bx, by, bz, (bx * bx + by * by + bz * bz) || 1e-9]; });
@@ -264,16 +276,14 @@
         let tu = ((ex - tax) * tbx + (ey - tay) * tby + (ez - taz) * tbz) / tll; tu = tu < 0 ? 0 : tu > 1 ? 1 : tu;
         const td = Math.hypot(ex - tax - tbx * tu, ey - tay - tby * tu, ez - taz - tbz * tu);
         if (td < TORSO_CLEAR) c += ((TORSO_CLEAR - td) / 0.03) ** 2 * 10; // elbow inside the body
-        // arm segments must go around the head and stay out of the trunk (unrolled, no allocation)
+        // arm segments must stay out of the trunk, upper chest, neck and head
         let px, py, pz, dd;
-        px = (shx0 + ex) * 0.5; py = (shy0 + ey) * 0.5; pz = (shz0 + ez) * 0.5;          // upper arm middle
-        dd = Math.hypot(px - hdx, py - hdy, pz - hdz); if (dd < HEAD_CLEAR) c += ((HEAD_CLEAR - dd) / 0.03) ** 2 * 10;
-        dd = Math.hypot(ex - hdx, ey - hdy, ez - hdz); if (dd < HEAD_CLEAR) c += ((HEAD_CLEAR - dd) / 0.03) ** 2 * 10;   // elbow
+        c += obsPen(ex, ey, ez, 0.05, true);                                 // elbow
+        px = (shx0 + ex) * 0.5; py = (shy0 + ey) * 0.5; pz = (shz0 + ez) * 0.5;   // upper arm middle
+        c += obsPen(px, py, pz, 0.055, (px - chx) * rsx + (py - chy) * rsy + (pz - chz) * rsz < 0.08);   // chest only once it crosses over
         for (let k = 0.33; k < 1; k += 0.285) {                             // forearm at 0.33, 0.615, 0.9
           px = ex + (wx - ex) * k; py = ey + (wy - ey) * k; pz = ez + (wz - ez) * k;
-          dd = Math.hypot(px - hdx, py - hdy, pz - hdz); if (dd < HEAD_CLEAR) c += ((HEAD_CLEAR - dd) / 0.03) ** 2 * 10;
-          let q = ((px - tax) * tbx + (py - tay) * tby + (pz - taz) * tbz) / tll; q = q < 0 ? 0 : q > 1 ? 1 : q;
-          dd = Math.hypot(px - tax - tbx * q, py - tay - tby * q, pz - taz - tbz * q); if (dd < 0.17) c += ((0.17 - dd) / 0.03) ** 2 * 6;
+          c += obsPen(px, py, pz, 0.045, true);
           if (nAv && k < 0.8) { dd = dAv(px, py, pz); if (dd < 0.09) c += ((0.09 - dd) / 0.03) ** 2 * 6; }   // near the wrists the forearms meet at the hilt anyway
         }
         if (nAv) { dd = dAv(ex, ey, ez); if (dd < 0.1) c += ((0.1 - dd) / 0.03) ** 2 * 6;
@@ -388,6 +398,20 @@
   }
 
   function segSegInline(a, b, c, e) { return segSeg(a, b, c, e); }
+
+  /** The fencer's own upper body as capsules the arms must stay out of:
+   *  [name, a, b, radius]. Lower trunk, a wide bar across the upper chest
+   *  and shoulders, the neck, and the head. */
+  function bodyObstacles(j, body) {
+    const k = (body && body.hb) || 1, { pelvis, chest, headJ, head, up, right } = j;
+    const cb = add(chest, mul(up, 0.07));
+    return [
+      ['trunk', pelvis, chest, 0.14 * k],
+      ['chest', sub(cb, mul(right, 0.12 * k)), add(cb, mul(right, 0.12 * k)), 0.11 * k],
+      ['neck', add(chest, mul(up, 0.12)), headJ, 0.065 * k],
+      ['head', head, head, 0.11 * k],
+    ];
+  }
   function segSeg(p1, q1, p2, q2) {
     const d1 = sub(q1, p1), d2 = sub(q2, p2), r = sub(p1, p2);
     const a = dot(d1, d1), e = dot(d2, d2), f = dot(d2, r), eps = 1e-12;
@@ -678,7 +702,7 @@
     return out;
   }
 
-  return { DIMS, BODIES, bodyOf, WEAPONS, DEFAULT_POSE, HITBOXES, strengthLabel, paceLabel,
+  return { DIMS, BODIES, bodyOf, WEAPONS, bodyObstacles, DEFAULT_POSE, HITBOXES, strengthLabel, paceLabel,
     bladeDir, lerpPose, clonePose, skeleton, skeletonWorld, toWorld, toLocal, maxPelvisY,
     layout, realToBase, poseAt, actionAt, simulate, checkAction, segSeg, crossEnds, origins,
     vec: { add, sub, mul, dot, cross, len, norm, slerp, rotY } };
