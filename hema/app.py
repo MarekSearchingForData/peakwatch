@@ -95,7 +95,8 @@ def page_studio():
    each with a weapon, a start distance and a beat length.
 2. **Pose**: choose A or B, start from a guard button, then drag the handles:
    yellow = sword hand, orange = sword tip, cyan = pelvis, green = feet, ring =
-   move the whole fencer. Turn/Lean/Crouch sliders do the torso. Arms and legs
+   move the whole fencer. Turn/Lean/Crouch sliders do the torso; *Edge*
+   turns the sword in the hands. Arms and legs
    are inverse kinematics on the mannequin's bones, so they can't stretch.
    Feet stay on the ground (the pelvis drops if it has to).
 3. **Record**: put the playhead on a beat (click the timeline, arrows step

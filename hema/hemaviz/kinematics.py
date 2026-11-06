@@ -28,10 +28,10 @@ class Weapon:
                 "guard_half": self.guard_half, "nagel": self.nagel}
 
 
-LONGSWORD = Weapon("longsword", "Longsword", blade=0.95, grip=0.27,
-                   hand_sep=0.15, guard_half=0.13)
-KRIEGSMESSER = Weapon("messer", "Kriegsmesser", blade=0.80, grip=0.25,
-                      hand_sep=0.12, guard_half=0.10, nagel=True)
+LONGSWORD = Weapon("longsword", "Longsword (Feder)", blade=0.95, grip=0.29,
+                   hand_sep=0.15, guard_half=0.135)
+KRIEGSMESSER = Weapon("messer", "Kriegsmesser", blade=0.80, grip=0.28,
+                      hand_sep=0.13, guard_half=0.10, nagel=True)
 WEAPONS = {w.key: w for w in (LONGSWORD, KRIEGSMESSER)}
 
 
@@ -53,6 +53,7 @@ class Pose:
     grip: tuple = (0.45, 1.10, 0.10)     # front (sword) hand
     blade: tuple = (1.0, 0.3, 0.0)       # direction hand -> tip (any length)
     left_on: bool = True                 # second hand on the hilt
+    roll: float = 0.0                    # edge turned about the blade (deg)
 
     def to_dict(self) -> dict:
         b = np.array(self.blade, float)
@@ -61,7 +62,7 @@ class Pose:
                 "lean": self.lean, "lfoot": list(self.lfoot),
                 "rfoot": list(self.rfoot), "grip": [round(v, 4) for v in self.grip],
                 "blade": [round(float(v), 4) for v in b],
-                "left_on": self.left_on}
+                "left_on": self.left_on, "roll": self.roll}
 
     def with_(self, **kw) -> "Pose":
         if "elev" in kw or "az" in kw:
@@ -79,11 +80,11 @@ class Pose:
 
 
 def P(grip, elev, az, *, hip=(0.0, 0.90, 0.0), yaw=0.0, lean=0.0,
-      lfoot=None, rfoot=None, left_on=True) -> Pose:
+      lfoot=None, rfoot=None, left_on=True, roll=0.0) -> Pose:
     """Compact pose constructor used by the technique library."""
     hx = hip[0]
     lf = lfoot if lfoot is not None else (hx + 0.30, hip[2] - 0.13)
     rf = rfoot if rfoot is not None else (hx - 0.30, hip[2] + 0.13)
     return Pose(hip=tuple(hip), yaw=yaw, lean=lean, lfoot=tuple(lf),
                 rfoot=tuple(rf), grip=tuple(grip),
-                blade=tuple(blade_dir(elev, az)), left_on=left_on)
+                blade=tuple(blade_dir(elev, az)), left_on=left_on, roll=roll)

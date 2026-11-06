@@ -20,7 +20,8 @@ pytest hema/tests                  # engine tests need Node.js
 2. **Pose**: choose A or B, start from a guard (Vom Tag, Ochs, Pflug,
    Alber, Langort / Zornhut, Stier, Eber, Luginsland, Wechsel), then drag:
    yellow = sword hand, orange = sword tip, cyan = pelvis, green = feet,
-   ring = whole fencer. Choose a male or female body per fencer. Arms and
+   ring = whole fencer. *Edge* turns the sword in the hands (the true edge
+   lines up with the front hand's knuckles, as it should). Choose a male or female body per fencer. Arms and
    legs are IK on the character's own bones,
    so they can't stretch, and the pelvis drops to keep the feet on the floor.
 3. **Record** (`R`) at the playhead: e.g. guard on beat 0, end of the cut
@@ -44,6 +45,19 @@ log (worked / double hit / failed). **Reality check** page (optional):
 film yourself and log frame counts. Actions linked to a measurement are
 flagged when they're faster than you've actually done them. Every action
 also gets automatic tip/hand-speed sanity checks.
+
+## Weapons
+
+Both are modelled to proportion and change the reach and the bind:
+
+* **Longsword (Feder)**: 95 cm blunt blade with a flared *schilt*, 29 cm
+  hilt (leather grip, pear pommel), 27 cm quillons curving toward the blade.
+* **Kriegsmesser**: two-handed, 80 cm single-edged blade gently curved
+  toward the edge with a clipped false edge, 28 cm riveted wooden grip with a
+  hooked cap, straight 20 cm cross and the *Nagel*.
+
+The quillons lie in the plane of the edges, so whether a blade can be
+caught on the cross depends on how you turn it (*Edge*).
 
 ## Examples included
 

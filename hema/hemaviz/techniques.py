@@ -87,11 +87,11 @@ def _stance(pose: Pose, hx: float) -> Pose:
 def _ls_oberhau_phases(start_hip: float) -> list:
     h0 = start_hip
     mid = P((h0 + 0.45, 1.62, 0.24), 72, 30, hip=(h0 + 0.30, 0.90, 0.02),
-            yaw=-10, lfoot=(h0 + 0.30, -0.13), rfoot=(h0 + 0.20, 0.14))
+            yaw=-10, lfoot=(h0 + 0.30, -0.13), rfoot=(h0 + 0.20, 0.14), roll=-3)
     hit = P((h0 + 1.15, 1.36, 0.06), 8, 2, hip=(h0 + 0.65, 0.86, 0.0),
-            yaw=20, lean=10, **rf_fwd(h0 + 0.65))
+            yaw=20, lean=10, **rf_fwd(h0 + 0.65), roll=-52)
     follow = P((h0 + 1.00, 1.00, -0.18), -30, -35, hip=(h0 + 0.70, 0.85, 0.0),
-               yaw=30, lean=12, **rf_fwd(h0 + 0.65))
+               yaw=30, lean=12, **rf_fwd(h0 + 0.65), roll=-7)
     return [
         Phase("Oberhau", "ls.oberhau", [(0.45, mid), (1.0, hit)],
               attack=True, cover=True),
@@ -119,11 +119,11 @@ LS_ZORNHAU = Technique(
 
 def _ls_zwerch_phases(h0: float) -> list:
     mid = P((h0 + 0.30, 1.80, 0.25), 20, 110, hip=(h0 + 0.30, 0.89, 0.08),
-            yaw=0, lfoot=(h0 + 0.30, -0.10), rfoot=(h0 + 0.20, 0.25))
+            yaw=0, lfoot=(h0 + 0.30, -0.10), rfoot=(h0 + 0.20, 0.25), roll=71)
     hit = P((h0 + 0.95, 1.74, 0.18), -12, -15, hip=(h0 + 0.60, 0.87, 0.15),
-            yaw=15, lean=6, **rf_fwd(h0 + 0.60, 0.15))
+            yaw=15, lean=6, **rf_fwd(h0 + 0.60, 0.15), roll=88)
     follow = P((h0 + 0.85, 1.55, -0.15), -15, -55, hip=(h0 + 0.62, 0.87, 0.15),
-               yaw=25, lean=6, **rf_fwd(h0 + 0.60, 0.15))
+               yaw=25, lean=6, **rf_fwd(h0 + 0.60, 0.15), roll=88)
     return [
         Phase("Zwerchhau", "ls.zwerch", [(0.5, mid), (1.0, hit)],
               attack=True, cover=True),
@@ -146,9 +146,9 @@ LS_ZWERCH = Technique(
 
 def _ls_thrust_phases(h0: float) -> list:
     hit = P((h0 + 1.10, 1.30, 0.02), 6, -2, hip=(h0 + 0.62, 0.85, 0.0),
-            yaw=15, lean=14, **rf_fwd(h0 + 0.62))
+            yaw=15, lean=14, **rf_fwd(h0 + 0.62), roll=-25)
     back = P((h0 + 0.80, 1.05, 0.12), 25, -6, hip=(h0 + 0.50, 0.88, 0.0),
-             yaw=0, lean=5, **rf_fwd(h0 + 0.55))
+             yaw=0, lean=5, **rf_fwd(h0 + 0.55), roll=-25)
     return [
         Phase("thrust", "ls.thrust", [(1.0, hit)], attack=True),
         Phase("recover to Pflug", "ls.follow", [(1.0, back)], cont=True),
@@ -185,11 +185,11 @@ LS_WINDUP = Technique(
 
 def _messer_zornhau_phases(h0: float) -> list:
     mid = P((h0 + 0.40, 1.62, 0.26), 70, 40, hip=(h0 + 0.30, 0.90, 0.02),
-            yaw=-12, lfoot=(h0 + 0.30, -0.13), rfoot=(h0 + 0.20, 0.14))
+            yaw=-12, lfoot=(h0 + 0.30, -0.13), rfoot=(h0 + 0.20, 0.14), roll=4)
     hit = P((h0 + 1.15, 1.40, 0.05), 6, 2, hip=(h0 + 0.68, 0.86, 0.0),
-            yaw=22, lean=12, **rf_fwd(h0 + 0.68))
+            yaw=22, lean=12, **rf_fwd(h0 + 0.68), roll=-69)
     follow = P((h0 + 1.00, 1.00, -0.18), -30, -35, hip=(h0 + 0.72, 0.85, 0.0),
-               yaw=30, lean=12, **rf_fwd(h0 + 0.68))
+               yaw=30, lean=12, **rf_fwd(h0 + 0.68), roll=-9)
     return [
         Phase("Zornhau", "messer.zornhau", [(0.45, mid), (1.0, hit)],
               attack=True, cover=True),
@@ -211,13 +211,13 @@ M_ZORNHAU = Technique(
 )
 
 _ZW_MID = P((0.18, 1.82, -0.05), 20, 95, hip=(0.20, 0.89, 0.09), yaw=-5,
-            lfoot=(0.30, -0.08), rfoot=(0.18, 0.25))
+            lfoot=(0.30, -0.08), rfoot=(0.18, 0.25), roll=113)
 # hilt high in front of the head (catch his blade on the cross), short edge
 # to his left ear, having sprung out to the right
 _ZW_HIT = P((0.87, 1.74, -0.15), -10, 3, hip=(0.45, 0.87, 0.15), yaw=15,
-            lean=10, **rf_fwd(0.45, 0.15))
+            lean=10, **rf_fwd(0.45, 0.15), roll=119)
 _ZW_FOLLOW = P((0.65, 1.45, -0.20), -15, -55, hip=(0.48, 0.87, 0.15), yaw=25,
-               lean=10, **rf_fwd(0.45, 0.15))
+               lean=10, **rf_fwd(0.45, 0.15), roll=119)
 
 M_ZWERCH = Technique(
     key="m_zwerch", name="Zwerch against the Oberhau",
@@ -237,9 +237,9 @@ M_ZWERCH = Technique(
 )
 
 _NR_HIT = P((1.32, 1.42, -0.04), -18, -16, hip=(0.82, 0.86, 0.0), yaw=22,
-            lean=14, **rf_fwd(0.82))
+            lean=14, **rf_fwd(0.82), roll=30)
 _NR_BACK = P((0.75, 1.20, 0.10), 10, -8, hip=(0.55, 0.88, 0.0), yaw=5,
-             lean=5, **rf_fwd(0.55))
+             lean=5, **rf_fwd(0.55), roll=30)
 
 M_NACHREISEN = Technique(
     key="m_nachreisen", name="Nachreisen to the hands",
@@ -261,9 +261,9 @@ M_NACHREISEN = Technique(
 _CV_HANG = P((0.35, 1.70, -0.02), 35, -55, hip=(0.12, 0.89, 0.0), yaw=-10,
              lean=4, **lf_fwd(0.12))
 _EL_MID = P((0.70, 1.75, 0.10), 30, -10, hip=(0.45, 0.88, 0.10), yaw=5,
-            lean=8, lfoot=(0.42, -0.10), rfoot=(0.40, 0.25))
+            lean=8, lfoot=(0.42, -0.10), rfoot=(0.40, 0.25), roll=157)
 _EL_HIT = P((1.05, 1.55, 0.05), -24, -8, hip=(0.80, 0.86, 0.10), yaw=20,
-            lean=12, **rf_fwd(0.80, 0.10))
+            lean=12, **rf_fwd(0.80, 0.10), roll=219)
 
 M_HENGEN_EINLAUF = Technique(
     key="m_hengen_einlauf", name="Hanging cover, then run in (Einlaufen)",

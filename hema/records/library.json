@@ -51,7 +51,8 @@
          0.9511,
          0.08
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -83,7 +84,8 @@
          0.9511,
          0.08
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -115,7 +117,8 @@
          0.9511,
          0.1545
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -3
        }
       },
       {
@@ -147,7 +150,8 @@
          0.1392,
          0.0346
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -52
        }
       },
       {
@@ -179,7 +183,8 @@
          -0.5,
          -0.4967
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -7
        }
       }
      ]
@@ -215,7 +220,8 @@
          0.5,
          0.1504
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -247,7 +253,8 @@
          0.5,
          0.1504
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -279,7 +286,8 @@
          0.9397,
          0.2198
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 4
        }
       },
       {
@@ -311,7 +319,8 @@
          0.1045,
          0.0347
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -69
        }
       },
       {
@@ -343,7 +352,8 @@
          -0.5,
          -0.4967
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -9
        }
       }
      ]
@@ -480,7 +490,8 @@
          0.9511,
          0.08
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -512,7 +523,8 @@
          0.9511,
          0.08
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -544,7 +556,8 @@
          0.9511,
          0.1545
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -3
        }
       },
       {
@@ -576,7 +589,8 @@
          0.1392,
          0.0346
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -52
        }
       },
       {
@@ -608,7 +622,8 @@
          -0.5,
          -0.4967
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -7
        }
       }
      ]
@@ -644,7 +659,8 @@
          0.5,
          0.1504
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -676,7 +692,8 @@
          0.5,
          0.1504
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -708,7 +725,8 @@
          0.342,
          0.9361
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 113
        }
       },
       {
@@ -740,7 +758,8 @@
          -0.1736,
          0.0515
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 119
        }
       },
       {
@@ -772,7 +791,8 @@
          -0.2588,
          -0.7912
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 119
        }
       }
      ]
@@ -896,7 +916,8 @@
          0.4695,
          -0.0923
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -928,7 +949,8 @@
          0.4695,
          -0.0923
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -960,7 +982,8 @@
          0.9511,
          0.08
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -992,7 +1015,8 @@
          0.9511,
          0.1545
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -3
        }
       },
       {
@@ -1024,7 +1048,8 @@
          0.1392,
          0.0346
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -52
        }
       },
       {
@@ -1056,7 +1081,8 @@
          -0.5,
          -0.4967
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -7
        }
       }
      ]
@@ -1092,7 +1118,8 @@
          0.4226,
          -0.0947
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -1124,7 +1151,8 @@
          0.4226,
          -0.0947
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -1156,7 +1184,8 @@
          -0.309,
          -0.2621
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 30
        }
       },
       {
@@ -1188,7 +1217,8 @@
          0.1736,
          -0.1371
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 30
        }
       }
      ]
@@ -1325,7 +1355,8 @@
          0.9511,
          0.08
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -1357,7 +1388,8 @@
          0.9511,
          0.08
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -1389,7 +1421,8 @@
          0.9511,
          0.1545
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -3
        }
       },
       {
@@ -1421,7 +1454,8 @@
          0.1392,
          0.0346
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -52
        }
       },
       {
@@ -1453,7 +1487,8 @@
          -0.5,
          -0.4967
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -7
        }
       }
      ]
@@ -1489,7 +1524,8 @@
          0.1736,
          -0.2048
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -1521,7 +1557,8 @@
          0.1736,
          -0.2048
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -1553,7 +1590,8 @@
          0.5736,
          -0.671
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -1585,7 +1623,8 @@
          0.5,
          -0.1504
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 157
        }
       },
       {
@@ -1617,7 +1656,8 @@
          -0.4067,
          -0.1271
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 219
        }
       }
      ]
@@ -1741,7 +1781,8 @@
          0.4695,
          -0.0923
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -1773,7 +1814,8 @@
          0.4695,
          -0.0923
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -1805,7 +1847,8 @@
          0.1045,
          -0.0347
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -25
        }
       },
       {
@@ -1837,7 +1880,8 @@
          0.4226,
          -0.0947
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -25
        }
       }
      ]
@@ -1873,7 +1917,8 @@
          0.5,
          0.1504
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -1905,7 +1950,8 @@
          0.5,
          0.1504
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 0.0
        }
       },
       {
@@ -1937,7 +1983,8 @@
          0.9397,
          0.2198
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": 4
        }
       },
       {
@@ -1969,7 +2016,8 @@
          0.1045,
          0.0347
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -69
        }
       },
       {
@@ -2001,7 +2049,8 @@
          -0.5,
          -0.4967
         ],
-        "left_on": true
+        "left_on": true,
+        "roll": -9
        }
       }
      ]
@@ -2126,7 +2175,8 @@
        0.9511,
        0.08
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 0.0
      }
     },
     {
@@ -2158,7 +2208,8 @@
        0.9511,
        0.08
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 0.0
      }
     },
     {
@@ -2190,7 +2241,8 @@
        0.9511,
        0.1545
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": -3
      }
     },
     {
@@ -2222,7 +2274,8 @@
        0.1392,
        0.0346
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": -52
      }
     },
     {
@@ -2254,7 +2307,8 @@
        -0.5,
        -0.4967
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": -7
      }
     }
    ],
@@ -2333,7 +2387,8 @@
        0.9511,
        0.08
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 0.0
      }
     },
     {
@@ -2365,7 +2420,8 @@
        0.9511,
        0.08
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 0.0
      }
     },
     {
@@ -2397,7 +2453,8 @@
        0.342,
        0.883
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 71
      }
     },
     {
@@ -2429,7 +2486,8 @@
        -0.2079,
        -0.2532
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 88
      }
     },
     {
@@ -2461,7 +2519,8 @@
        -0.2588,
        -0.7912
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 88
      }
     }
    ],
@@ -2540,7 +2599,8 @@
        0.4695,
        -0.0923
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 0.0
      }
     },
     {
@@ -2572,7 +2632,8 @@
        0.4695,
        -0.0923
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 0.0
      }
     },
     {
@@ -2604,7 +2665,8 @@
        0.1045,
        -0.0347
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": -25
      }
     },
     {
@@ -2636,7 +2698,8 @@
        0.4226,
        -0.0947
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": -25
      }
     }
    ],
@@ -2715,7 +2778,8 @@
        0.4695,
        -0.0923
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 0.0
      }
     },
     {
@@ -2747,7 +2811,8 @@
        0.4695,
        -0.0923
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 0.0
      }
     },
     {
@@ -2779,7 +2844,8 @@
        0.9511,
        0.08
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 0.0
      }
     },
     {
@@ -2811,7 +2877,8 @@
        0.9511,
        0.1545
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": -3
      }
     },
     {
@@ -2843,7 +2910,8 @@
        0.1392,
        0.0346
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": -52
      }
     },
     {
@@ -2875,7 +2943,8 @@
        -0.5,
        -0.4967
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": -7
      }
     }
    ],
@@ -2966,7 +3035,8 @@
        0.5,
        0.1504
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 0.0
      }
     },
     {
@@ -2998,7 +3068,8 @@
        0.5,
        0.1504
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 0.0
      }
     },
     {
@@ -3030,7 +3101,8 @@
        0.9397,
        0.2198
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 4
      }
     },
     {
@@ -3062,7 +3134,8 @@
        0.1045,
        0.0347
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": -69
      }
     },
     {
@@ -3094,7 +3167,8 @@
        -0.5,
        -0.4967
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": -9
      }
     }
    ],
@@ -3173,7 +3247,8 @@
        0.5,
        0.1504
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 0.0
      }
     },
     {
@@ -3205,7 +3280,8 @@
        0.342,
        0.9361
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 113
      }
     },
     {
@@ -3237,7 +3313,8 @@
        -0.1736,
        0.0515
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 119
      }
     },
     {
@@ -3269,7 +3346,8 @@
        -0.2588,
        -0.7912
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 119
      }
     }
    ],
@@ -3336,7 +3414,8 @@
        0.4226,
        -0.0947
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 0.0
      }
     },
     {
@@ -3368,7 +3447,8 @@
        -0.309,
        -0.2621
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 30
      }
     },
     {
@@ -3400,7 +3480,8 @@
        0.1736,
        -0.1371
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 30
      }
     }
    ],
@@ -3467,7 +3548,8 @@
        0.1736,
        -0.2048
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 0.0
      }
     },
     {
@@ -3499,7 +3581,8 @@
        0.5736,
        -0.671
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 0.0
      }
     },
     {
@@ -3531,7 +3614,8 @@
        0.5,
        -0.1504
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 157
      }
     },
     {
@@ -3563,7 +3647,8 @@
        -0.4067,
        -0.1271
       ],
-      "left_on": true
+      "left_on": true,
+      "roll": 219
      }
     }
    ],

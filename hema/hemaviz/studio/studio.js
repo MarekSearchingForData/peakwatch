@@ -168,33 +168,135 @@ function placeCapsule(g, p, q) {
 }
 
 // ---- swords
-function makeSword(w) {
-  const g = new THREE.Group();
-  const steel = new THREE.MeshStandardMaterial({ color: 0xd5dae0, metalness: 0.85, roughness: 0.28, side: THREE.DoubleSide });
-  const dark = new THREE.MeshStandardMaterial({ color: 0x3a3028, roughness: 0.85 });
-  const W = w.width, L = w.blade, sh = new THREE.Shape();
-  if (w.key === 'messer') {   // single edge, straight back, clipped point
-    sh.moveTo(-W * 0.35, 0); sh.lineTo(W * 0.65, 0); sh.lineTo(W * 0.62, L * 0.72);
-    sh.quadraticCurveTo(W * 0.5, L * 0.93, -W * 0.15, L); sh.lineTo(-W * 0.35, L * 0.86); sh.lineTo(-W * 0.35, 0);
-  } else {
-    sh.moveTo(-W / 2, 0); sh.lineTo(W / 2, 0); sh.lineTo(W * 0.28, L * 0.9); sh.lineTo(0, L); sh.lineTo(-W * 0.28, L * 0.9); sh.lineTo(-W / 2, 0);
+// Built in the sword's own frame: +Y from the cross toward the tip, +X the
+// (true) edge, +Z = X x Y, the flat facing the fencer's right when the blade
+// is up and the edge forward (where the messer's Nagel sits).
+const MAT = {
+  steel: () => new THREE.MeshStandardMaterial({ color: 0xd9dee4, metalness: 0.6, roughness: 0.28, flatShading: true, envMap: steelEnv() }),
+  dark: () => new THREE.MeshStandardMaterial({ color: 0x9aa1aa, metalness: 0.85, roughness: 0.45 }),
+  leather: () => new THREE.MeshStandardMaterial({ color: 0x3a2a20, roughness: 0.9 }),
+  wood: () => new THREE.MeshStandardMaterial({ color: 0x6e4a2c, roughness: 0.75 }),
+  brass: () => new THREE.MeshStandardMaterial({ color: 0xb48f55, metalness: 0.8, roughness: 0.35 }),
+};
+let _env = null;
+function steelEnv() {             // soft studio gradient for the steel to reflect
+  if (_env) return _env;
+  const c = document.createElement('canvas'); c.width = 4; c.height = 64;
+  const x = c.getContext('2d'), gr = x.createLinearGradient(0, 0, 0, 64);
+  gr.addColorStop(0, '#f4f6f8'); gr.addColorStop(0.45, '#9aa3ad'); gr.addColorStop(0.55, '#3a3f46'); gr.addColorStop(1, '#1b1d21');
+  x.fillStyle = gr; x.fillRect(0, 0, 4, 64);
+  _env = new THREE.CanvasTexture(c); _env.mapping = THREE.EquirectangularReflectionMapping; _env.encoding = THREE.sRGBEncoding;
+  return _env;
+}
+// Loft a blade from cross-sections. section(y) -> [[x, z], ...] (closed ring).
+function loftBlade(L, n, section) {
+  const rings = [];
+  for (let i = 0; i <= n; i++) { const y = L * i / n; rings.push(section(y).map(([x, z]) => [x, y, z])); }
+  const m = rings[0].length, pos = [], idx = [];
+  rings.forEach(r => r.forEach(p => pos.push(...p)));
+  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) {
+    const a = i * m + j, b = i * m + (j + 1) % m, c = (i + 1) * m + j, d = (i + 1) * m + (j + 1) % m;
+    idx.push(a, c, b, b, c, d);
   }
-  const bg = new THREE.ExtrudeGeometry(sh, { depth: 0.005, bevelEnabled: false }); bg.translate(0, 0, -0.0025);
-  const blade = new THREE.Mesh(bg, steel);
-  const crossM = new THREE.Mesh(new THREE.BoxGeometry(w.guard_half * 2, 0.018, 0.02), steel);
-  const gl = w.grip - 0.04;
-  const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.017, gl, 10), dark); grip.position.y = -gl / 2;
-  const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.027, 12, 10), steel); pommel.position.y = -w.grip + 0.01;
-  g.add(blade, crossM, grip, pommel);
-  if (w.nagel) { const n = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.012, 0.06), steel); n.position.set(0, 0.006, 0.035); g.add(n); }
-  g.userData.steel = steel;
+  for (let j = 1; j < m - 1; j++) idx.push(0, j + 1, j);          // cap the base
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  return g;
+}
+function lathe(profile, mat) {   // profile: [[r, y], ...] revolved about Y
+  return new THREE.Mesh(new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r, y)), 20), mat);
+}
+function tubeAlong(points, r, mat) {
+  const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)));
+  return new THREE.Mesh(new THREE.TubeGeometry(curve, 24, r, 8, false), mat);
+}
+
+// Feder: the HEMA sparring longsword. Narrow blunt blade (2 mm edges), flared
+// schilt at the base, rounded tip, long leather grip, pear pommel.
+function makeFeder(w) {
+  const g = new THREE.Group(), steel = MAT.steel(), L = w.blade;
+  const width = y => {
+    if (y < 0.012) return 0.044 + (0.062 - 0.044) * y / 0.012;
+    if (y < 0.06) return 0.062;                                     // schilt
+    if (y < 0.085) return 0.062 - (0.062 - 0.034) * (y - 0.06) / 0.025;
+    const yt = 0.93 * L;
+    if (y < yt) return 0.034 - 0.008 * (y - 0.085) / (yt - 0.085);
+    const u = Math.min(1, (y - yt) / (L - yt));
+    return Math.max(0.002, 0.026 * Math.sqrt(1 - u * u));         // rounded tip
+  };
+  const thick = y => (y < 0.085 ? 0.0065 : 0.0055 - 0.0025 * y / L);
+  const blade = new THREE.Mesh(loftBlade(L, 60, y => {
+    const hw = width(y) / 2, t = thick(y) / 2, te = Math.min(0.001, t);
+    return [[hw, te], [0, t], [-hw, te], [-hw, -te], [0, -t], [hw, -te]];
+  }), steel);
+  const h = w.guard_half;
+  const cross = tubeAlong([[-h, 0.016, 0], [-h * 0.5, 0.003, 0], [0, 0, 0], [h * 0.5, 0.003, 0], [h, 0.016, 0]], 0.0068, steel);
+  const knob = x => { const k = new THREE.Mesh(new THREE.SphereGeometry(0.0095, 12, 10), steel); k.position.set(x, 0.017, 0); return k; };
+  const block = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.022, 0.02), steel);   // cross block
+  const gl = w.grip - 0.055;
+  const grip = lathe([[0.0, 0], [0.0158, 0], [0.0150, -0.03], [0.0136, -gl * 0.35], [0.0146, -gl * 0.65], [0.0128, -gl], [0, -gl]], MAT.leather());
+  const pommel = lathe([[0, -gl], [0.012, -gl], [0.022, -gl - 0.016], [0.026, -gl - 0.03], [0.02, -gl - 0.045], [0.009, -gl - 0.052],
+    [0.006, -gl - 0.052], [0.006, -w.grip], [0, -w.grip]], steel);
+  g.add(blade, cross, knob(-h), knob(h), block, grip, pommel);
+  return g;
+}
+
+// Kriegsmesser: two-handed, single-edged, gently curved toward the edge,
+// clipped point with a short false edge, riveted wooden grip scales on a flat
+// tang, a cap hooked toward the edge, straight cross and the Nagel.
+function makeMesser(w) {
+  const g = new THREE.Group(), steel = MAT.steel(), L = w.blade, c = w.curve || 0.02;
+  const bow = y => c * 4 * (y / L) * (1 - y / L);                  // bulge toward the edge
+  const W0 = 0.036, Wm = 0.043, yc = 0.80 * L;                     // clip starts here
+  const blade = new THREE.Mesh(loftBlade(L, 70, y => {
+    const u = y / L, wid = W0 + (Wm - W0) * Math.min(1, u / 0.7);
+    let e = 0.58 * wid, bk = -0.42 * wid;                          // edge / back extents
+    if (y > yc) {
+      const v = (y - yc) / (L - yc);
+      e = e * Math.sqrt(Math.max(0, 1 - v * v * v));               // edge curves up to the point
+      bk = bk + (0.42 * wid + 0.12 * wid) * v;                     // back drops: false edge
+      if (bk > e) bk = e;
+    }
+    const ox = bow(y), tb = (0.0062 - 0.0022 * u) / 2, te = 0.0009, tm = tb * 0.85;
+    const backT = y > yc ? Math.max(te, tb * (1 - (y - yc) / (L - yc))) : tb;   // false edge thins the back
+    return [[ox + e, te], [ox + (e + bk) / 2, tm], [ox + bk, backT], [ox + bk, -backT], [ox + (e + bk) / 2, -tm], [ox + e, -te]];
+  }), steel);
+  const h = w.guard_half;
+  const cross = tubeAlong([[-h, 0.004, 0], [-h * 0.4, 0, 0], [h * 0.4, 0, 0], [h, 0.004, 0]], 0.0055, steel);
+  const knob = x => { const k = new THREE.Mesh(new THREE.SphereGeometry(0.008, 12, 10), steel); k.position.set(x, 0.004, 0); return k; };
+  const nagel = new THREE.Mesh(new THREE.CylinderGeometry(0.0065, 0.0075, 0.032, 12), steel);
+  nagel.rotation.x = Math.PI / 2; nagel.position.set(0.004, 0.002, 0.018);
+  const nagelCap = new THREE.Mesh(new THREE.SphereGeometry(0.0072, 12, 10), steel); nagelCap.position.set(0.004, 0.002, 0.034);
+  const gl = w.grip - 0.028;
+  const shape = new THREE.Shape(), gw = 0.033, gt = 0.022, rr = 0.007;   // rounded-rect grip section
+  shape.moveTo(-gw / 2 + rr, -gt / 2); shape.lineTo(gw / 2 - rr, -gt / 2); shape.quadraticCurveTo(gw / 2, -gt / 2, gw / 2, -gt / 2 + rr);
+  shape.lineTo(gw / 2, gt / 2 - rr); shape.quadraticCurveTo(gw / 2, gt / 2, gw / 2 - rr, gt / 2); shape.lineTo(-gw / 2 + rr, gt / 2);
+  shape.quadraticCurveTo(-gw / 2, gt / 2, -gw / 2, gt / 2 - rr); shape.lineTo(-gw / 2, -gt / 2 + rr); shape.quadraticCurveTo(-gw / 2, -gt / 2, -gw / 2 + rr, -gt / 2);
+  const gg = new THREE.ExtrudeGeometry(shape, { depth: gl, bevelEnabled: false, curveSegments: 4 });
+  gg.rotateX(Math.PI / 2);                                         // extrusion now runs down -Y
+  const grip = new THREE.Mesh(gg, MAT.wood());
+  const tang = (x) => { const t = new THREE.Mesh(new THREE.BoxGeometry(0.0035, gl, gt + 0.001), MAT.dark()); t.position.set(x, -gl / 2, 0); return t; };
+  const rivets = [0.25, 0.55, 0.85].map(f => { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.0042, 0.0042, gt + 0.004, 10), MAT.brass()); r.rotation.x = Math.PI / 2; r.position.set(0, -gl * f, 0); return r; });
+  const cap = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.024, gt + 0.004), steel);   // Knauf hooked toward the edge
+  cap.position.set(0.006, -gl - 0.01, 0); cap.rotation.z = -0.35;
+  g.add(blade, cross, knob(-h), knob(h), nagel, nagelCap, grip, tang(gw / 2), tang(-gw / 2), cap, ...rivets);
+  return g;
+}
+
+function makeSword(w) {
+  const g = w.key === 'messer' ? makeMesser(w) : makeFeder(w);
+  const steels = []; g.traverse(o => { if (o.isMesh && o.material.envMap) steels.push(o.material); });
+  g.userData.steel = { color: { setHex: hex => steels.forEach(m => m.color.setHex(hex === 0xd5dae0 ? 0xd9dee4 : hex)) } };
   scene.add(g);
   return g;
 }
 const mBasis = new THREE.Matrix4();
 function placeSword(g, sk) {
   const d = V.norm(V.sub(sk.tip, sk.guard));
-  let ax = V.cross(d, [0, 1, 0]); if (V.len(ax) < 0.2) ax = [0, 0, 1]; ax = V.norm(ax);
+  let ax = sk.edge ? V.sub(sk.edge, V.mul(d, V.dot(sk.edge, d))) : V.cross(d, [0, 1, 0]);
+  if (V.len(ax) < 0.2) ax = V.cross(d, [0, 1, 0]);
+  if (V.len(ax) < 0.2) ax = [0, 0, 1];
+  ax = V.norm(ax);
   const z = V.cross(ax, d);
   mBasis.makeBasis(v3(ax), v3(d), v3(z));
   g.quaternion.setFromRotationMatrix(mBasis); g.position.set(...sk.guard);
@@ -594,7 +696,7 @@ function editPose(fn) { const f = S.fencer; if (!S.work[f]) S.work[f] = clone(au
 function syncPoseUI() {
   if (!S.lib) return;
   const p = curPose();
-  $('yaw').value = p.yaw; $('lean').value = p.lean;
+  $('yaw').value = p.yaw; $('lean').value = p.lean; $('roll').value = p.roll || 0;
   $('crouch').value = Math.max(0, H.maxPelvisY(p, bodyOf(S.fencer)) - p.hip[1]);
   $('leftOn').checked = !!p.left_on;
   const dirty = !!S.work[S.fencer];
@@ -607,6 +709,7 @@ function syncPoseUI() {
 }
 $('yaw').oninput = e => editPose(p => { p.yaw = +e.target.value; });
 $('lean').oninput = e => editPose(p => { p.lean = +e.target.value; });
+$('roll').oninput = e => editPose(p => { p.roll = +e.target.value; });
 $('crouch').oninput = e => editPose(p => { p.hip[1] = H.maxPelvisY(p, bodyOf(S.fencer)) - +e.target.value; });
 $('leftOn').onchange = e => editPose(p => { p.left_on = e.target.checked; });
 function renderGuards() {
@@ -1039,5 +1142,5 @@ function frame(now) {
 }
 resize(); camUpdate();
 requestAnimationFrame(frame);
-window.__studio = { S, seek, setMode, record, togglePlay, figures: () => figures, cam };
+window.__studio = { S, seek, setMode, record, togglePlay, figures: () => figures, cam, makeSword, scene };
 })();

@@ -42,8 +42,8 @@
   const bodyOf = k => BODIES[k] || BODIES.male;
 
   const WEAPONS = {
-    longsword: { key: 'longsword', name: 'Longsword', blade: 0.95, grip: 0.27, hand_sep: 0.15, guard_half: 0.13, nagel: false, width: 0.045 },
-    messer: { key: 'messer', name: 'Kriegsmesser', blade: 0.80, grip: 0.25, hand_sep: 0.12, guard_half: 0.10, nagel: true, width: 0.06 },
+    longsword: { key: 'longsword', name: 'Longsword (Feder)', blade: 0.95, grip: 0.29, hand_sep: 0.15, guard_half: 0.135, nagel: false, width: 0.034, curve: 0 },
+    messer: { key: 'messer', name: 'Kriegsmesser', blade: 0.80, grip: 0.28, hand_sep: 0.13, guard_half: 0.10, nagel: true, width: 0.042, curve: 0.022 },
   };
 
   // Strength / pace vocabulary for the bars.
@@ -83,7 +83,7 @@
   const DEFAULT_POSE = {
     hip: [0, 0.88, 0], yaw: -20, lean: 0,
     lfoot: [0.30, -0.13], rfoot: [-0.30, 0.15],
-    grip: [0.30, 1.0, 0.14], blade: bladeDir(28, -6), left_on: true,
+    grip: [0.30, 1.0, 0.14], blade: bladeDir(28, -6), left_on: true, roll: 0,
   };
   const clonePose = p => JSON.parse(JSON.stringify(p));
 
@@ -94,6 +94,7 @@
       rfoot: [lerp(a.rfoot[0], b.rfoot[0], u), lerp(a.rfoot[1], b.rfoot[1], u)],
       grip: lerp3(a.grip, b.grip, u), blade: slerp(a.blade, b.blade, u),
       left_on: u > 0.5 ? b.left_on : a.left_on,
+      roll: lerp(a.roll || 0, b.roll || 0, u),
     };
   }
   function footLift(a, b, u) {
@@ -168,11 +169,20 @@
     // the palm side follows from which hand it is (mirror images). The wrist
     // is placed so the hilt axis sits where the solved finger curl wraps it:
     // D.hand along the fingers and D.palm toward the palm.
-    const gripFrame = (sh, hand, side) => {
+    // The true edge lines up with the front hand's knuckles. By default it
+    // faces along the front arm's reach (square to the blade); pose.roll turns
+    // it about the blade. Both hands grip along the same edge line.
+    const rotAbout = (v, axis, deg) => {   // Rodrigues
+      const c = Math.cos(rad(deg)), s2 = Math.sin(rad(deg));
+      return add(add(mul(v, c), mul(cross(axis, v), s2)), mul(axis, dot(axis, v) * (1 - c)));
+    };
+    let edge = sub(hand_r, sh_r); edge = sub(edge, mul(d, dot(edge, d)));
+    if (len(edge) < 1e-4) edge = sub(fwd, mul(d, dot(fwd, d)));
+    edge = norm(rotAbout(norm(edge), d, pose.roll || 0));
+    const gripFrame = (sh, hand, side, Fin) => {
       const K = mul(d, -1);
-      let F = sub(hand, sh); F = sub(F, mul(d, dot(F, d)));
-      if (len(F) < 1e-4) F = sub(fwd, mul(d, dot(fwd, d)));
-      F = norm(F);
+      let F = Fin;
+      if (!F) { F = sub(hand, sh); F = sub(F, mul(d, dot(F, d))); if (len(F) < 1e-4) F = sub(fwd, mul(d, dot(fwd, d))); F = norm(F); }
       const palm = mul(cross(F, K), side);          // side: +1 right, -1 left
       const wrist = sub(sub(hand, mul(F, D.hand)), mul(palm, D.palm));
       return { F, K, palm, wrist };
@@ -181,7 +191,7 @@
       const pole = add(add(mul(up, -0.7), mul(right, 0.6 * side)), mul(fwd, -0.2));
       return twoBone(sh, clampReach(sh, wrist, D.upper + D.fore - 0.002), D.upper, D.fore, pole);
     };
-    const gr = gripFrame(sh_r, hand_r, 1), gl = gripFrame(sh_l, hand_l, -1);
+    const gr = gripFrame(sh_r, hand_r, 1, edge), gl = gripFrame(sh_l, hand_l, -1, pose.left_on ? edge : null);
     const wr_r = clampReach(sh_r, gr.wrist, D.upper + D.fore - 0.002), wr_l = clampReach(sh_l, gl.wrist, D.upper + D.fore - 0.002);
     const el_r = arm(sh_r, wr_r, 1), el_l = arm(sh_l, wr_l, -1);
 
@@ -198,7 +208,7 @@
       hand_l, hand_r, hp_l, hp_r, kn_l, kn_r, an_l, an_r, toe_l: toe(an_l), toe_r: toe(an_r),
       guard, tip: add(guard, mul(d, weapon.blade)), pommel: sub(guard, mul(d, weapon.grip)),
       fwd, up, right, hfwd,
-      hF_r: gr.F, hK_r: gr.K, hF_l: gl.F, hK_l: gl.K,
+      hF_r: gr.F, hK_r: gr.K, hF_l: gl.F, hK_l: gl.K, edge,
     };
   }
 
@@ -218,7 +228,7 @@
   function toLocal(v, origin, facing) {
     return facing === 1 ? [v[0] - origin, v[1], v[2]] : [origin - v[0], v[1], -v[2]];
   }
-  const DIR_KEYS = new Set(['fwd', 'up', 'right', 'hfwd', 'hF_r', 'hK_r', 'hF_l', 'hK_l']);
+  const DIR_KEYS = new Set(['fwd', 'up', 'right', 'hfwd', 'hF_r', 'hK_r', 'hF_l', 'hK_l', 'edge']);
   function skeletonWorld(sk, origin, facing) {
     const out = {};
     for (const k in sk) {
@@ -247,9 +257,11 @@
     }
     return [len(sub(add(p1, mul(d1, s)), add(p2, mul(d2, t)))), s, t];
   }
-  function crossEnds(guard, tip, half) {
+  /** Crossguard bar endpoints: the quillons lie in the plane of the edges. */
+  function crossEnds(guard, tip, half, edge) {
     const d = norm(sub(tip, guard));
-    let ax = cross(d, [0, 1, 0]);
+    let ax = edge ? sub(edge, mul(d, dot(edge, d))) : cross(d, [0, 1, 0]);
+    if (len(ax) < 0.2) ax = cross(d, [0, 1, 0]);
     if (len(ax) < 0.2) ax = [0, 0, 1];
     ax = norm(ax);
     return [sub(guard, mul(ax, half)), add(guard, mul(ax, half))];
@@ -442,7 +454,7 @@
     let best = null;
     let [d, sa, sb] = segSeg(ag, at, bg, bt);
     if (d < BIND_DIST) best = [d, sa, sb, add(ag, mul(sub(at, ag), sa)), add(bg, mul(sub(bt, bg), sb))];
-    const [ca0, ca1] = crossEnds(ag, at, W[0].guard_half), [cb0, cb1] = crossEnds(bg, bt, W[1].guard_half);
+    const [ca0, ca1] = crossEnds(ag, at, W[0].guard_half, SK[0].edge), [cb0, cb1] = crossEnds(bg, bt, W[1].guard_half, SK[1].edge);
     let r = segSeg(ca0, ca1, bg, bt);
     if (r[0] < BIND_DIST && (!best || r[0] < best[0])) best = [r[0], 0, r[2], add(ca0, mul(sub(ca1, ca0), r[1])), add(bg, mul(sub(bt, bg), r[2]))];
     r = segSeg(ag, at, cb0, cb1);
