@@ -280,50 +280,82 @@ function curlFingers(sceneRoot, bones, body) {
     b.quaternion.premultiply(delta); b.updateMatrixWorld(true);
   };
   const axisQ = (x, y, z, deg) => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(x, y, z).normalize(), deg * Math.PI / 180);
+  const pads = { l: thumbPads(bones, 'l'), r: thumbPads(bones, 'r') };
   for (const sd of ['l', 'r']) {
     const m = sd === 'l' ? 1 : -1;          // mirror sign
     for (const f of ['index', 'middle', 'ring', 'pinky']) {
       G[f].forEach((deg, i) => rotWorld(bones[`${f}_0${i + 1}_${sd}`], axisQ(0, 0, 1, -m * deg)));
     }
-    placeThumb(bones, sd, body);
+    placeThumb(bones, sd, body, pads[sd]);
   }
 }
 
-// Thumb IK in the model's T-pose frame. The handle axis follows from the
-// hand: it runs index -> pinky, D.hand along the fingers and D.palm toward
-// the palm (palms face down in the T-pose). Targets: the thumb's middle joint
-// against the back of the handle, its tip on the outside of the index
-// finger's middle segment. Two CCD passes reach them without stretching.
-function placeThumb(bones, sd, body) {
+// The thumb is an opposing digit: it wraps around the handle the other way
+// from the fingers and meets them. In the model's T-pose frame we lay its
+// three joints on an arc round the handle at the index finger's position
+// (outside the curled fingers), going opposite to the fingers' wrap, then aim
+// each thumb bone at the next joint and roll it so the pad faces the handle
+// (nail out). Each hand uses its own geometry, so left/right and both bodies
+// work the same way.
+function placeThumb(bones, sd, body, padLocal) {
   const W = n => { const v = new THREE.Vector3(); bones[`${n}_${sd}`].getWorldPosition(v); return v; };
   const hand = W('hand'), F = W('middle_01').sub(hand); F.y = 0; F.normalize();
   const palm = new THREE.Vector3(0, -1, 0);
   const K = W('pinky_01').sub(W('index_01')); K.addScaledVector(F, -K.dot(F)).addScaledVector(palm, -K.dot(palm)).normalize();
-  const C = hand.clone().addScaledVector(F, body.hand).addScaledVector(palm, body.palm);   // a point on the axis
-  const onAxis = p => C.clone().addScaledVector(K, p.clone().sub(C).dot(K));
-  const outward = p => p.clone().sub(onAxis(p)).normalize();
+  const C = hand.clone().addScaledVector(F, body.hand).addScaledVector(palm, body.palm);   // point on the handle axis
+  // cross-section basis: e1, e2 with e1 x e2 = K
+  const e1 = F.clone(), e2 = new THREE.Vector3().crossVectors(K, e1);
+  const ang = p => { const w = p.clone().sub(C); return Math.atan2(w.dot(e2), w.dot(e1)); };
+  const axial = p => p.clone().sub(C).dot(K);
+  const at = (phi, r, s) => C.clone().addScaledVector(K, s).addScaledVector(e1, r * Math.cos(phi)).addScaledVector(e2, r * Math.sin(phi));
+  // which way do the fingers wrap? (sign of d(angle) along the index finger)
+  const unwrap = x => Math.atan2(Math.sin(x), Math.cos(x));
+  const fingerSense = Math.sign(unwrap(ang(W('index_03')) - ang(W('index_02'))) || 1);
+  const len = (a, b) => W(a).distanceTo(W(b));
+  const L2 = len('thumb_02', 'thumb_03'), L3 = len('thumb_03', 'thumb_04_leaf');
+  const R = 0.037;                                   // outside the fingers (handle 1.6 cm + finger)
   const i2 = W('index_02'), i3 = W('index_03');
-  const seg = i2.clone().add(i3).multiplyScalar(0.5);
-  const tipT = seg.clone().addScaledVector(outward(seg), 0.016);
-  // middle joint: on the handle surface at the back (toward the wrist, -F),
-  // swung toward the palm side, halfway along the handle from base to tip
-  const base = W('thumb_01');
-  const mid = onAxis(base.clone().lerp(tipT, 0.55)).addScaledVector(F.clone().multiplyScalar(-1).add(palm.clone().multiplyScalar(0.9)).normalize(), 0.03);
-  const bonesT = [1, 2, 3].map(i => bones[`thumb_0${i}_${sd}`]);
-  const tipBone = bones[`thumb_04_leaf_${sd}`];
-  const wp = new THREE.Vector3(), we = new THREE.Vector3(), pq = new THREE.Quaternion(), q = new THREE.Quaternion();
-  const ccd = (chain, effector, target, iters) => {
-    for (let it = 0; it < iters; it++) for (const b of chain) {
-      b.getWorldPosition(wp); effector.getWorldPosition(we);
-      const from = we.sub(wp).normalize(), to = target.clone().sub(wp).normalize();
-      if (from.lengthSq() < 1e-9 || to.lengthSq() < 1e-9) continue;
-      q.setFromUnitVectors(from, to);
+  const sIdx = (axial(i2) + axial(i3)) / 2 + 0.006;  // just on the guard side of the index finger
+  const phiTip = ang(i2.clone().add(i3).multiplyScalar(0.5));   // tip rests over the index middle segment
+  const d3 = 2 * Math.asin(Math.min(1, L3 / (2 * R))), d2 = 2 * Math.asin(Math.min(1, L2 / (2 * R)));
+  // walking back from the tip toward the thumb's base goes WITH the fingers'
+  // sense, so the thumb itself (base -> tip) wraps against them
+  const T4 = at(phiTip, R, sIdx);
+  const T3 = at(phiTip + fingerSense * d3, R, sIdx - 0.004);
+  const T2 = at(phiTip + fingerSense * (d3 + d2), R + 0.004, sIdx - 0.012);
+  const chain = [['thumb_01', 'thumb_02', T2], ['thumb_02', 'thumb_03', T3], ['thumb_03', 'thumb_04_leaf', T4]];
+  const pq = new THREE.Quaternion(), bq = new THREE.Quaternion(), q = new THREE.Quaternion();
+  for (const [bn, cn, target] of chain) {
+    const b = bones[`${bn}_${sd}`], bp = W(bn);
+    const cur = W(cn).sub(bp).normalize(), want = target.clone().sub(bp).normalize();
+    q.setFromUnitVectors(cur, want);
+    b.parent.getWorldQuaternion(pq);
+    b.quaternion.premultiply(pq.clone().invert().multiply(q).multiply(pq)); b.updateMatrixWorld(true);
+    // roll about the segment so the pad faces the handle axis
+    b.getWorldQuaternion(bq);
+    const pad = padLocal[bn].clone().applyQuaternion(bq);
+    const seg = want, mid = bp.clone().add(target).multiplyScalar(0.5);
+    const toAxis = C.clone().addScaledVector(K, axial(mid)).sub(mid);
+    const pa = pad.addScaledVector(seg, -pad.dot(seg)).normalize(), ta = toAxis.addScaledVector(seg, -toAxis.dot(seg)).normalize();
+    if (pa.lengthSq() > 0.5 && ta.lengthSq() > 0.5) {
+      q.setFromUnitVectors(pa, ta);
       b.parent.getWorldQuaternion(pq);
       b.quaternion.premultiply(pq.clone().invert().multiply(q).multiply(pq)); b.updateMatrixWorld(true);
     }
-  };
-  ccd([bonesT[1], bonesT[0]], bonesT[2], mid, 12);        // middle joint to the back of the handle
-  ccd([bonesT[2], bonesT[1]], tipBone, tipT, 12);         // tip onto the index finger
+  }
+}
+// Rest-pose pad direction of each thumb bone (toward the palm / index
+// knuckle, square to the bone), stored in the bone's own frame.
+function thumbPads(bones, sd) {
+  const out = {}, W = n => { const v = new THREE.Vector3(); bones[`${n}_${sd}`].getWorldPosition(v); return v; };
+  const q = new THREE.Quaternion();
+  for (const [bn, cn] of [['thumb_01', 'thumb_02'], ['thumb_02', 'thumb_03'], ['thumb_03', 'thumb_04_leaf']]) {
+    const bp = W(bn), seg = W(cn).sub(bp).normalize();
+    const pad = W('index_01').sub(bp); pad.addScaledVector(seg, -pad.dot(seg)).normalize();
+    bones[`${bn}_${sd}`].getWorldQuaternion(q);
+    out[bn] = pad.applyQuaternion(q.invert());
+  }
+  return out;
 }
 
 // Each vertex belongs to the body part of the bone that moves it most, so a
