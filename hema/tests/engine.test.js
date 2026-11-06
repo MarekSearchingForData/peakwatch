@@ -98,3 +98,19 @@ test('arms stay anatomical: wrists in range, elbows outside the body', () => {
   }
   assert.ok(wristOk / frames > 0.9, `only ${(100 * wristOk / frames).toFixed(0)}% of frames have the wrists in range`);
 });
+
+test('arms go around the head and the hilt stays out of the body', () => {
+  const V = H.vec;
+  for (const ex of lib.exchanges) for (const f of [0, 1]) {
+    const L = H.layout(ex, f), W = H.WEAPONS[ex.fencers[f].weapon], B = H.bodyOf(ex.fencers[f].body), hint = {};
+    for (let t = 0; t <= L.real[L.real.length - 1]; t += 10) {
+      const p = H.poseAt(ex, L, t, null), sk = H.skeleton(p.pose, W, p.lift, B, hint);
+      for (const sd of ['r', 'l']) {
+        const dF = H.segSeg(sk.head, sk.head, sk['el_' + sd], sk['wr_' + sd])[0], dU = H.segSeg(sk.head, sk.head, sk['sh_' + sd], sk['el_' + sd])[0];
+        assert.ok(Math.min(dF, dU) > 0.13, `${ex.id} ${'AB'[f]} ${sd} arm through the head at ${t} ms`);
+      }
+      const dH = H.segSeg(sk.hand_l, sk.hand_r, sk.pelvis, sk.chest)[0];
+      assert.ok(dH > 0.15, `${ex.id} ${'AB'[f]} hilt inside the body at ${t} ms`);
+    }
+  }
+});

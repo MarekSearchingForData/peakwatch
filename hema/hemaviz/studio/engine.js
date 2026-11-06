@@ -39,6 +39,7 @@
     },
   };
   const DIMS = BODIES.male;
+  const GRIP_DIAG = 22;   // handle across the palm (deg)
   const bodyOf = k => BODIES[k] || BODIES.male;
 
   const WEAPONS = {
@@ -164,6 +165,25 @@
     } else {
       hand_l = add(sh_l, add(mul(up, -0.5), add(mul(fwd, 0.10), mul(right, -0.08))));
     }
+    // Self-collision repair: a pose may ask for the hilt inside the head or
+    // the belly. Push the hands just clear (head: hand + head radius, trunk:
+    // hand + trunk radius) so arms and fists never go through the body.
+    {
+      const nearPt = (p, a, b) => { const ab = sub(b, a), l2 = dot(ab, ab); const u = l2 ? Math.max(0, Math.min(1, dot(sub(p, a), ab) / l2)) : 0; return add(a, mul(ab, u)); };
+      const hiltA = () => pose.left_on ? sub(hand_l, mul(d, 0.04)) : hand_r, hiltB = () => add(hand_r, mul(d, 0.04));
+      const shift = v => { hand_r = add(hand_r, v); if (pose.left_on) hand_l = add(hand_l, v); };
+      for (let it = 0; it < 2; it++) {
+        const ph = nearPt(head, hiltA(), hiltB()), dh = len(sub(ph, head));
+        if (dh < 0.2) { const dir = dh > 1e-4 ? norm(sub(ph, head)) : fwd; shift(mul(dir, 0.2 - dh)); }
+        const [dt, sa, sb] = segSegInline(hiltA(), hiltB(), hip, neck);   // trunk and neck
+        if (dt < 0.22) {
+          const pa = add(hiltA(), mul(sub(hiltB(), hiltA()), sa)), pb = add(hip, mul(sub(neck, hip), sb));
+          let dir = sub(pa, pb); dir = sub(dir, mul(up, dot(dir, up)));    // push out horizontally
+          dir = len(dir) > 1e-3 ? norm(dir) : fwd;
+          shift(mul(dir, 0.22 - dt));
+        }
+      }
+    }
     // Grip frame per hand: knuckle line (index -> pinky) runs toward the
     // pommel, fingers point along the arm's reach (square to the hilt), and
     // the palm side follows from which hand it is (mirror images). The wrist
@@ -189,15 +209,22 @@
       let F = Fin;
       if (!F) { F = sub(hand, sh); F = sub(F, mul(d, dot(F, d))); if (len(F) < 1e-4) F = sub(fwd, mul(d, dot(fwd, d))); F = norm(F); }
       const palm = mul(cross(F, K), side);          // side: +1 right, -1 left
-      const wrist = sub(sub(hand, mul(F, D.hand)), mul(palm, D.palm));
-      return { F, K, palm, wrist };
+      // The handle lies diagonally across the palm (index base -> heel of the
+      // hand), so the hand's own axes are turned ~22 deg about the palm normal:
+      // the fingers lean toward the blade and the forearm comes in from the
+      // pommel side, as in a real sword grip.
+      const ct = Math.cos(rad(GRIP_DIAG)), st = Math.sin(rad(GRIP_DIAG));
+      const Fd = norm(add(mul(F, ct), mul(d, st)));
+      const Kd = norm(sub(K, mul(Fd, dot(K, Fd))));
+      const wrist = sub(sub(hand, mul(Fd, D.hand)), mul(palm, D.palm));
+      return { F: Fd, K: Kd, palm, wrist };
     };
     // Elbow swivel: the elbow can sit anywhere on a circle around the
     // shoulder-wrist line. Pick the spot that lets the forearm line up with
     // the hand (wrist flexion within ~70 deg, sideways deviation within ~35)
     // and keeps the elbow anatomically sensible (own side of the chest, not
     // behind the back, not hiked above the shoulder).
-    const arm = (sh, wrist, side, gf, thHint, exact) => {
+    const arm = (sh, wrist, side, gf, thHint, exact, avoid) => {
       const L1 = D.upper, L2 = D.fore;
       const w = clampReach(sh, wrist, L1 + L2 - 0.002), ax = norm(sub(w, sh));
       let dd = len(sub(w, sh)); dd = Math.min(Math.max(dd, Math.abs(L1 - L2) + 1e-4), L1 + L2 - 1e-4);
@@ -214,6 +241,13 @@
       const [tax, tay, taz] = hip, tbx = chest[0] - tax, tby = chest[1] - tay, tbz = chest[2] - taz;   // trunk: pelvis -> chest
       const tll = tbx * tbx + tby * tby + tbz * tbz;
       const TORSO_CLEAR = 0.17;                                         // elbow resting against the side
+      const [hdx, hdy, hdz] = head, HEAD_CLEAR = 0.165;                  // head radius + arm
+      const [shx0, shy0, shz0] = sh;
+      // the other arm (forearm and upper arm) as obstacles, flattened to scalars
+      const avs = (avoid || []).map(([a, b]) => { const bx = b[0] - a[0], by = b[1] - a[1], bz = b[2] - a[2]; return [a[0], a[1], a[2], bx, by, bz, (bx * bx + by * by + bz * bz) || 1e-9]; });
+      const nAv = avs.length;
+      const dAv = (x, y, z) => { let m = 9; for (let i = 0; i < nAv; i++) { const o = avs[i]; let q = ((x - o[0]) * o[3] + (y - o[1]) * o[4] + (z - o[2]) * o[5]) / o[6]; q = q < 0 ? 0 : q > 1 ? 1 : q;
+        const dd = Math.hypot(x - o[0] - o[3] * q, y - o[1] - o[4] * q, z - o[2] - o[5] * q); if (dd < m) m = dd; } return m; };
       const cost = th => {
         const ct = Math.cos(th), st = Math.sin(th);
         const ox = ux * ct + vx * st, oy = uy * ct + vy * st, oz = uz * ct + vz * st;   // unit offset
@@ -230,11 +264,28 @@
         let tu = ((ex - tax) * tbx + (ey - tay) * tby + (ez - taz) * tbz) / tll; tu = tu < 0 ? 0 : tu > 1 ? 1 : tu;
         const td = Math.hypot(ex - tax - tbx * tu, ey - tay - tby * tu, ez - taz - tbz * tu);
         if (td < TORSO_CLEAR) c += ((TORSO_CLEAR - td) / 0.03) ** 2 * 10; // elbow inside the body
+        // arm segments must go around the head and stay out of the trunk (unrolled, no allocation)
+        let px, py, pz, dd;
+        px = (shx0 + ex) * 0.5; py = (shy0 + ey) * 0.5; pz = (shz0 + ez) * 0.5;          // upper arm middle
+        dd = Math.hypot(px - hdx, py - hdy, pz - hdz); if (dd < HEAD_CLEAR) c += ((HEAD_CLEAR - dd) / 0.03) ** 2 * 10;
+        dd = Math.hypot(ex - hdx, ey - hdy, ez - hdz); if (dd < HEAD_CLEAR) c += ((HEAD_CLEAR - dd) / 0.03) ** 2 * 10;   // elbow
+        for (let k = 0.33; k < 1; k += 0.285) {                             // forearm at 0.33, 0.615, 0.9
+          px = ex + (wx - ex) * k; py = ey + (wy - ey) * k; pz = ez + (wz - ez) * k;
+          dd = Math.hypot(px - hdx, py - hdy, pz - hdz); if (dd < HEAD_CLEAR) c += ((HEAD_CLEAR - dd) / 0.03) ** 2 * 10;
+          let q = ((px - tax) * tbx + (py - tay) * tby + (pz - taz) * tbz) / tll; q = q < 0 ? 0 : q > 1 ? 1 : q;
+          dd = Math.hypot(px - tax - tbx * q, py - tay - tby * q, pz - taz - tbz * q); if (dd < 0.17) c += ((0.17 - dd) / 0.03) ** 2 * 6;
+          if (nAv && k < 0.8) { dd = dAv(px, py, pz); if (dd < 0.09) c += ((0.09 - dd) / 0.03) ** 2 * 6; }   // near the wrists the forearms meet at the hilt anyway
+        }
+        if (nAv) { dd = dAv(ex, ey, ez); if (dd < 0.1) c += ((0.1 - dd) / 0.03) ** 2 * 6;
+          dd = dAv((shx0 + ex) * 0.5, (shy0 + ey) * 0.5, (shz0 + ez) * 0.5); if (dd < 0.1) c += ((0.1 - dd) / 0.03) ** 2 * 6; }
         const back = rx * fx_ + ry * fy_ + rz * fz_;
         if (back < -0.12) c += ((-0.12 - back) / 0.08) ** 2 * 2;          // elbow behind the back
-        const hike = ey - shy;
-        if (hike > 0.12) c += ((hike - 0.12) / 0.1) ** 2;                 // elbow above the shoulder
+        const hike = ey - shy, hikeOk = Math.max(0.12, wy - shy - 0.05);   // hands overhead: elbows may go up
+        if (hike > hikeOk) c += ((hike - hikeOk) / 0.1) ** 2;             // elbow above the shoulder
         c += 0.25 * (1 - (ox * hx + oy * hy + oz * hz));                  // tie-break: elbows down/out
+        // elbows hang below the shoulder-wrist line unless the hands are up high
+        const elbowUp = oy * h, upOk = wy > shy + 0.1 ? 0.25 : 0.0;
+        if (elbowUp > upOk) c += ((elbowUp - upOk) / 0.05) ** 2 * 1.5;
         return c;
       };
       let best = 0, bc = Infinity;
@@ -249,15 +300,17 @@
     // hint (optional, per call site) carries the last solution so a run of
     // nearby poses -- the simulation clock, the playhead -- searches locally:
     // faster, and elbows don't flip between frames.
-    const solveHand = (sh, hand, side, Fedge, rollCost, slot) => {
+    const solveHand = (sh, hand, side, Fedge, rollCost, slot, avoid) => {
       const prev = hint && hint[slot] && hint.n % 25 !== 0 ? hint[slot] : null;
       const tryPsi = (psi, th, exact) => {
         const gf = gripFrame(sh, hand, side, Fedge ? norm(rotAbout(Fedge, d, psi)) : null);
-        const r = arm(sh, gf.wrist, side, gf, th, exact);
+        const r = arm(sh, gf.wrist, side, gf, th, exact, avoid);
         // keep the wrist out of the trunk too (rear hand against the hip in Pflug)
         const tb = sub(chest, hip), tu = Math.max(0, Math.min(1, dot(sub(r.wrist, hip), tb) / dot(tb, tb)));
         const wd = len(sub(r.wrist, add(hip, mul(tb, tu))));
-        const wPen = wd < 0.16 ? ((0.16 - wd) / 0.03) ** 2 * 10 : 0;
+        let wPen = wd < 0.17 ? ((0.17 - wd) / 0.03) ** 2 * 10 : 0;
+        const wh = len(sub(r.wrist, head));
+        if (wh < 0.17) wPen += ((0.17 - wh) / 0.03) ** 2 * 10;           // nor in the head
         return { gf, el: r.el, wr: r.wrist, th: r.th, psi, cost: r.cost + wPen + (psi / rollCost) ** 2 };
       };
       let best;
@@ -270,7 +323,7 @@
         for (let psi = -60; psi <= 60; psi += 15) { const r = tryPsi(psi, null); if (!best || r.cost < best.cost) best = r; }
         for (const dp of [-7, -4, 4, 7]) { const r = tryPsi(best.psi + dp, null); if (Math.abs(r.psi) <= 70 && r.cost < best.cost) best = r; }
       }
-      if (prev && best.cost > 1.0 && !(hint.reuse && hint.n % 4 !== 0)) {   // stuck? try the full search too
+      if (prev && best.cost > (prev.ref == null ? 1 : prev.ref) + 1.5 && !(hint.reuse && hint.n % 4 !== 0)) {   // got much worse than the last full search? search again
         let g = null;
         if (!Fedge) g = tryPsi(0, null);
         else {
@@ -278,12 +331,14 @@
           for (const dp of [-7, -4, 4, 7]) { const r = tryPsi(g.psi + dp, null); if (Math.abs(r.psi) <= 70 && r.cost < g.cost) g = r; }
         }
         if (g.cost < best.cost) best = g;
+        best.full = true;
       }
-      if (hint) hint[slot] = { psi: best.psi, th: best.th };
+      if (hint) hint[slot] = { psi: best.psi, th: best.th, ref: (!prev || best.full) ? best.cost : prev.ref };
       return best;
     };
     if (hint) hint.n = (hint.n || 0) + 1;
-    const R_ = solveHand(sh_r, hand_r, 1, edge, 35, 'r'), L_ = solveHand(sh_l, hand_l, -1, pose.left_on ? edge : null, 55, 'l');
+    const R_ = solveHand(sh_r, hand_r, 1, edge, 35, 'r');
+    const L_ = solveHand(sh_l, hand_l, -1, pose.left_on ? edge : null, 55, 'l', [[R_.el, R_.wr], [sh_r, R_.el]]);   // left arm avoids the right
     const gr = R_.gf, gl = L_.gf, wr_r = R_.wr, wr_l = L_.wr, el_r = R_.el, el_l = L_.el;
 
     const an_l = [pose.lfoot[0], D.ankleY + lift[0], pose.lfoot[1]];
@@ -332,6 +387,7 @@
     return out;
   }
 
+  function segSegInline(a, b, c, e) { return segSeg(a, b, c, e); }
   function segSeg(p1, q1, p2, q2) {
     const d1 = sub(q1, p1), d2 = sub(q2, p2), r = sub(p1, p2);
     const a = dot(d1, d1), e = dot(d2, d2), f = dot(d2, r), eps = 1e-12;

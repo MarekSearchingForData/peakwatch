@@ -71,12 +71,12 @@ def rf_fwd(hx, hz=0.0):
 # ------------------------------------------------------------------ guards
 # Longsword (Lichtenauer / Meyer names)
 VOM_TAG = P((0.05, 1.30, 0.24), 72, 165, yaw=-30, **lf_fwd(0.0))
-PFLUG = P((0.30, 1.00, 0.14), 28, -6, yaw=-20, **lf_fwd(0.0))
+PFLUG = P((0.40, 1.00, 0.08), 28, -6, yaw=-20, **lf_fwd(0.0))
 
 # Messer (Lecküchner / Meyer dussack names)
 ZORNHUT = P((0.02, 1.32, 0.25), 30, 170, yaw=-35, **lf_fwd(0.0))
 STIER = P((0.25, 1.55, 0.22), 10, -12, yaw=-25, **lf_fwd(0.0))
-EBER = P((0.30, 1.00, 0.14), 25, -6, yaw=-20, **lf_fwd(0.0))
+EBER = P((0.40, 1.00, 0.14), 25, -6, yaw=-20, **lf_fwd(0.0))
 
 
 def _stance(pose: Pose, hx: float) -> Pose:
@@ -147,7 +147,7 @@ LS_ZWERCH = Technique(
 def _ls_thrust_phases(h0: float) -> list:
     hit = P((h0 + 1.10, 1.30, 0.02), 6, -2, hip=(h0 + 0.62, 0.85, 0.0),
             yaw=15, lean=14, **rf_fwd(h0 + 0.62), roll=-25)
-    back = P((h0 + 0.80, 1.05, 0.12), 25, -6, hip=(h0 + 0.50, 0.88, 0.0),
+    back = P((h0 + 0.90, 1.05, 0.12), 25, -6, hip=(h0 + 0.50, 0.88, 0.0),
              yaw=0, lean=5, **rf_fwd(h0 + 0.55), roll=-25)
     return [
         Phase("thrust", "ls.thrust", [(1.0, hit)], attack=True),
@@ -212,14 +212,14 @@ M_ZORNHAU = Technique(
     tags=["oberhau", "one action", "longsword habits"],
 )
 
-_ZW_MID = P((0.18, 1.82, -0.05), 20, 95, hip=(0.20, 0.89, 0.09), yaw=-5,
-            lfoot=(0.30, -0.08), rfoot=(0.18, 0.25), roll=113)
+_ZW_MID = P((0.33, 1.72, -0.05), 20, 95, hip=(0.20, 0.89, 0.09), yaw=-5,
+            lfoot=(0.30, -0.08), rfoot=(0.18, 0.25), roll=83)
 # hilt high in front of the head (catch his blade on the cross), short edge
 # to his left ear, having sprung out to the right
 _ZW_HIT = P((0.87, 1.74, -0.15), -10, 3, hip=(0.45, 0.87, 0.15), yaw=15,
             lean=10, **rf_fwd(0.45, 0.15), roll=119)
-_ZW_FOLLOW = P((0.85, 1.45, -0.16), -15, -55, hip=(0.48, 0.87, 0.15), yaw=25,
-               lean=10, **rf_fwd(0.45, 0.15), roll=119)
+_ZW_FOLLOW = P((0.75, 1.60, -0.16), -15, -55, hip=(0.48, 0.87, 0.15), yaw=25,
+               lean=10, **rf_fwd(0.45, 0.15), roll=59)
 
 M_ZWERCH = Technique(
     key="m_zwerch", name="Zwerch against the Oberhau",
@@ -238,8 +238,8 @@ M_ZWERCH = Technique(
     tags=["zwerch", "one action", "cover+strike", "vs oberhau"],
 )
 
-_NR_HIT = P((1.32, 1.42, -0.04), -18, -16, hip=(0.82, 0.86, 0.0), yaw=22,
-            lean=14, **rf_fwd(0.82), roll=30)
+_NR_HIT = P((1.22, 1.42, -0.04), -18, -16, hip=(0.82, 0.86, 0.0), yaw=22,
+            lean=14, **rf_fwd(0.82), roll=60)
 _NR_BACK = P((0.75, 1.20, 0.10), 10, -8, hip=(0.55, 0.88, 0.0), yaw=5,
              lean=5, **rf_fwd(0.55), roll=30)
 
@@ -260,11 +260,11 @@ M_NACHREISEN = Technique(
     tags=["nachreisen", "one action", "hands", "vs wind-up"],
 )
 
-_CV_HANG = P((0.35, 1.70, -0.02), 35, -55, hip=(0.12, 0.89, 0.0), yaw=-10,
+_CV_HANG = P((0.25, 1.60, -0.02), 35, -55, hip=(0.12, 0.89, 0.0), yaw=-10,
              lean=4, **lf_fwd(0.12))
-_EL_MID = P((0.70, 1.75, 0.10), 30, -10, hip=(0.45, 0.88, 0.10), yaw=5,
-            lean=8, lfoot=(0.42, -0.10), rfoot=(0.40, 0.25), roll=157)
-_EL_HIT = P((1.05, 1.55, 0.05), -24, -8, hip=(0.80, 0.86, 0.10), yaw=20,
+_EL_MID = P((0.60, 1.65, 0.10), 30, -10, hip=(0.45, 0.88, 0.10), yaw=5,
+            lean=8, lfoot=(0.42, -0.10), rfoot=(0.40, 0.25), roll=187)
+_EL_HIT = P((0.95, 1.45, 0.05), -24, -8, hip=(0.80, 0.86, 0.10), yaw=20,
             lean=12, **rf_fwd(0.80, 0.10), roll=219)
 
 M_HENGEN_EINLAUF = Technique(
@@ -347,10 +347,10 @@ SCENARIO_BY_KEY = {s.key: s for s in SCENARIOS}
 
 # ---------------------------------------------------------- guard presets
 OCHS = P((0.22, 1.58, 0.22), 12, -14, yaw=-25, **lf_fwd(0.0))
-ALBER = P((0.35, 0.85, 0.05), -35, -2, yaw=-15, **lf_fwd(0.0))
-LANGORT = P((0.62, 1.30, 0.02), 4, -2, yaw=10, lean=6, **lf_fwd(0.0))
-LUGINSLAND = P((0.10, 1.78, 0.18), 78, 170, yaw=-25, **lf_fwd(0.0))
-WECHSEL = P((0.12, 0.92, 0.26), -35, 150, yaw=-35, **lf_fwd(0.0))
+ALBER = P((0.35, 0.85, 0.02), -35, 13, yaw=-15, **lf_fwd(0.0))
+LANGORT = P((0.52, 1.25, 0.02), 4, -2, yaw=10, lean=6, **lf_fwd(0.0))
+LUGINSLAND = P((0.10, 1.73, 0.18), 78, 170, yaw=-25, **lf_fwd(0.0))
+WECHSEL = P((0.12, 0.97, 0.26), -35, 150, yaw=-35, **lf_fwd(0.0))
 
 GUARDS = {
     "longsword": {"Vom Tag": VOM_TAG, "Ochs": OCHS, "Pflug": PFLUG,
