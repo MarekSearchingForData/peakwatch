@@ -805,6 +805,8 @@ function record() {
     }
   });
   S.work[f] = null; runSim(); syncPoseUI();
+  const fixed = H.repairPose(pose, weaponOf(f), bodyOf(f)).repair;
+  if (fixed && (fixed.moved > 0.005 || fixed.roll)) flash(`The arms couldn't hold the sword there within their range of motion, so the hilt was moved ${(fixed.moved * 100).toFixed(0)} cm${fixed.roll ? ` and the edge turned ${fixed.roll}°` : ''}.`);
 }
 $('rec').onclick = record;
 function deleteKeys() {

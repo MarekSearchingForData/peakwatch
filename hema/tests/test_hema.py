@@ -18,7 +18,7 @@ from hemaviz.timings import (add_custom_action, default_store,  # noqa: E402
 
 def test_seed_library_is_consistent():
     lib = seed_library()
-    assert len(lib["exchanges"]) == 5 and lib["moves"]
+    assert len(lib["exchanges"]) == 3 and lib["moves"]
     for ex in lib["exchanges"] + [dict(m, tracks=[{"keys": m["keys"]}]) for m in lib["moves"]]:
         ids = set()
         for tr in ex["tracks"]:
@@ -40,7 +40,7 @@ def test_library_roundtrip_and_restore_seeds(tmp_path):
     save_library(lib, p)
     again = load_library(p)
     assert len(again["exchanges"]) == 1
-    assert add_missing_seeds(again) == 4
+    assert add_missing_seeds(again) == 2
     assert add_missing_seeds(again) == 0
 
 

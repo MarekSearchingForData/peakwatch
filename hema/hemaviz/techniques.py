@@ -313,6 +313,9 @@ class Scenario:
     distance: float = 2.4   # pelvis to pelvis at the start (m)
 
 
+# The Zwerch and the hanging cover + Einlaufen matchups were removed: once
+# real joint limits were enforced, their hand-written motions turned out to be
+# anatomically impossible. Re-record them (Studio or video capture).
 SCENARIOS = [
     Scenario("mutual", "Mutual Zornhau: longsword vs messer", "ls_zornhau",
              "m_zornhau", 0, 0,
@@ -320,22 +323,10 @@ SCENARIOS = [
              "longsword's extra ~15 cm lands on the head first; the best the "
              "messer gets is an afterblow to the hands. This is fighting the "
              "messer like a longsword.", distance=3.6),
-    Scenario("zwerch", "Zwerch against his Oberhau", "ls_zornhau", "m_zwerch",
-             1, 0,
-             "Spring out with the Zwerch the instant he cuts (Indes): his blade "
-             "lands on your cross while your short edge takes his head. One "
-             "action that covers and hits. Add even 50 ms of reaction and it "
-             "fails -- you have to read the cut, not answer it.",
-             distance=2.8),
     Scenario("nachreisen", "Nachreisen on a wind-up", "ls_windup",
              "m_nachreisen", 1, 120,
              "He winds up from Pflug (two actions). You go on his wind-up "
              "and cut the hands. A one-action answer to a two-action attack."),
-    Scenario("einlauf", "Hanging cover + Einlaufen", "ls_zornhau",
-             "m_hengen_einlauf", 1, 60,
-             "Cover his Oberhau with your strong, then run in where his "
-             "longer blade can't follow. Cover must be up before his "
-             "blade arrives."),
     Scenario("thrust", "Messer Zornhau vs longsword thrust", "ls_thrust",
              "m_zornhau", 0, 0,
              "Both go at once. His point travels the shortest line and has "

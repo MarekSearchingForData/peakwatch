@@ -37,24 +37,33 @@ test('mutual Zornhau: the longsword reaches the head first', () => {
   assert.ok(!r.first[1] || r.first[1].t > r.first[0].t);
 });
 
-test('Zwerch catches the Oberhau on the cross and hits', () => {
-  const r = H.simulate(exOf('seed-zwerch'));
-  assert.ok(r.events.some(e => e.kind === 'displace' && e.by === 1));
-  assert.strictEqual(r.verdict, 'B wins clean');
-  const disp = r.events.find(e => e.kind === 'displace');
-  assert.ok(!r.events.some(e => e.kind === 'hit' && e.by === 0 && e.t > disp.t), 'displaced action cannot score');
+test('a displaced action can never score afterwards', () => {
+  let seen = 0;
+  for (const e0 of lib.exchanges) {
+    const ex = clone(e0), r = H.simulate(ex);
+    for (const d of r.events.filter(e => e.kind === 'displace')) {
+      seen++;
+      const L = H.layout(ex, d.on), a = H.actionAt(L, d.t);
+      assert.ok(!r.events.some(e => e.kind === 'hit' && e.by === d.on && e.t > d.t && e.t < a.t1),
+        `${ex.id}: ${'AB'[d.on]} scored with a displaced action`);
+    }
+  }
+  assert.ok(seen > 0, 'the examples contain displacements');
 });
 
-test('a slow Zwerch fails', () => {
-  const ex = exOf('seed-zwerch'); act(ex, 1, 'Zwerch').pace = 1.4;
-  assert.notStrictEqual(H.simulate(ex).verdict, 'B wins clean');
+test('timing decides: a slower Zornhau against the thrust changes the result', () => {
+  const ex = exOf('seed-thrust'), base = H.simulate(ex).verdict;
+  act(ex, 1, 'Zornhau').pace = 1.4;
+  assert.notStrictEqual(H.simulate(ex).verdict, base);
 });
 
-test('strength decides the bind: a weak Zwerch no longer displaces a strong Oberhau', () => {
-  const ex = exOf('seed-zwerch');
-  act(ex, 1, 'Zwerch').strength = 0.0; act(ex, 0, 'Oberhau').strength = 1.0;
-  const r = H.simulate(ex);
-  assert.ok(!r.events.some(e => e.kind === 'displace' && e.by === 1));
+test('strength decides the bind: swapping strengths swaps who is displaced', () => {
+  const ex = exOf('seed-mutual'), r = H.simulate(ex), d = r.events.find(e => e.kind === 'displace');
+  assert.ok(d, 'the mutual Zornhau ends in a bind with a displacement');
+  const aw = H.actionAt(H.layout(ex, d.by), d.t), al = H.actionAt(H.layout(ex, d.on), d.t);
+  ex.actions.find(a => a.id === aw.id).strength = 0; ex.actions.find(a => a.id === al.id).strength = 1;
+  const d2 = H.simulate(ex).events.find(e => e.kind === 'displace' && Math.abs(e.t - d.t) < 30);
+  assert.ok(d2 && d2.by === d.on, 'the stronger blade now wins the bind');
 });
 
 test('Nachreisen hits the rising hands first', () => {
@@ -111,6 +120,17 @@ test('arms go around the head and the hilt stays out of the body', () => {
       }
       const dH = H.segSeg(sk.hand_l, sk.hand_r, sk.pelvis, sk.chest)[0];
       assert.ok(dH > 0.15, `${ex.id} ${'AB'[f]} hilt inside the body at ${t} ms`);
+    }
+  }
+});
+
+test('every example key is held within the joints\' range of motion (after repair)', () => {
+  for (const ex of lib.exchanges) for (const f of [0, 1]) {
+    const W = H.WEAPONS[ex.fencers[f].weapon], B = H.bodyOf(ex.fencers[f].body);
+    for (const k of ex.tracks[f].keys) {
+      const p = H.repairPose(k.pose, W, B), sk = H.skeleton(p, W, null, B);
+      const v = sk.armViol[0].total + (p.left_on ? sk.armViol[1].total : 0);
+      assert.ok(v <= 0.05, `${ex.id} ${'AB'[f]} key ${k.id} still outside range (${v.toFixed(2)})`);
     }
   }
 });

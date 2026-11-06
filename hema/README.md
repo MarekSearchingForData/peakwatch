@@ -63,11 +63,24 @@ caught on the cross depends on how you turn it (*Edge*).
 
 | Exchange | What it shows |
 |---|---|
-| Mutual Zornhau, longsword vs messer | Same speed: the longsword's reach takes the head; the messer only gets an afterblow to the hands. |
-| Zwerch against his Oberhau | Started on his cut, the Zwerch catches it on the cross and hits the head. Make it slow (drag its bar) or weak and it fails. |
+| Mutual Zornhau, longsword vs messer | Same speed: the longsword's reach takes the head; the messer only gets an afterblow. |
 | Nachreisen on a wind-up | A one-action cut to the rising hands beats a two-action attack. |
-| Hanging cover + Einlaufen | Cover on the strong, then run in where the longsword can't follow. |
-| Messer Zornhau vs longsword thrust | The point arrives first; how much faster would you need to be? |
+| Messer Zornhau vs longsword thrust | The point arrives first; a slower Zornhau loses outright. |
+
+The Zwerch and hanging cover + Einlaufen examples were removed: with real
+joint limits enforced, their hand-written motions were anatomically
+impossible. They are still in the moves library, to be re-recorded.
+
+## Anatomy
+
+Arms use analytical IK after Kallmann (*Analytical inverse kinematics with
+body posture control*, CAVW 2008): the elbow starts from its natural
+position and moves only as far as needed to keep every joint within its
+range of motion (shoulder ~180° flexion/abduction but ~60° behind the body,
+~90° rotation, elbow 145°, wrist ~75/70° and 25/40° sideways; standard
+clinical values) and the arms out of the trunk, chest, neck and head. Every
+recorded key is checked: if the arms can't hold the hilt where it was put,
+the hilt moves to the nearest place they can, and the Studio says so.
 
 *Restore the seed examples* in the sidebar brings back any you deleted.
 
